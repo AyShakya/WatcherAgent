@@ -1,0 +1,17 @@
+services:
+  guardian-agent:
+    image: guardian-agent:latest
+    environment:
+      - PORT=3000
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - DEFAULT_LLM_MODEL=${DEFAULT_LLM_MODEL}
+      - PINECONE_API_KEY=${PINECONE_API_KEY}
+      - PINECONE_INDEX_NAME=${PINECONE_INDEX_NAME}
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
+      - DISCORD_INCIDENT_CHANNEL_ID=${DISCORD_INCIDENT_CHANNEL_ID}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_REPO_OWNER=${GITHUB_REPO_OWNER}
+      - GITHUB_REPO_NAME=${GITHUB_REPO_NAME}
+    ports:
+      - "${ASSIGNED_PORT}:3000"
+    restart: always
