@@ -1,59 +1,76 @@
 # 🛡️ Watcher: Quick Start Guide
 
-Guardian is an autonomous SRE agent that triages incidents, retrieves fixes via Pinecone RAG, and deploys GitHub PRs after Discord approval.
+Watcher is an autonomous SRE agent that receives incident webhooks, triages them, looks up similar fixes, opens a human approval flow in Discord, and then creates a GitHub fix after approval.
 
 ## 1. Prerequisites
 
-- **OpenRouter:** API key for LLM orchestration (OpenAI, Gemini, Claude).
-- **Pinecone:** API key and Index for Vector RAG.
-- **Discord:** A bot token and a channel ID.
-- **GitHub:** A Personal Access Token (PAT) with `repo` scope.
-- **Node.js:** v20+
+Install these before you start:
 
-## 2. Configuration (.env)
+- Node.js 20 or newer.
+- An OpenRouter API key for LLM orchestration.
+- A Pinecone API key and an index for vector search.
+- A Discord bot token and the channel ID where approval cards should appear.
+- A GitHub personal access token with `repo` scope.
 
-Create a `.env` file in the root directory:
+## 2. Install Dependencies
 
-```env
-PORT=3000
-
-# OpenRouter (LLM)
-OPENROUTER_API_KEY=your_openrouter_api_key
-DEFAULT_LLM_MODEL=google/gemini-flash-1.5
-
-# Pinecone (Vector RAG)
-PINECONE_API_KEY=your_pinecone_api_key
-PINECONE_INDEX_NAME=guardian-knowledge
-
-# Discord (HITL)
-DISCORD_BOT_TOKEN=your-discord-bot-token
-DISCORD_INCIDENT_CHANNEL_ID=your-target-channel-id
-
-# GitHub (Automation)
-GITHUB_TOKEN=your-github-pat
-GITHUB_REPO_OWNER=your-github-username
-GITHUB_REPO_NAME=your-repo-name
-```
-
-## 3. Installation
+From the repository root, install the workspace dependencies:
 
 ```bash
 npm install
 ```
 
-## 4. Running the Agent
+## 3. Create Your `.env`
+
+Create a `.env` file in the repository root and fill in the values for your environment:
+
+```env
+PORT=3000
+
+# LLM provider
+OPENROUTER_API_KEY=your_openrouter_api_key
+DEFAULT_LLM_MODEL=google/gemini-flash-1.5
+
+# Retrieval
+PINECONE_API_KEY=your_pinecone_api_key
+PINECONE_INDEX_NAME=guardian-knowledge
+
+# Human-in-the-loop approval
+DISCORD_BOT_TOKEN=your_discord_bot_token
+DISCORD_INCIDENT_CHANNEL_ID=your_discord_channel_id
+
+# GitHub automation
+GITHUB_TOKEN=your_github_pat
+GITHUB_REPO_OWNER=your_github_username_or_org
+GITHUB_REPO_NAME=your_repository_name
+```
+
+If you plan to use the demo script in direct or full pipeline mode, also set:
+
+```env
+AIRIA_ENDPOINT_URL=your_airia_webhook_url
+AIRIA_API_KEY=your_airia_api_key
+PAGERDUTY_INTEGRATION_KEY=your_pagerduty_key
+PAGERDUTY_SERVICE_ID=your_pagerduty_service_id
+```
+
+## 4. Start the Server
+
+Run the webhook server from the project root:
 
 ```bash
 node server.js
 ```
 
-## 5. Testing the Architecture
+When it starts, it listens on `http://localhost:3000` by default.
 
-Trigger a sample incident using `curl` to see the entire pipeline in action:
+## 5. Send a Test Incident
+
+In a second terminal, send a sample alert to the webhook endpoint:
 
 ```bash
-curl -X POST http://localhost:3000/webhook \\
-  -H "Content-Type: application/json" \\
+curl -X POST http://localhost:3000/webhook \
+  -H "Content-Type: application/json" \
   -d '{
     "service": "user-authentication",
     "alert": {
@@ -64,18 +81,44 @@ curl -X POST http://localhost:3000/webhook \\
   }'
 ```
 
-### What to expect:
-1. **Console:** You'll see "🛡️ Received Webhook" and the Triage results via OpenRouter.
-2. **Pinecone:** The agent will search your Pinecone index for similar past fixes.
-3. **Discord:** A card will appear in your channel with an "Accept & Fix" button.
-4. **Action:** Click "Accept & Fix".
-5. **GitHub:** A new PR will be created in your repository with an AI-generated code fix and a `POSTMORTEM.md`.
-6. **Learning:** Once the PR is created, the solution is stored back in Pinecone for future incidents.
+You should see the request accepted with an incident ID and severity, then the triage, runbook, and Discord handoff logs in the server terminal.
 
-## 6. Customizing the Agent (Prompt Space)
+## 6. Run the Demo Script
 
-You can customize how the AI thinks and responds by editing the files in the `prompts/` directory:
-- `prompts/triage.js`: Define how the agent classifies incidents and reasoning.
-- `prompts/fixer.js`: Define how the agent generates technical code fixes.
+The repository also includes a demo driver that can exercise the workflow without manually crafting webhooks.
 
-This allows you to align the agent with your team's specific coding standards and SRE practices.
+```bash
+npm run demo -- --mode=local
+```
+
+Use `--mode=local` for a fully local 5-node run.
+
+```bash
+npm run demo -- --mode=direct
+```
+
+Use `--mode=direct` when `AIRIA_ENDPOINT_URL` and `AIRIA_API_KEY` are configured.
+
+```bash
+npm run demo
+```
+
+The default mode is `both`, which tries PagerDuty and then sends the alert through the pipeline.
+
+## 7. Approve the Incident
+
+If Discord is configured, a card will appear in your incident channel. Click the approval action to continue the fix pipeline.
+
+After approval, the war room and fixer nodes create the code change, open the GitHub PR, and generate the postmortem artifact.
+
+## 8. Customize Prompts
+
+You can adjust the agent behavior by editing the prompt files in `prompts/`:
+
+- `prompts/triage.js` controls incident classification and reasoning.
+- `prompts/fixer.js` controls how the repair plan and code fix are generated.
+
+## 9. Optional Docker Deployment
+
+The file `docker-compose.template.yml` shows the environment variables expected by the container image. If you use it, copy it to your own compose file, provide the same `.env` values, and make sure the `guardian-agent:latest` image already exists before starting the service.
+
