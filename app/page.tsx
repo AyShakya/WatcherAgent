@@ -23,7 +23,9 @@ export default function Page() {
             <Link href="/dashboard">
               <Button variant="ghost" className="text-sm">Dashboard</Button>
             </Link>
-            <Button variant="ghost" className="text-sm">Sign In</Button>
+            <Link href="/sign-in">
+              <Button variant="ghost" className="text-sm">Sign In</Button>
+            </Link>
             <Button className="bg-primary hover:bg-primary/90 text-white text-sm">Connect GitHub</Button>
           </div>
         </div>
