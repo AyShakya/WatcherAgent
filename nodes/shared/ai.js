@@ -57,17 +57,26 @@ export async function callLLM({ prompt, systemPrompt, model = DEFAULT_MODEL, res
  */
 export async function getEmbedding(text, pc) {
   try {
+    if (!text) throw new Error('No text provided for embedding');
+
     // Standard serverless embedding model in Pinecone
     const model = 'multilingual-e5-large'; 
-    const embeddings = await pc.inference.embed(
-      model,
-      [text],
-      { inputType: 'passage', truncate: 'END' }
-    );
     
-    // Pinecone returns an array of embeddings
-    if (embeddings && embeddings.length > 0) {
-      return embeddings[0].values;
+    // Ensure pc.inference exists
+    if (!pc || !pc.inference) {
+      throw new Error('Pinecone client not initialized with inference capabilities. Ensure you are using SDK v7+');
+    }
+
+    // Pinecone v7 SDK Inference Signature: embed({ model, inputs, parameters })
+    const response = await pc.inference.embed({
+      model: model,
+      inputs: [text],
+      parameters: { inputType: 'passage', truncate: 'END' }
+    });
+    
+    // Pinecone v7 returns an EmbeddingsList object with a .data array
+    if (response && response.data && response.data.length > 0) {
+      return response.data[0].values;
     }
     
     throw new Error('No embeddings returned from Pinecone');

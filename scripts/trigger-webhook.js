@@ -3,9 +3,9 @@ dotenv.config();
 
 const payload = {
   service: "checkout-service",
-  error: "Error: ECONNREFUSED 127.0.0.1:5432",
-  message: "Failed to connect to postgres database. Checkout process failing for all users.",
-  stack: "Error: ECONNREFUSED 127.0.0.1:5432\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1605:16)",
+  error: "Error: ECONNREFUSED 127.0.0.1:27017",
+  message: "Failed to connect to mongodb database.",
+  stack: "Error: ECONNREFUSED 127.0.0.1:27017\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1605:16)",
   metadata: {
     env: "production",
     region: "us-east-1",

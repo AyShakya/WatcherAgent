@@ -38,11 +38,11 @@ export async function searchRunbooks(service, errorReasoning) {
       includeMetadata: true
     });
 
-    if (queryResponse.matches && queryResponse.matches.length > 0) {
+    if (queryResponse && queryResponse.matches && queryResponse.matches.length > 0) {
       return queryResponse.matches.map(match => ({
-        title: match.metadata.title || 'Relevant Fix',
-        content: match.metadata.content || '',
-        source: match.metadata.source || 'PINECONE',
+        title: match.metadata?.title || 'Relevant Fix',
+        content: match.metadata?.content || '',
+        source: match.metadata?.source || 'PINECONE',
         relevance: match.score
       }));
     }
