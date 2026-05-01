@@ -1,7 +1,7 @@
 "use client"
 
 import { signIn, signUp, useSession } from "@/lib/auth-client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Eye, Github, Loader2 } from "lucide-react"
@@ -17,8 +17,13 @@ export default function SignInPage() {
   const router = useRouter()
 
   // Redirect if already logged in
+  useEffect(() => {
+    if (session && !sessionLoading) {
+      router.push("/dashboard")
+    }
+  }, [session, sessionLoading, router])
+
   if (session && !sessionLoading) {
-    router.push("/dashboard")
     return null
   }
 

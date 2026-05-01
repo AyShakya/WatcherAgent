@@ -1,6 +1,9 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { signOut } from "@/lib/auth-client";
 import {
   Eye,
   AlertCircle,
@@ -113,16 +116,25 @@ const recentPRs = [
 ];
 
 export default function Dashboard() {
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/sign-in");
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Navigation */}
       <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-              <Eye className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold">Watcher</span>
+            <Link href="/" className="flex items-center gap-3 group cursor-pointer">
+              <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
+                <Eye className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold group-hover:text-primary transition-colors">Watcher</span>
+            </Link>
             <span className="ml-8 text-sm text-muted-foreground">Dashboard</span>
           </div>
           <div className="flex items-center gap-4">
@@ -130,7 +142,7 @@ export default function Dashboard() {
               <Settings className="w-4 h-4 mr-2" />
               Settings
             </Button>
-            <Button variant="ghost" size="sm" className="text-sm">
+            <Button variant="ghost" size="sm" className="text-sm" onClick={handleSignOut}>
               <LogOut className="w-4 h-4 mr-2" />
               Sign Out
             </Button>
@@ -146,10 +158,12 @@ export default function Dashboard() {
             <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
             <p className="text-muted-foreground">Welcome back! Here&apos;s what Watcher found.</p>
           </div>
-          <Button className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Add Repository
-          </Button>
+          <Link href="/dashboard/instance">
+            <Button className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Add Instance
+            </Button>
+          </Link>
         </div>
 
         {/* Key Metrics */}
