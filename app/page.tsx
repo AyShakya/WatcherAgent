@@ -1,8 +1,14 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Eye, AlertCircle, GitPullRequest, CheckCircle, Zap, Shield, Github } from "lucide-react";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
 
-export default function Page() {
+export default async function Page() {
+  const session = await auth.api.getSession({
+    headers: await headers()
+  });
+
   return (
     <div className="min-h-screen bg-background text-foreground overflow-hidden">
       {/* Navigation */}
@@ -20,12 +26,15 @@ export default function Page() {
             <a href="/pricing" className="text-sm text-muted-foreground hover:text-foreground transition">Pricing</a>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/dashboard">
-              <Button variant="ghost" className="text-sm">Dashboard</Button>
-            </Link>
-            <Link href="/sign-in">
-              <Button variant="ghost" className="text-sm">Sign In</Button>
-            </Link>
+            {session ? (
+              <Link href="/dashboard">
+                <Button variant="ghost" className="text-sm">Dashboard</Button>
+              </Link>
+            ) : (
+              <Link href="/sign-in">
+                <Button variant="ghost" className="text-sm">Sign In</Button>
+              </Link>
+            )}
             <Button className="bg-primary hover:bg-primary/90 text-white text-sm">Connect GitHub</Button>
           </div>
         </div>
