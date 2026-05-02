@@ -40,7 +40,15 @@ async function getFileContent(path) {
 /**
  * Gets a comprehensive list of candidate files using search and tree crawl.
  */
-async function getCandidatePaths(keywords, service) {
+async function getDefaultBranch() {
+  const { data: repo } = await octokit.rest.repos.get({
+    owner: REPO_OWNER,
+    repo: REPO_NAME,
+  });
+  return repo.default_branch;
+}
+
+async function getCandidatePaths(keywords, service, defaultBranch) {
   const candidates = new Set();
   
   // 1. Search for technical keywords
@@ -57,7 +65,7 @@ async function getCandidatePaths(keywords, service) {
     const { data: tree } = await octokit.rest.git.getTree({
       owner: REPO_OWNER,
       repo: REPO_NAME,
-      tree_sha: 'main',
+      tree_sha: defaultBranch,
       recursive: true
     });
     
@@ -87,23 +95,27 @@ export async function createFixPR(incidentData) {
   }
 
   const branchName = `guardian/fix-${incidentData.incident_id.toLowerCase()}`;
-  const baseBranch = 'main';
+  let baseBranch = 'main';
   let currentContent = null;
   let aiFix = { file_path: 'N/A', new_content: '', reasoning: 'AI could not identify a fix.' };
 
   try {
     // Phase 1: Keyword Extraction
     console.log('🕵️ Phase 1: Identifying technical search keywords...');
-    const keywordsRaw = await callLLM({ 
-      prompt: `Based on this technical error, return 3 comma-separated keywords or symbols to find the relevant code: ${incidentData.reasoning}`, 
-      systemPrompt: 'Return only keywords. Prioritize specific error strings or function names.',
-      responseFormat: 'text' 
+    const keywordsResult = await callLLM({
+      prompt: `Analyze this technical error and return the 3 most specific search terms.
+ERROR: ${incidentData.raw_error_message || incidentData.reasoning}`,
+      systemPrompt: 'Return ONLY raw JSON in this exact shape: { "keywords": ["term1", "term2", "term3"] }',
+      responseFormat: 'json_object'
     });
-    const keywords = keywordsRaw.split(',').map(k => k.trim());
+    const keywords = Array.isArray(keywordsResult?.keywords)
+      ? keywordsResult.keywords.map((k) => String(k).trim()).filter(Boolean).slice(0, 3)
+      : [];
 
     // Phase 2: Path Discovery & LLM Ranking
     console.log('🕵️ Phase 2: Discovering and ranking candidate files...');
-    const allPaths = await getCandidatePaths(keywords, incidentData.service);
+    baseBranch = await getDefaultBranch();
+    const allPaths = await getCandidatePaths(keywords, incidentData.service, baseBranch);
     
     const rankingPrompt = `
       You are an expert SRE. Given the incident below, identify which file is the most likely source of the bug.
