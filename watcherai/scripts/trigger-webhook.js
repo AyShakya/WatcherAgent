@@ -2,19 +2,25 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const payload = {
+  incident_id: `INC-${Math.floor(Math.random() * 9000) + 1000}`,
   service: "checkout-service",
-  error: "Error: ECONNREFUSED 127.0.0.1:27017",
-  message: "Failed to connect to mongodb database.",
-  stack: "Error: ECONNREFUSED 127.0.0.1:27017\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1605:16)",
-  metadata: {
-    env: "production",
-    region: "us-east-1",
-    timestamp: new Date().toISOString()
-  }
+  triggered_at: new Date().toISOString(),
+  alert: {
+    latencyMs: 4800,
+    errorRate: 0.73,
+    durationMin: 12,
+    transactionsAffected: 2340,
+    p95LatencyMs: 8200,
+    p99LatencyMs: 14500,
+    errorTypes: ["ECONNREFUSED", "MongoNetworkError"],
+    affectedRegions: ["us-east-1"],
+  },
+  runbook_hint: "MongoDB connection refused — check DB host reachability and connection pool settings.",
+  pagerduty_url: "https://example.pagerduty.com/incidents/P1234",
 };
 
 async function trigger() {
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 3001;
   const url = `http://localhost:${port}/webhook`;
   
   console.log(`🚀 Sending test webhook to ${url}...`);
