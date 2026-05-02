@@ -11,6 +11,12 @@ const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 const REPO_OWNER = process.env.GITHUB_REPO_OWNER;
 const REPO_NAME = process.env.GITHUB_REPO_NAME;
 
+/** Strip control characters (except \n \r \t) that break JSON serialization */
+function sanitize(str) {
+  if (!str) return '';
+  return String(str).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+}
+
 const SYSTEM_INSTRUCTIONS = `
 You are a Senior Software Engineer and SRE performing root cause analysis and fix generation.
 INVIOLABLE RULES:
@@ -125,7 +131,7 @@ export async function createFixPR(incidentData) {
     console.log('🕵️ Phase 1: Identifying technical search keywords...');
     const keywordsResult = await callLLM({
       prompt: `Analyze this technical error and return the 3 most specific search terms.
-ERROR: ${incidentData.raw_error_message || incidentData.reasoning}`,
+ERROR: ${sanitize(incidentData.raw_error_message || incidentData.reasoning)}`,
       systemPrompt: 'Return ONLY raw JSON in this exact shape: { "keywords": ["term1", "term2", "term3"] }',
       responseFormat: 'json_object',
       maxTokens: 256,
@@ -142,8 +148,8 @@ ERROR: ${incidentData.raw_error_message || incidentData.reasoning}`,
     const rankingPrompt = `
       You are an expert SRE. Given the incident below, identify which file is the most likely source of the bug.
       
-      INCIDENT: ${incidentData.reasoning}
-      SERVICE: ${incidentData.service}
+      INCIDENT: ${sanitize(incidentData.reasoning)}
+      SERVICE: ${sanitize(incidentData.service)}
       
       REPOSITORY FILES:
       ${allPaths.join('\n')}
@@ -183,15 +189,15 @@ ERROR: ${incidentData.raw_error_message || incidentData.reasoning}`,
     console.log('🕵️ Phase 3: Auditing code and generating fix...');
     const audits = await Promise.all(finalPaths.map(async (path) => {
       const content = await getFileContent(path);
-      return `FILE: ${path}\nCONTENT:\n${content || 'Empty'}\n---`;
+      return `FILE: ${path}\nCONTENT:\n${sanitize(content || 'Empty')}\n---`;
     }));
 
     const auditPrompt = `
 ## INCIDENT
-Service: ${incidentData.service}
-Error type: ${incidentData.error_type || 'unknown'}
-Verbatim error: ${incidentData.raw_error_message || incidentData.reasoning}
-Root frame: ${incidentData.root_frame?.file || 'unknown'}:${incidentData.root_frame?.line || 'unknown'} in ${incidentData.root_frame?.function || 'unknown'}
+Service: ${sanitize(incidentData.service)}
+Error type: ${sanitize(incidentData.error_type || 'unknown')}
+Verbatim error: ${sanitize(incidentData.raw_error_message || incidentData.reasoning)}
+Root frame: ${sanitize(incidentData.root_frame?.file || 'unknown')}:${incidentData.root_frame?.line || 'unknown'} in ${sanitize(incidentData.root_frame?.function || 'unknown')}
 Severity: ${incidentData.severity}
 
 ## CODE TO AUDIT (with line numbers)
