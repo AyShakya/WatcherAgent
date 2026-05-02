@@ -55,7 +55,7 @@ export async function searchRunbooks(service, errorReasoning) {
     if (highConfidenceMatches.length > 0) {
       return highConfidenceMatches.map(match => ({
         title: match.metadata?.title || 'Historical Fix',
-        steps: JSON.parse(match.metadata?.steps || '[]'),
+        steps: (() => { try { return JSON.parse(match.metadata?.steps || '[]'); } catch { return []; } })(),
         fix_diff: match.metadata?.fix_diff || null,
         root_cause: match.metadata?.root_cause || null,
         pr_url: match.metadata?.pr_url || null,
