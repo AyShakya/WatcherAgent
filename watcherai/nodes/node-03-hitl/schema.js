@@ -30,4 +30,4 @@ export const OutputSchema = z.object({
   runbooks: z.array(z.record(z.unknown())),
   ai_explanation: z.string().nullable().optional(),
   hitl: HITLPendingSchema,
-});
+}).passthrough();

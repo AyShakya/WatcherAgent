@@ -81,6 +81,7 @@ ${JSON.stringify(input, null, 2)}
 
     console.log(`🎯 Triage Result for ${incident_id}: ${aiResult.reasoning}`);
 
+    const isCritical = !!aiResult.is_critical;
     return {
       incident_id,
       service: aiResult.service || input.service || 'unknown-service',
@@ -92,7 +93,8 @@ ${JSON.stringify(input, null, 2)}
       root_frame: aiResult.root_frame || { file: null, line: null, function: null },
       affected_files: Array.isArray(aiResult.affected_files) ? aiResult.affected_files : [],
       error_type: aiResult.error_type || 'unknown',
-      isCriticalService: !!aiResult.is_critical,
+      isCriticalService: isCritical,
+      criticalMultiplierApplied: isCritical && aiResult.severity === 'P1',
       alert_raw: input,
       triggered_at: input.triggered_at || new Date().toISOString(),
       triage_completed_at: new Date().toISOString(),
@@ -118,6 +120,7 @@ function getFallbackTriage(input, incident_id) {
     affected_files: [],
     error_type: 'unknown',
     isCriticalService: false,
+    criticalMultiplierApplied: false,
     alert_raw: input,
     triggered_at: new Date().toISOString(),
     triage_completed_at: new Date().toISOString(),

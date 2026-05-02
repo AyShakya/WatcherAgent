@@ -31,6 +31,7 @@ export async function updateAgentMemory(incidentData) {
 
   if (
     incidentData.runbooks?.[0]?.source === 'LOCAL_FALLBACK' ||
+    incidentData.runbooks?.[0]?.source === 'LOCAL_RUNBOOK' ||
     incidentData.runbooks?.[0]?.source === 'CACHED_FALLBACK'
   ) {
     console.warn('⚠️ Skipping memory update — resolution came from fallback, not a real fix.');

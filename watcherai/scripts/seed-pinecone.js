@@ -124,11 +124,13 @@ async function seed() {
     const embedding = await getEmbedding(runbook.content, pc);
 
     await index.upsert({
-      records: [{
+      vectors: [{
         id: runbook.id,
         values: embedding,
         metadata: {
+          chunk_type: 'error_signature',
           title: runbook.title,
+          steps: JSON.stringify(runbook.content.split('\n').filter(Boolean)),
           content: runbook.content,
           service: runbook.service,
           source: 'SEED_RUNBOOK',
