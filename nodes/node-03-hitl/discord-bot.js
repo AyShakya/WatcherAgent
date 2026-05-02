@@ -101,18 +101,22 @@ export async function sendApprovalCard(incidentData) {
     await thread.send(`Thread started for ${incidentData.incident_id}. Awaiting human decision...`);
 
     const timeout = setTimeout(async () => {
-      const stillPending = getIncident(incidentData.incident_id);
-      if (!stillPending) {
-        return;
-      }
+      const stillPending = await getIncident(incidentData.incident_id);
+      if (!stillPending) return;
 
       console.warn(`⏰ HITL timeout for ${incidentData.incident_id}. Auto-cleaning pending incident.`);
-      removeIncident(incidentData.incident_id);
+      await removeIncident(incidentData.incident_id);
 
       try {
-        await thread.send(`⏰ **Timeout.** Incident ${incidentData.incident_id} timed out without a human decision.`);
+        await thread.delete().catch(async () => {
+          await thread.send('⏰ **Timeout.** Incident timed out.').catch(() => {});
+          await thread.setArchived(true).catch(() => {});
+        });
+        await message.delete().catch(async () => {
+          await message.edit({ content: '⏰ **Incident Timed Out & Archived.**', components: [], embeds: [] }).catch(() => {});
+        });
       } catch (error) {
-        console.warn(`⚠️ Failed to post timeout notice for ${incidentData.incident_id}: ${error.message}`);
+        console.warn(`⚠️ Failed to clean up Discord artifacts for ${incidentData.incident_id}: ${error.message}`);
       }
     }, HITL_TIMEOUT_MS);
 

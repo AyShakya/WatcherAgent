@@ -8,6 +8,19 @@ const storeDir = process.env.INCIDENT_STORE_DIR || path.resolve('.data');
 const storeFile = path.join(storeDir, 'incidents.json');
 const HITL_TIMEOUT_MS = parseInt(process.env.HITL_TIMEOUT_MS || '900000', 10);
 
+const timeouts = new Map();
+
+export function saveIncidentTimeout(id, timeout) {
+  timeouts.set(id, timeout);
+}
+
+export function clearIncidentTimeout(id) {
+  if (timeouts.has(id)) {
+    clearTimeout(timeouts.get(id));
+    timeouts.delete(id);
+  }
+}
+
 async function ensureStoreFile() {
   await fs.mkdir(storeDir, { recursive: true });
 
