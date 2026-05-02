@@ -1,32 +1,35 @@
-# ---- Build ----
-FROM node:18-alpine AS builder
+# ---------- BUILD ----------
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# 1) copy only deps first (better cache)
 COPY watcher/package*.json ./
 
-# Install original deps
 RUN npm install
 
-# Override Prisma to v7 ONLY inside container
+# 2) override prisma (your constraint)
 RUN npm install prisma@7 @prisma/client@7 @prisma/adapter-pg pg dotenv
 
+# 3) copy source
 COPY watcher/ .
 
-# Generate Prisma client with v7
+# 4) prisma + build
 RUN npx prisma generate
-
 RUN npm run build
 
-# ---- Runtime ----
-FROM node:18-alpine
+
+# ---------- RUNTIME ----------
+FROM node:20-alpine
 
 WORKDIR /app
 ENV NODE_ENV=production
 
+# copy everything from builder (includes node_modules + .next)
 COPY --from=builder /app ./
 
-RUN npm install --omit=dev
+# ❌ DO NOT run npm install again (removes override + breaks)
+# RUN npm install --omit=dev  ← remove this
 
 EXPOSE 3000
 

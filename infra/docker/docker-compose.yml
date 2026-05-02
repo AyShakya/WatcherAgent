@@ -16,5 +16,8 @@ services:
       dockerfile: infra/docker/watcher.Dockerfile
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - ../env/watcher.env
+      - ../env/watcherai.env
     environment:
       - NODE_ENV=production
