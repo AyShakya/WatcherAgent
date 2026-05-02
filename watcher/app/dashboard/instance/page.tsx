@@ -22,6 +22,7 @@ export default function AddInstancePage() {
     githubToken: '',
     githubRepoOwner: '',
     githubRepoName: '',
+    prompt: '',
   });
 
   const handleChange = (field: string, value: string) => {
@@ -267,6 +268,27 @@ export default function AddInstancePage() {
                     className="w-full bg-background border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
                     required
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* Custom Prompt Config */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4 border-b border-border pb-2">Watcher Custom Instructions</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    System Prompt <span className="text-muted-foreground text-xs font-normal ml-2">(Optional)</span>
+                  </label>
+                  <textarea 
+                    placeholder="Enter custom instructions for how the AI should behave..." 
+                    value={formData.prompt}
+                    onChange={(e) => handleChange('prompt', e.target.value)}
+                    className="w-full h-32 bg-background border border-border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm resize-y"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Provide specific context, coding guidelines, or rules you want the Watcher agent to follow when fixing bugs for this instance.
+                  </p>
                 </div>
               </div>
             </div>

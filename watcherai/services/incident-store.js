@@ -84,3 +84,19 @@ export async function removeIncident(id) {
   delete incidents[id];
   await writeStore(incidents);
 }
+<<<<<<< HEAD
+=======
+
+/**
+ * Returns all non-expired incidents as an array, newest first.
+ * Used by GET /api/incidents in the dashboard.
+ */
+export async function getAllIncidents() {
+  const incidents = await readStore();
+  const now = Date.now();
+  return Object.values(incidents)
+    .filter((entry) => !entry.expiresAt || now <= new Date(entry.expiresAt).getTime())
+    .map((entry) => entry.data)
+    .sort((a, b) => new Date(b.saved_at || 0) - new Date(a.saved_at || 0));
+}
+>>>>>>> e19f96c5ecd53a217f15a751e8cc1f73116861ff
