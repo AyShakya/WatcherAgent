@@ -1,51 +1,88 @@
 // nodes/node-03-hitl/discord-bot.js
 // Guardian Node 03 — Discord HITL (Human-in-the-Loop)
-// Manages Discord incident threads and approval buttons
+// Lazy-initialises the Discord client on first use so the server can
+// boot and handle webhooks even when DISCORD_BOT_TOKEN is absent.
 
-import { 
-  Client, 
-  GatewayIntentBits, 
-  ActionRowBuilder, 
-  ButtonBuilder, 
-  ButtonStyle, 
-  EmbedBuilder 
+import {
+  Client,
+  GatewayIntentBits,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  EmbedBuilder,
 } from 'discord.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
-
-// These will be loaded from your .env later
 const DISCORD_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CHANNEL_ID = process.env.DISCORD_INCIDENT_CHANNEL_ID;
 
+let client = null;
+let botReady = false;
+
+/**
+ * Returns an initialised, logged-in Discord client.
+ * Creates the client and logs in once; returns the same instance after that.
+ */
+async function getClient() {
+  if (!DISCORD_TOKEN || !CHANNEL_ID) return null;
+
+  if (client && botReady) return client;
+
+  client = new Client({
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+  });
+
+  // Wire interaction handler before login
+  client.on('interactionCreate', handleInteraction);
+
+  await new Promise((resolve, reject) => {
+    client.once('ready', () => {
+      console.log(`🤖 Discord bot logged in as ${client.user?.tag}`);
+      botReady = true;
+      resolve();
+    });
+    client.once('error', reject);
+    client.login(DISCORD_TOKEN).catch(reject);
+  });
+
+  return client;
+}
+
 /**
  * Sends an incident approval card to Discord.
- * Creates a private thread for the incident.
  */
 export async function sendApprovalCard(incidentData) {
   if (!DISCORD_TOKEN || !CHANNEL_ID) {
-    console.error('❌ Discord credentials missing. Skipping Discord notification.');
+    console.warn('⚠️  Discord credentials missing — skipping HITL notification.');
     return { ...incidentData, hitl_status: 'SKIPPED_NO_AUTH' };
   }
 
   try {
-    const channel = await client.channels.fetch(CHANNEL_ID);
-    
-    // 1. Create the Embed (The visual card)
+    const discord = await getClient();
+    if (!discord) {
+      return { ...incidentData, hitl_status: 'SKIPPED_NO_AUTH' };
+    }
+
+    const channel = await discord.channels.fetch(CHANNEL_ID);
+
     const embed = new EmbedBuilder()
-      .setColor(incidentData.severity === 'P1' ? 0xFF0000 : 0xFFA500)
-      .setTitle(`🚨 Incident Triage: ${incidentData.service}`)
-      .setDescription(incidentData.reasoning)
+      .setColor(incidentData.severity === 'P1' ? 0xff0000 : 0xffa500)
+      .setTitle(`🚨 Incident: ${incidentData.service}`)
+      .setDescription(incidentData.reasoning || 'No reasoning provided.')
       .addFields(
-        { name: 'Severity', value: incidentData.severity, inline: true },
-        { name: 'Confidence', value: `${incidentData.confidence}%`, inline: true },
-        { name: 'Suggested Fix', value: incidentData.runbooks[0]?.steps.join('\n') || 'No automated fix found.' }
+        { name: 'Severity', value: incidentData.severity ?? 'P2', inline: true },
+        { name: 'Confidence', value: `${incidentData.confidence ?? 50}%`, inline: true },
+        {
+          name: 'Suggested Fix',
+          value:
+            incidentData.runbooks?.[0]?.steps?.slice(0, 3).join('\n') ||
+            'No automated runbook found.',
+        }
       )
       .setTimestamp();
 
-    // 2. Create the Buttons
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId(`approve_${incidentData.incident_id}`)
@@ -57,96 +94,80 @@ export async function sendApprovalCard(incidentData) {
         .setStyle(ButtonStyle.Danger)
     );
 
-    // 3. Send the message
     const message = await channel.send({ embeds: [embed], components: [row] });
 
-    // 4. Start a thread for this incident
     const thread = await message.startThread({
-      name: `thread-${incidentData.incident_id}`,
+      name: `inc-${incidentData.incident_id}`,
       autoArchiveDuration: 60,
     });
+    await thread.send(`Thread opened for ${incidentData.incident_id}. Awaiting human decision…`);
 
-    await thread.send(`Thread started for ${incidentData.incident_id}. Awaiting human decision...`);
+    console.log(`📨 Discord approval card sent for ${incidentData.incident_id}`);
 
-    return { 
-      ...incidentData, 
-      discord_message_id: message.id, 
+    return {
+      ...incidentData,
+      discord_message_id: message.id,
       discord_thread_id: thread.id,
-      hitl_status: 'AWAITING_APPROVAL' 
+      hitl_status: 'AWAITING_APPROVAL',
     };
-
   } catch (error) {
-    console.error('❌ Discord Bot Error:', error);
-    return { ...incidentData, hitl_status: 'FAILED' };
+    console.error('❌ Discord Bot Error:', error.message);
+    return { ...incidentData, hitl_status: 'FAILED', discord_error: error.message };
   }
 }
 
-// Handle Button Interactions
-client.on('interactionCreate', async (interaction) => {
+/**
+ * Handles Discord button interactions (approve / ignore).
+ */
+async function handleInteraction(interaction) {
   if (!interaction.isButton()) return;
 
-  const [action, incidentId] = interaction.customId.split('_');
+  const parts = interaction.customId.split('_');
+  const action = parts[0];
+  const incidentId = parts.slice(1).join('_');
 
   if (action === 'approve') {
-    await interaction.update({ content: '✅ **Fix Accepted.** Deploying PR...', components: [] });
-    
-    // Notify the orchestrator to proceed to Phase 4 & 5
+    await interaction.update({ content: '✅ **Fix Accepted.** Deploying PR…', components: [] });
+
     try {
-      await fetch(`http://localhost:${process.env.PORT || 3000}/internal/discord-approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          incident_id: incidentId, 
-          approver: interaction.user.tag 
-        })
-      });
+      await fetch(
+        `http://localhost:${process.env.PORT || 3001}/internal/discord-approve`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            incident_id: incidentId,
+            approver: interaction.user.tag,
+          }),
+        }
+      );
     } catch (err) {
-      console.error('❌ Failed to notify orchestrator:', err);
+      console.error('❌ Failed to notify orchestrator:', err.message);
     }
   } else if (action === 'ignore') {
-    await interaction.reply('🗑️ **Incident Ignored.** Cleaning up...');
-    
-    const thread = interaction.message.thread;
-    const message = interaction.message;
+    await interaction.update({
+      content: '🗑️ **Incident Ignored.** Archived.',
+      components: [],
+      embeds: [],
+    });
 
-    // 1. Try to delete the thread
+    // Notify orchestrator to remove from store
     try {
-      if (thread) {
-        console.log(`🗑️ Attempting to delete thread ${thread.id}`);
-        await thread.delete();
-      } else {
-        const threads = await interaction.channel.threads.fetch();
-        const foundThread = threads.threads.find(t => t.name.includes(incidentId));
-        if (foundThread) {
-          console.log(`🗑️ Found thread by name. Attempting to delete ${foundThread.id}`);
-          await foundThread.delete();
+      await fetch(
+        `http://localhost:${process.env.PORT || 3001}/internal/discord-ignore`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ incident_id: incidentId }),
         }
-      }
+      );
     } catch (err) {
-      if (err.code === 50013) {
-        console.warn('⚠️ Bot lacks "Manage Threads" permission. Archiving thread instead.');
-        if (thread) await thread.setArchived(true).catch(() => {});
-      } else {
-        console.error('❌ Failed to delete thread:', err.message);
-      }
+      console.error('❌ Failed to notify orchestrator of ignore:', err.message);
     }
 
-    // 2. Try to delete the original message
-    try {
-      console.log(`🗑️ Attempting to delete original message ${message.id}`);
-      await message.delete();
-    } catch (err) {
-      if (err.code === 50013) {
-        console.warn('⚠️ Bot lacks "Manage Messages" permission. Updating message content instead.');
-        await message.edit({ content: '🗑️ **Incident Ignored & Archived.**', components: [], embeds: [] }).catch(() => {});
-      } else {
-        console.error('❌ Failed to delete message:', err.message);
-      }
+    const thread = interaction.message.thread;
+    if (thread) {
+      await thread.setArchived(true).catch(() => {});
     }
   }
-});
-
-// Login the bot
-if (DISCORD_TOKEN) {
-  client.login(DISCORD_TOKEN);
 }
