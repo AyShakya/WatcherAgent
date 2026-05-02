@@ -55,11 +55,13 @@ export async function searchRunbooks(service, errorReasoning) {
     if (highConfidenceMatches.length > 0) {
       return highConfidenceMatches.map(match => ({
         title: match.metadata?.title || 'Historical Fix',
-        content: match.metadata?.content || match.metadata?.fix_reasoning || '',
+        steps: JSON.parse(match.metadata?.steps || '[]'),
+        fix_diff: match.metadata?.fix_diff || null,
+        root_cause: match.metadata?.root_cause || null,
+        pr_url: match.metadata?.pr_url || null,
         source: match.metadata?.source || 'PINECONE',
         relevance: match.score,
         incident_id: match.metadata?.incident_id,
-        chunk_type: match.metadata?.chunk_type
       }));
     }
 
@@ -75,7 +77,14 @@ function getLocalFallback(service) {
   return [
     {
       title: 'Universal Emergency Procedure',
-      content: '1. Check application logs.\\n2. Verify environment variables.\\n3. Escalate to service owner.',
+      steps: [
+        'Check application logs.',
+        'Verify environment variables.',
+        'Escalate to service owner.'
+      ],
+      fix_diff: null,
+      root_cause: null,
+      pr_url: null,
       source: 'LOCAL_FALLBACK',
       relevance: 0.5
     }
