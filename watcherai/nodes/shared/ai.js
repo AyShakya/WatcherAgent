@@ -19,6 +19,14 @@ function safeParseJSON(content) {
 }
 
 /**
+ * Remove control characters (U+0000–U+001F except \t \n \r) and
+ * Unicode line/paragraph separators that some JSON parsers reject.
+ */
+function cleanString(str) {
+  return String(str ?? '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\u2028\u2029]/g, '');
+}
+
+/**
  * Common LLM call function via OpenRouter
  */
 export async function callLLM({ prompt, systemPrompt, model = DEFAULT_MODEL, responseFormat = 'json_object', maxTokens = 4096, timeoutMs = parseInt(process.env.LLM_TIMEOUT_MS || '30000', 10) }) {
@@ -36,25 +44,29 @@ export async function callLLM({ prompt, systemPrompt, model = DEFAULT_MODEL, res
 
   const messages = [];
   if (systemPrompt || responseFormat === 'json_object') {
-    const baseSystemPrompt = systemPrompt ? `${systemPrompt}\n\n` : '';
+    const baseSystemPrompt = systemPrompt ? `${cleanString(systemPrompt)}\n\n` : '';
     const finalSystemPrompt = responseFormat === 'json_object'
       ? `${baseSystemPrompt}${JSON_ONLY_INSTRUCTION}`
       : baseSystemPrompt.trim();
 
     messages.push({ role: 'system', content: finalSystemPrompt });
   }
-  messages.push({ role: 'user', content: prompt });
+  messages.push({ role: 'user', content: cleanString(prompt) });
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
+  // Manually serialize to guarantee valid JSON — bypasses any axios serialization edge cases
+  const bodyPayload = {
+    model,
+    messages,
+    max_tokens: maxTokens,
+    ...(responseFormat === 'json_object' ? { response_format: { type: 'json_object' } } : {}),
+  };
+  const bodyString = JSON.stringify(bodyPayload);
+
   try {
-    const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-      model: model,
-      messages: messages,
-      max_tokens: maxTokens,
-      response_format: responseFormat === 'json_object' ? { type: 'json_object' } : undefined
-    }, {
+    const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', bodyString, {
       headers: {
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
