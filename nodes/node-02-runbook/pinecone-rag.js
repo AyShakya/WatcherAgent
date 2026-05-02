@@ -11,7 +11,7 @@ const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
 const INDEX_NAME = process.env.PINECONE_INDEX_NAME || 'guardian-knowledge';
 
 const pc = new Pinecone({ apiKey: PINECONE_API_KEY });
-
+const SCORE_THRESHOLD = 0.87;
 
 function normalizeErrorSignature(raw) {
   return raw
@@ -44,22 +44,36 @@ export async function searchRunbooks(service, errorReasoning) {
     const queryEmbedding = await getEmbedding(normalizedQuery, pc);
     
     // 2. Search Pinecone
+    const queryFilter = {
+      chunk_type: { $eq: 'error_signature' }
+    };
+
+    if (service) {
+      queryFilter.service = { $eq: service };
+    }
+
     const queryResponse = await index.query({
       vector: queryEmbedding,
-      topK: 3,
-      includeMetadata: true
+      topK: 5,
+      includeMetadata: true,
+      filter: queryFilter
     });
 
-    if (queryResponse && queryResponse.matches && queryResponse.matches.length > 0) {
-      return queryResponse.matches.map(match => ({
-        title: match.metadata?.title || 'Relevant Fix',
+    const matches = queryResponse?.matches || [];
+    const highConfidenceMatches = matches.filter(match => (match.score || 0) >= SCORE_THRESHOLD);
+
+    if (highConfidenceMatches.length > 0) {
+      return highConfidenceMatches.map(match => ({
+        title: match.metadata?.title || 'Historical Fix',
         content: match.metadata?.content || '',
         source: match.metadata?.source || 'PINECONE',
-        relevance: match.score
+        relevance: match.score,
+        incident_id: match.metadata?.incident_id,
+        chunk_type: match.metadata?.chunk_type
       }));
     }
 
-    return getLocalFallback(service);
+    return [];
 
   } catch (error) {
     console.error('❌ Pinecone RAG Search Error:', error);
