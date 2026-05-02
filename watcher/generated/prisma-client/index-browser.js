@@ -188,7 +188,8 @@ exports.Prisma.InstanceConfigScalarFieldEnum = {
   discordIncidentChannelId: 'discordIncidentChannelId',
   githubToken: 'githubToken',
   githubRepoOwner: 'githubRepoOwner',
-  githubRepoName: 'githubRepoName'
+  githubRepoName: 'githubRepoName',
+  prompt: 'prompt'
 };
 
 exports.Prisma.SortOrder = {

@@ -152,3 +152,33 @@ export async function getRecentPRs() {
     return [];
   }
 }
+
+export async function saveInstancePrompt(instanceId: string, prompt: string) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user?.id) throw new Error('Unauthorized');
+
+    // Verify ownership
+    const instance = await prisma.instance.findUnique({
+      where: { id: instanceId, userId: session.user.id },
+    });
+
+    if (!instance) {
+      throw new Error('Instance not found or unauthorized');
+    }
+
+    await prisma.instanceConfig.upsert({
+      where: { instanceId },
+      update: { prompt },
+      create: {
+        instanceId,
+        prompt,
+      },
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error saving prompt:', error);
+    return { success: false, error: error.message };
+  }
+}

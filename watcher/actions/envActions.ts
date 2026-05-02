@@ -54,6 +54,7 @@ export async function saveInstanceConfig(data: {
   githubToken: string;
   githubRepoOwner: string;
   githubRepoName: string;
+  prompt: string;
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) throw new Error('Unauthorized');
@@ -83,6 +84,9 @@ export async function saveInstanceConfig(data: {
           githubToken:     encryptField(data.githubToken),
           githubRepoOwner: data.githubRepoOwner,
           githubRepoName:  data.githubRepoName,
+
+          // Custom Prompt
+          prompt:          data.prompt,
         },
       },
     },
