@@ -52,38 +52,61 @@ async function getDefaultBranch() {
 
 async function getCandidatePaths(keywords, service, defaultBranch) {
   const candidates = new Set();
-  
-  // 1. Search for technical keywords
-  try {
-    const q = `${keywords.join(' ')} repo:${REPO_OWNER}/${REPO_NAME}`;
-    const { data: results } = await octokit.rest.search.code({ q });
-    results.items.forEach(item => candidates.add(item.path));
-  } catch (e) {
-    console.warn('⚠️ GitHub Search API limit or failure.');
-  }
+  const SOURCE_EXTENSIONS = /\.(js|ts|py|go|java|rb|php|cs|cpp|c|rs|kt|swift|yaml|yml|json|env|conf|config|toml|sh|sql)$/i;
 
-  // 2. Always crawl the tree for architectural context
+  // 1. Crawl the full repo tree
+  let allSourceFiles = [];
   try {
     const { data: tree } = await octokit.rest.git.getTree({
       owner: REPO_OWNER,
       repo: REPO_NAME,
       tree_sha: defaultBranch,
-      recursive: true
+      recursive: true,
     });
-    
-    // Add files that match the service name or keywords in their path
-    tree.tree.forEach(f => {
-      if (f.type !== 'blob' || f.path.includes('node_modules') || f.path.includes('.git')) return;
-      const lowerPath = f.path.toLowerCase();
-      if (lowerPath.includes(service.toLowerCase()) || keywords.some(k => lowerPath.includes(k.toLowerCase()))) {
-        candidates.add(f.path);
-      }
-    });
+
+    allSourceFiles = tree.tree.filter(
+      f => f.type === 'blob'
+        && !f.path.includes('node_modules')
+        && !f.path.includes('.git')
+        && !f.path.includes('package-lock')
+        && SOURCE_EXTENSIONS.test(f.path)
+    ).map(f => f.path);
+
+    // For small repos (<= 60 files) just pass everything to the LLM ranker
+    if (allSourceFiles.length <= 60) {
+      allSourceFiles.forEach(p => candidates.add(p));
+    } else {
+      // Larger repos: filter by service name or keyword match in path
+      allSourceFiles.forEach(p => {
+        const lp = p.toLowerCase();
+        if (lp.includes(service.toLowerCase()) || keywords.some(k => lp.includes(k.toLowerCase()))) {
+          candidates.add(p);
+        }
+      });
+      // Always include likely config/connection files even if path doesn't match
+      allSourceFiles.forEach(p => {
+        const lp = p.toLowerCase();
+        if (/db|database|config|connection|client|service|handler|route|controller/.test(lp)) {
+          candidates.add(p);
+        }
+      });
+    }
   } catch (e) {
     console.error('❌ Failed to fetch repo tree:', e.message);
   }
 
-  return Array.from(candidates);
+  // 2. Try GitHub code search (may be rate-limited or slow to index new files)
+  try {
+    const q = `${keywords.slice(0, 2).join(' ')} repo:${REPO_OWNER}/${REPO_NAME}`;
+    const { data: results } = await octokit.rest.search.code({ q });
+    results.items.forEach(item => candidates.add(item.path));
+  } catch (e) {
+    console.warn('⚠️ GitHub Search API unavailable — using tree-only discovery.');
+  }
+
+  const result = Array.from(candidates);
+  console.log(`📂 Discovered ${result.length} candidate files (${allSourceFiles.length} total source files in repo)`);
+  return result;
 }
 
 export async function createFixPR(incidentData) {
@@ -130,15 +153,23 @@ ERROR: ${incidentData.raw_error_message || incidentData.reasoning}`,
 
     const rankedPathsRaw = await callLLM({ 
       prompt: rankingPrompt, 
-      systemPrompt: 'Return only a list of file paths.',
+      systemPrompt: 'Return only a list of file paths, one per line. No numbering, no explanation, no markdown.',
       responseFormat: 'text',
       maxTokens: 512,
     });
-    const rankedPaths = rankedPathsRaw.split('\n').map(p => p.trim()).filter(p => p && allPaths.includes(p)).slice(0, 5);
-    
-    console.log(`🎯 AI selected top candidates for audit: ${rankedPaths.join(', ') || '(none)'}`);
+    // Strip numbering/bullets/backticks and match against known paths
+    const rankedPaths = rankedPathsRaw
+      .split('\n')
+      .map(p => p.replace(/^[\d\.\-\*\`\s]+/, '').replace(/`/g, '').trim())
+      .filter(p => p && allPaths.includes(p))
+      .slice(0, 5);
 
-    if (rankedPaths.length === 0) {
+    // If LLM returned nothing valid, fall back to all candidates (already small set)
+    const finalPaths = rankedPaths.length > 0 ? rankedPaths : allPaths.slice(0, 5);
+    
+    console.log(`🎯 AI selected top candidates for audit: ${finalPaths.join(', ') || '(none)'}`);
+
+    if (finalPaths.length === 0) {
       console.warn('⚠️ No candidate files found in repo for this incident. Skipping code fix.');
       return {
         ...incidentData,
@@ -150,7 +181,7 @@ ERROR: ${incidentData.raw_error_message || incidentData.reasoning}`,
 
     // Phase 3: Deep Audit & Fix
     console.log('🕵️ Phase 3: Auditing code and generating fix...');
-    const audits = await Promise.all(rankedPaths.map(async (path) => {
+    const audits = await Promise.all(finalPaths.map(async (path) => {
       const content = await getFileContent(path);
       return `FILE: ${path}\nCONTENT:\n${content || 'Empty'}\n---`;
     }));
@@ -194,10 +225,10 @@ STEP 4 — VERIFY: List 2 edge cases your fix might introduce.
       maxTokens: 4096,
     });
 
-    const validatedPath = rankedPaths.find((p) => p === aiFix.file_path);
+    const validatedPath = finalPaths.find((p) => p === aiFix.file_path);
     if (!validatedPath) {
       console.error(`❌ AI returned file_path "${aiFix.file_path}" which is not in audited candidate paths.`);
-      return { ...incidentData, pr_status: 'FAILED_INVALID_PATH', ai_fix_suggestion: aiFix };
+      return { ...incidentData, pr_status: 'FAILED_INVALID_PATH', ai_fix_suggestion: aiFix, fix_initiated_at: new Date().toISOString() };
     }
 
     currentContent = await getFileContent(validatedPath);
