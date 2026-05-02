@@ -1,439 +1,327 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
+import { Eye, Plus, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import { saveInstanceConfig } from "@/actions/envActions";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { signOut } from "@/lib/auth-client";
-import { getInstances, getBugsData, getBugTypesData, getRecentPRs, getDashboardStats } from "@/actions/dashboard";
-import {
-  Eye,
-  AlertCircle,
-  GitPullRequest,
-  CheckCircle,
-  TrendingUp,
-  Settings,
-  LogOut,
-  Github,
-  Plus,
-  MoreVertical,
-  ExternalLink,
-  Search,
-  Bell,
-  HelpCircle,
-  LayoutDashboard,
-  FolderOpen,
-  Workflow,
-  ScrollText,
-  Bot
-} from "lucide-react";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
-export default function Dashboard() {
+export default function AddInstancePage() {
   const router = useRouter();
-  const [userInstances, setUserInstances] = useState<any[]>([]);
-  const [loadingInstances, setLoadingInstances] = useState(true);
-  const [bugsData, setBugsData] = useState<any[]>([]);
-  const [bugTypesData, setBugTypesData] = useState<any[]>([]);
-  const [recentPRs, setRecentPRs] = useState<any[]>([]);
-  const [stats, setStats] = useState({ totalBugs: 0, totalPRs: 0, fixedBugs: 0 });
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    instanceName: '',
+    port: '',
+    openrouterApiKey: '',
+    defaultLlmModel: 'google/gemini-flash-1.5',
+    pineconeApiKey: '',
+    pineconeIndexName: 'guardian-knowledge',
+    discordBotToken: '',
+    discordChannelId: '',
+    githubToken: '',
+    githubRepoOwner: '',
+    githubRepoName: '',
+    prompt: '',
+  });
 
-  useEffect(() => {
-    Promise.all([
-      getInstances(),
-      getBugsData(),
-      getBugTypesData(),
-      getRecentPRs(),
-      getDashboardStats()
-    ]).then(([instances, bugs, bugTypes, prs, dashboardStats]) => {
-      setUserInstances(instances);
-      setBugsData(bugs);
-      setBugTypesData(bugTypes);
-      setRecentPRs(prs);
-      setStats(dashboardStats);
-    }).catch(console.error).finally(() => setLoadingInstances(false));
-  }, []);
+  const handleChange = (field: string, value: string) => {
+    setFormData({ ...formData, [field]: value });
+  };
 
-  const handleSignOut = async () => {
-    await signOut();
-    router.push("/sign-in");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Simple validation
+    if (!formData.instanceName) {
+      alert('Please enter an instance name');
+      return;
+    }
+
+    if (!formData.openrouterApiKey || !formData.pineconeApiKey || 
+        !formData.discordBotToken || !formData.githubToken) {
+      alert('Please fill in all required API keys');
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      const result = await saveInstanceConfig(formData);
+      
+      if (result.success) {
+        alert('✅ Configuration saved successfully!');
+        router.push('/dashboard');
+      }
+    } catch (error) {
+      alert('❌ Error saving configuration: ' + (error as Error).message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="flex h-screen bg-[#f8f9ff] text-[#0b1c30] font-sans overflow-hidden">
-      
-      {/* Sidebar */}
-      <aside className="w-[240px] bg-white border-r border-[#e5eeff] flex-col justify-between hidden md:flex shrink-0">
-        <div>
-          <div className="p-6">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-[#131b2e] rounded-md flex items-center justify-center">
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Navigation */}
+      <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3 group cursor-pointer">
+              <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
                 <Eye className="w-5 h-5 text-white" />
               </div>
-              <div>
-                <div className="font-bold text-[16px] leading-tight text-[#0b1c30]">Watcher</div>
-                <div className="text-[10px] text-[#76777d] font-bold tracking-wider mt-0.5 uppercase">AI Agent Active</div>
-              </div>
+              <span className="text-xl font-bold group-hover:text-primary transition-colors">Watcher</span>
             </Link>
+            <span className="ml-8 text-sm text-muted-foreground">Add Instance</span>
           </div>
-          
-          <nav className="px-4 py-2 space-y-1">
-            <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2.5 rounded-md bg-[#f8f9ff] text-[#0b1c30] font-medium text-sm border-l-2 border-[#0b1c30]">
-              <LayoutDashboard className="w-4 h-4" />
-              Dashboard
-            </Link>
-            <Link href="#" className="flex items-center gap-3 px-3 py-2.5 rounded-md text-[#45464d] hover:bg-[#f8f9ff] hover:text-[#0b1c30] font-medium text-sm transition-colors border-l-2 border-transparent">
-              <FolderOpen className="w-4 h-4" />
-              Projects
-            </Link>
-            <Link href="#" className="flex items-center gap-3 px-3 py-2.5 rounded-md text-[#45464d] hover:bg-[#f8f9ff] hover:text-[#0b1c30] font-medium text-sm transition-colors border-l-2 border-transparent">
-              <Workflow className="w-4 h-4" />
-              Pipelines
-            </Link>
-            <Link href="#" className="flex items-center gap-3 px-3 py-2.5 rounded-md text-[#45464d] hover:bg-[#f8f9ff] hover:text-[#0b1c30] font-medium text-sm transition-colors border-l-2 border-transparent">
-              <ScrollText className="w-4 h-4" />
-              Logs
-            </Link>
-            <Link href="#" className="flex items-center gap-3 px-3 py-2.5 rounded-md text-[#45464d] hover:bg-[#f8f9ff] hover:text-[#0b1c30] font-medium text-sm transition-colors border-l-2 border-transparent">
-              <Bot className="w-4 h-4" />
-              Agents
-            </Link>
-          </nav>
         </div>
+      </nav>
 
-        <div className="p-4 mb-4">
-          <Link href="/dashboard/instance">
-            <button className="w-full py-2.5 bg-[#131b2e] hover:bg-[#0b1c30] text-white text-xs font-bold tracking-widest uppercase rounded-md transition-colors flex items-center justify-center cursor-pointer">
-              New Pipeline
-            </button>
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="mb-8">
+          <Link href="/dashboard" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition mb-4">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
           </Link>
+          <h1 className="text-4xl font-bold mb-2">Configure Instance</h1>
+          <p className="text-muted-foreground">Set up the environment configuration for your new Watcher instance.</p>
         </div>
-      </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        
-        {/* Top Header */}
-        <header className="h-[72px] bg-white border-b border-[#e5eeff] flex items-center justify-between px-8 shrink-0 z-10">
-          <div className="flex items-center gap-4 flex-1">
-            <div className="flex items-center gap-3 font-bold text-lg md:hidden">
-              <div className="w-8 h-8 bg-[#131b2e] rounded-md flex items-center justify-center">
-                <Eye className="w-5 h-5 text-white" />
-              </div>
-              Watcher
-            </div>
-            
-            <div className="hidden md:flex relative w-full max-w-md">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#76777d]" />
-              <input 
-                type="text" 
-                placeholder="Search systems..." 
-                className="w-full bg-[#f8f9ff] border-none rounded-md py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-[#c6c6cd] text-[#0b1c30] placeholder-[#76777d]"
-              />
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-5 text-[#45464d]">
-            <button className="hover:text-[#0b1c30] transition-colors"><Bell className="w-5 h-5" /></button>
-            <button className="hover:text-[#0b1c30] transition-colors"><HelpCircle className="w-5 h-5" /></button>
-            <button className="hover:text-[#0b1c30] transition-colors"><Settings className="w-5 h-5" /></button>
-            <div className="w-8 h-8 rounded-full bg-[#131b2e] flex items-center justify-center ml-2 border-2 border-white shadow-sm cursor-pointer" onClick={handleSignOut}>
-              <span className="text-white text-xs font-bold">JD</span>
-            </div>
-          </div>
-        </header>
-
-        {/* Scrollable Dashboard Content */}
-        <main className="flex-1 overflow-y-auto p-8">
-          <div className="max-w-[1200px] mx-auto">
-            
-            {/* Page Title */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-              <div>
-                <h1 className="text-[30px] font-semibold tracking-tight text-[#0b1c30] mb-1">System Overview</h1>
-                <p className="text-[#45464d] text-[16px]">Real-time intelligence and autonomous agent monitoring.</p>
-              </div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#eff4ff] text-[#0b1c30] rounded-full border border-[#dce9ff]">
-                <div className="w-2 h-2 rounded-full bg-[#10b981]"></div>
-                <span className="text-[10px] font-bold tracking-widest uppercase">AI Agent: Optimized</span>
-              </div>
-            </div>
-
-            {/* Key Metrics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-              
-              {/* Card 1 */}
-              <div className="bg-white border border-[#e5eeff] rounded-md p-6 shadow-[0px_4px_20px_rgba(11,28,48,0.02)]">
-                <div className="text-[10px] font-bold tracking-widest uppercase text-[#76777d] mb-4">Total Bugs Detected</div>
-                <div className="flex items-end gap-3 mb-6">
-                  <div className="text-5xl font-bold tracking-tight text-[#0b1c30]">{stats.totalBugs || "1,284"}</div>
-                  <div className="text-[#10b981] font-semibold text-sm mb-1.5 flex items-center">↑ 12%</div>
-                </div>
-                <div className="h-[120px] bg-[#f8f9ff] rounded border border-[#e5eeff] overflow-hidden">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={bugsData.length ? bugsData : [{week:'1',bugs:10},{week:'2',bugs:15}]}>
-                      <Line type="monotone" dataKey="bugs" stroke="#4b41e1" strokeWidth={2} dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Card 2 */}
-              <div className="bg-white border border-[#e5eeff] rounded-md p-6 shadow-[0px_4px_20px_rgba(11,28,48,0.02)]">
-                <div className="text-[10px] font-bold tracking-widest uppercase text-[#76777d] mb-4">Autonomous PRs</div>
-                <div className="flex items-center gap-6 mb-6">
-                  <div className="relative w-16 h-16 flex items-center justify-center">
-                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                      <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e5eeff" strokeWidth="3" />
-                      <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#4b41e1" strokeWidth="3" strokeDasharray="84, 100" />
-                    </svg>
-                    <div className="absolute text-sm font-bold text-[#0b1c30]">84%</div>
-                  </div>
-                  <div>
-                    <div className="text-3xl font-bold tracking-tight text-[#0b1c30]">{stats.totalPRs || "432"}</div>
-                    <div className="text-sm text-[#76777d]">Merged this month</div>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-[#45464d]">Security Fixes</span>
-                      <span className="font-semibold text-[#0b1c30]">128</span>
-                    </div>
-                    <div className="w-full bg-[#e5eeff] h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-[#4b41e1] h-full rounded-full" style={{ width: '40%' }}></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-[#45464d]">Refactoring</span>
-                      <span className="font-semibold text-[#0b1c30]">304</span>
-                    </div>
-                    <div className="w-full bg-[#e5eeff] h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-[#0b1c30] h-full rounded-full" style={{ width: '85%' }}></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 3 (Dark Navy) */}
-              <div className="bg-[#131b2e] rounded-md p-6 text-white shadow-[0px_4px_20px_rgba(11,28,48,0.08)] flex flex-col justify-between">
+        <div className="p-8 rounded-xl border border-border bg-card/50 backdrop-blur-sm mb-12">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* General Info */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4 border-b border-border pb-2">General</h2>
+              <div className="space-y-4">
                 <div>
-                  <div className="text-[10px] font-bold tracking-widest uppercase text-[#7c839b] mb-4">System Uptime</div>
-                  <div className="text-5xl font-bold tracking-tight mb-2">99.98%</div>
-                  <div className="text-sm text-[#7c839b]">Active across {userInstances.length || 14} nodes</div>
+                  <label className="block text-sm font-medium mb-2">
+                    Instance Name <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. Production Watcher" 
+                    value={formData.instanceName}
+                    onChange={(e) => handleChange('instanceName', e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                    required
+                  />
                 </div>
-                
                 <div>
-                  <div className="flex items-end gap-1.5 h-16 mb-3">
-                    {[80, 100, 90, 100, 100, 70, 95, 30, 85, 100, 90].map((h, i) => (
-                      <div key={i} className={`flex-1 rounded-sm ${h < 50 ? 'bg-[#ef4444]' : 'bg-[#10b981]'}`} style={{ height: `${h}%` }}></div>
-                    ))}
-                  </div>
-                  <div className="text-[10px] text-[#7c839b] uppercase tracking-wider font-semibold">
-                    Last incident: 42 minutes ago (Network Latency)
-                  </div>
+                  <label className="block text-sm font-medium mb-2">Port (Optional)</label>
+                  <input 
+                    type="number" 
+                    placeholder="3000" 
+                    value={formData.port}
+                    onChange={(e) => handleChange('port', e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                  />
                 </div>
-              </div>
-
-            </div>
-
-            {/* Repositories Section */}
-            <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <h2 className="text-[24px] font-semibold tracking-tight text-[#0b1c30]">Connected Repositories</h2>
-              <div className="flex gap-3">
-                <Button variant="outline" className="border-[#c6c6cd] text-[#0b1c30] hover:bg-[#f8f9ff] h-9">
-                  Export Report
-                </Button>
-                <Link href="/dashboard/instance">
-                  <Button className="bg-[#131b2e] hover:bg-[#0b1c30] text-white h-9">
-                    Add Repository
-                  </Button>
-                </Link>
               </div>
             </div>
 
-            <div className="bg-white border border-[#e5eeff] rounded-md shadow-[0px_4px_20px_rgba(11,28,48,0.02)] mb-10 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead>
-                    <tr className="border-b border-[#e5eeff] bg-white">
-                      <th className="py-4 px-6 text-[10px] font-bold tracking-widest uppercase text-[#76777d]">Repository Name</th>
-                      <th className="py-4 px-6 text-[10px] font-bold tracking-widest uppercase text-[#76777d]">Health Status</th>
-                      <th className="py-4 px-6 text-[10px] font-bold tracking-widest uppercase text-[#76777d]">AI Coverage</th>
-                      <th className="py-4 px-6 text-[10px] font-bold tracking-widest uppercase text-[#76777d]">Last Sync</th>
-                      <th className="py-4 px-6 text-[10px] font-bold tracking-widest uppercase text-[#76777d] text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loadingInstances ? (
-                      <tr>
-                        <td colSpan={5} className="py-8 text-center text-[#76777d]">Loading repositories...</td>
-                      </tr>
-                    ) : userInstances.length === 0 ? (
-                      <tr className="border-b border-[#e5eeff] hover:bg-[#f8f9ff] transition-colors">
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded bg-[#f8f9ff] flex items-center justify-center border border-[#e5eeff]">
-                              <Github className="w-4 h-4 text-[#76777d]" />
-                            </div>
-                            <div>
-                              <div className="font-semibold text-[#0b1c30]">watcher-core-engine</div>
-                              <div className="text-xs text-[#76777d]">main branch · microservices</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-[#d1fae5] text-[#065f46]">Stable</span>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-24 bg-[#e5eeff] h-1.5 rounded-full overflow-hidden">
-                              <div className="bg-[#4b41e1] h-full rounded-full" style={{ width: '92%' }}></div>
-                            </div>
-                            <span className="text-xs font-bold text-[#0b1c30]">92%</span>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6 text-[#45464d] text-xs">2 mins ago</td>
-                        <td className="py-4 px-6 text-right">
-                          <button className="text-[#76777d] hover:text-[#0b1c30]"><MoreVertical className="w-4 h-4 inline" /></button>
-                        </td>
-                      </tr>
-                    ) : (
-                      userInstances.map((instance, idx) => (
-                        <tr key={instance.id} className="border-b border-[#e5eeff] last:border-0 hover:bg-[#f8f9ff] transition-colors">
-                          <td className="py-4 px-6">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded bg-[#f8f9ff] flex items-center justify-center border border-[#e5eeff]">
-                                <FolderOpen className="w-4 h-4 text-[#76777d]" />
-                              </div>
-                              <div>
-                                <div className="font-semibold text-[#0b1c30]">{instance.name}</div>
-                                <div className="text-xs text-[#76777d]">ID: {instance.id}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-4 px-6">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-[#d1fae5] text-[#065f46]">Stable</span>
-                          </td>
-                          <td className="py-4 px-6">
-                            <div className="flex items-center gap-3">
-                              <div className="w-24 bg-[#e5eeff] h-1.5 rounded-full overflow-hidden">
-                                <div className="bg-[#4b41e1] h-full rounded-full" style={{ width: `${80 - (idx * 10)}%` }}></div>
-                              </div>
-                              <span className="text-xs font-bold text-[#0b1c30]">{80 - (idx * 10)}%</span>
-                            </div>
-                          </td>
-                          <td className="py-4 px-6 text-[#45464d] text-xs">{new Date(instance.createdAt).toLocaleDateString()}</td>
-                          <td className="py-4 px-6 text-right">
-                            <button className="text-[#76777d] hover:text-[#0b1c30]"><MoreVertical className="w-4 h-4 inline" /></button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+            {/* OpenRouter Config */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4 border-b border-border pb-2">OpenRouter (LLM Orchestration)</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    OpenRouter API Key <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="password" 
+                    placeholder="your_openrouter_api_key" 
+                    value={formData.openrouterApiKey}
+                    onChange={(e) => handleChange('openrouterApiKey', e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                    autoComplete="off"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Get your key at <a href="https://openrouter.ai/" target="_blank" className="text-primary hover:underline">openrouter.ai</a>
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Default LLM Model</label>
+                  <input 
+                    type="text" 
+                    placeholder="google/gemini-flash-1.5" 
+                    value={formData.defaultLlmModel}
+                    onChange={(e) => handleChange('defaultLlmModel', e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Recommended: 'google/gemini-flash-1.5' or 'meta-llama/llama-3-8b'</p>
+                </div>
               </div>
             </div>
 
-            {/* Bottom Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
-              {/* Watcher Insights */}
-              <div className="lg:col-span-2 bg-white border border-[#e5eeff] rounded-md shadow-[0px_4px_20px_rgba(11,28,48,0.02)] flex flex-col">
-                <div className="p-6 border-b border-[#e5eeff] flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 text-[#4b41e1]"><Eye /></div>
-                    <h3 className="font-bold text-lg text-[#0b1c30]">Watcher Insights</h3>
-                  </div>
-                  <span className="text-[10px] font-bold tracking-widest uppercase text-[#76777d]">Refreshed 10s ago</span>
+            {/* Pinecone Config */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4 border-b border-border pb-2">Pinecone (Vector RAG)</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Pinecone API Key <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="password" 
+                    placeholder="your_pinecone_api_key" 
+                    value={formData.pineconeApiKey}
+                    onChange={(e) => handleChange('pineconeApiKey', e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                    autoComplete="off"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Get your key at <a href="https://www.pinecone.io/" target="_blank" className="text-primary hover:underline">pinecone.io</a>
+                  </p>
                 </div>
-                
-                <div className="p-6 space-y-4 flex-1">
-                  <div className="flex gap-4">
-                    <div className="w-1 bg-[#4b41e1] rounded-full shrink-0"></div>
-                    <div>
-                      <h4 className="font-semibold text-[#0b1c30] mb-1">Potential Memory Leak Detected</h4>
-                      <p className="text-sm text-[#45464d] mb-3">
-                        Watcher has identified an anomalous memory pattern in <code className="bg-[#f8f9ff] text-[#0b1c30] px-1.5 py-0.5 rounded border border-[#e5eeff] text-xs font-mono">watcher-core-engine/auth-service</code>. A fix has been drafted and is ready for review.
-                      </p>
-                      <a href="#" className="text-sm font-semibold text-[#4b41e1] hover:underline flex items-center gap-1">
-                        View Drafted PR <ExternalLink className="w-3 h-3" />
-                      </a>
-                    </div>
-                  </div>
-                  
-                  <div className="h-px bg-[#e5eeff] w-full"></div>
-                  
-                  <div className="flex gap-4">
-                    <div className="w-1 bg-[#e5eeff] rounded-full shrink-0"></div>
-                    <div>
-                      <h4 className="font-semibold text-[#0b1c30] mb-1">Unused Dependencies Cleanup</h4>
-                      <p className="text-sm text-[#45464d]">
-                        Agent 'Zephyr' found 14 redundant npm packages in the UI Kit. Removing these will reduce bundle size by 12%.
-                      </p>
-                    </div>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Pinecone Index Name</label>
+                  <input 
+                    type="text" 
+                    placeholder="guardian-knowledge" 
+                    value={formData.pineconeIndexName}
+                    onChange={(e) => handleChange('pineconeIndexName', e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                  />
                 </div>
               </div>
-
-              {/* Agent Live Streams */}
-              <div className="bg-[#0b1c30] rounded-md shadow-[0px_4px_20px_rgba(11,28,48,0.08)] flex flex-col overflow-hidden text-[#bec6e0] font-mono text-xs">
-                <div className="p-4 border-b border-[#213145] flex items-center gap-2 text-white">
-                  <Bot className="w-4 h-4" />
-                  <h3 className="font-bold font-sans text-sm tracking-wide">Agent Live Streams</h3>
-                </div>
-                
-                <div className="p-4 space-y-3 overflow-y-auto flex-1">
-                  {recentPRs.slice(0, 5).map((pr, idx) => (
-                    <div key={idx} className="flex items-start gap-3">
-                      <span className="text-[#45464d] shrink-0">[{new Date().toISOString().substring(11, 19)}]</span>
-                      <span className="text-[#10b981] font-bold shrink-0">AGENT/TITAN</span>
-                      <span className="text-[#bec6e0]">Creating PR: {pr.title} in {pr.repo}...</span>
-                    </div>
-                  ))}
-                  {recentPRs.length === 0 && (
-                    <>
-                      <div className="flex items-start gap-3">
-                        <span className="text-[#45464d] shrink-0">[14:02:11]</span>
-                        <span className="text-[#10b981] font-bold shrink-0">AGENT/ZEPHYR</span>
-                        <span className="text-[#bec6e0]">Scanning watcher-ui-kit...</span>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <span className="text-[#45464d] shrink-0">[14:02:15]</span>
-                        <span className="text-[#10b981] font-bold shrink-0">AGENT/TITAN</span>
-                        <span className="text-[#bec6e0]">Resolving vulnerability CVE-2024-33...</span>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <span className="text-[#45464d] shrink-0">[14:02:18]</span>
-                        <span className="text-[#4b41e1] font-bold shrink-0">CORE/ENGINE</span>
-                        <span className="text-[#bec6e0]">Triggering autonomous CI pipeline #829</span>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <span className="text-[#45464d] shrink-0">[14:02:22]</span>
-                        <span className="text-[#10b981] font-bold shrink-0">AGENT/ZEPHYR</span>
-                        <span className="text-[#bec6e0]">Analysis complete. 0 critical errors found.</span>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <span className="text-[#45464d] shrink-0">[14:02:25]</span>
-                        <span className="text-[#10b981] font-bold shrink-0">AGENT/TITAN</span>
-                        <span className="text-[#bec6e0]">Pushing branch 'fix/security-patch-v4'...</span>
-                      </div>
-                    </>
-                  )}
-                </div>
-                
-                <div className="p-3 border-t border-[#213145] bg-[#131b2e] flex items-center justify-between text-[10px] font-sans font-bold tracking-widest uppercase">
-                  <span className="text-[#7c839b]">Agents Active: 4</span>
-                  <span className="text-[#10b981]">All Systems Nominal</span>
-                </div>
-              </div>
-
             </div>
 
-          </div>
-        </main>
-      </div>
+            {/* Discord Config */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4 border-b border-border pb-2">Discord (HITL Interface)</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Discord Bot Token <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="password" 
+                    placeholder="your_discord_bot_token" 
+                    value={formData.discordBotToken}
+                    onChange={(e) => handleChange('discordBotToken', e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                    autoComplete="off"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Discord Incident Channel ID <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="your_channel_id" 
+                    value={formData.discordChannelId}
+                    onChange={(e) => handleChange('discordChannelId', e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* GitHub Config */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4 border-b border-border pb-2">GitHub (Fix Deployment)</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    GitHub Personal Access Token <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="password" 
+                    placeholder="your_personal_access_token" 
+                    value={formData.githubToken}
+                    onChange={(e) => handleChange('githubToken', e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                    autoComplete="off"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Generate at <a href="https://github.com/settings/tokens" target="_blank" className="text-primary hover:underline">GitHub Settings → Tokens</a>
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    GitHub Repo Owner <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="your_github_username" 
+                    value={formData.githubRepoOwner}
+                    onChange={(e) => handleChange('githubRepoOwner', e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    GitHub Repo Name <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="your_repo_name" 
+                    value={formData.githubRepoName}
+                    onChange={(e) => handleChange('githubRepoName', e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Custom Prompt Config */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4 border-b border-border pb-2">Watcher Custom Instructions</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    System Prompt <span className="text-muted-foreground text-xs font-normal ml-2">(Optional)</span>
+                  </label>
+                  <textarea 
+                    placeholder="Enter custom instructions for how the AI should behave..." 
+                    value={formData.prompt}
+                    onChange={(e) => handleChange('prompt', e.target.value)}
+                    className="w-full h-32 bg-background border border-border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm resize-y"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Provide specific context, coding guidelines, or rules you want the Watcher agent to follow when fixing bugs for this instance.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Security Notice */}
+            <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <p className="text-sm text-blue-400">
+                🔒 All API keys are encrypted before storage and never exposed in logs or client code.
+              </p>
+            </div>
+
+            <div className="pt-6 flex justify-end gap-4 border-t border-border">
+              <Link href="/dashboard">
+                <Button variant="ghost" type="button">Cancel</Button>
+              </Link>
+              <Button 
+                type="submit" 
+                className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>Saving...</>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    Save Configuration
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </main>
     </div>
   );
 }
