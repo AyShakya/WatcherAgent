@@ -124,7 +124,7 @@ async function seed() {
     const embedding = await getEmbedding(runbook.content, pc);
 
     await index.upsert({
-      vectors: [{
+      records: [{
         id: runbook.id,
         values: embedding,
         metadata: {

@@ -131,7 +131,7 @@ export async function updateAgentMemory(incidentData) {
     for (const chunk of chunks) {
       const embedding = await getEmbedding(chunk.embedText, pinecone);
       await index.upsert({
-        vectors: [{
+        records: [{
           id: chunk.id,
           values: embedding,
           metadata: chunk.metadata
