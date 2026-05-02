@@ -4,6 +4,7 @@
 import { Octokit } from 'octokit';
 import dotenv from 'dotenv';
 import { callLLM } from '../shared/ai.js';
+import { categoryLabel } from '../shared/categorize.js';
 
 dotenv.config();
 
@@ -167,6 +168,7 @@ export async function createFixPR(incidentData) {
 ## Incident
 - **Service:** ${incidentData.service}
 - **Severity:** ${incidentData.severity}
+- **Category:** ${categoryLabel(incidentData.error_category || historicalFix.error_category || 'UNKNOWN')}
 - **Recalled from:** [${historicalFix.incident_id}](${historicalFix.pr_url || '#'})
 - **Recall confidence:** ${((aiFix.confidence || 0.95) * 100).toFixed(0)}%
 
@@ -368,6 +370,7 @@ STEP 4 — VERIFY: List 2 edge cases your fix might introduce.
 ## Incident summary
 - **Service:** ${incidentData.service}
 - **Severity:** ${incidentData.severity}
+- **Category:** ${categoryLabel(incidentData.error_category || 'UNKNOWN')}
 - **Status:** ${fixApplied ? 'RESOLVED' : 'AWAITING_MANUAL_FIX'}
 
 ## Root cause

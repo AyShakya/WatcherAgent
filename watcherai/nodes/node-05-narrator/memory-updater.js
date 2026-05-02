@@ -6,6 +6,7 @@ import { Pinecone } from '@pinecone-database/pinecone';
 import dotenv from 'dotenv';
 import { getEmbedding } from '../shared/ai.js';
 import { normalizeErrorSignature } from '../shared/normalize.js';
+import { categorizeError } from '../shared/categorize.js';
 
 dotenv.config();
 
@@ -60,10 +61,15 @@ export async function updateAgentMemory(incidentData) {
     ? [incidentData.ai_fix_suggestion.reasoning]
     : [];
 
-  const fixDiff    = meta(incidentData.ai_fix_suggestion?.diff);
-  const fixFile    = meta(incidentData.ai_fix_suggestion?.file_path);
-  const fixReason  = meta(incidentData.ai_fix_suggestion?.reasoning);
-  const prUrl      = meta(incidentData.pr_url);
+  const fixDiff     = meta(incidentData.ai_fix_suggestion?.diff);
+  const fixFile     = meta(incidentData.ai_fix_suggestion?.file_path);
+  const fixReason   = meta(incidentData.ai_fix_suggestion?.reasoning);
+  const prUrl       = meta(incidentData.pr_url);
+  const errCategory = meta(
+    incidentData.error_category ||
+    categorizeError(incidentData.raw_error_message, incidentData.error_type),
+    'UNKNOWN'
+  );
 
   const chunks = [
     {
@@ -76,6 +82,7 @@ export async function updateAgentMemory(incidentData) {
         normalized_signature: normalizedSignature,
         raw_error: meta(incidentData.reasoning),
         priority: meta(incidentData.severity, 'unknown'),
+        error_category: errCategory,
         title: `Error: ${normalizedSignature.slice(0, 80)}`,
         steps: JSON.stringify(fixSteps),
         // Store fix details here so RAG recall can surface them directly
@@ -108,6 +115,7 @@ export async function updateAgentMemory(incidentData) {
         chunk_type: 'fix',
         incident_id: incidentId,
         service: meta(incidentData.service, 'unknown'),
+        error_category: errCategory,
         fix_diff: fixDiff,
         fix_file: fixFile,
         fix_reasoning: fixReason,

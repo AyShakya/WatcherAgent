@@ -4,6 +4,7 @@
 import dotenv from 'dotenv';
 import { callLLM } from '../shared/ai.js';
 import { triagePrompt as userPromptFunc } from '../../prompts/triage.js';
+import { categorizeError } from '../shared/categorize.js';
 
 dotenv.config();
 
@@ -82,17 +83,20 @@ ${JSON.stringify(input, null, 2)}
     console.log(`🎯 Triage Result for ${incident_id}: ${aiResult.reasoning}`);
 
     const isCritical = !!aiResult.is_critical;
+    const errorType = aiResult.error_type || 'unknown';
+    const rawMsg    = aiResult.raw_error_message || '';
     return {
       incident_id,
       service: aiResult.service || input.service || 'unknown-service',
       severity: aiResult.severity,
       confidence: aiResult.confidence,
       reasoning: aiResult.reasoning,
-      raw_error_message: aiResult.raw_error_message,
-      normalized_error_signature: aiResult.normalized_error_signature || aiResult.raw_error_message,
+      raw_error_message: rawMsg,
+      normalized_error_signature: aiResult.normalized_error_signature || rawMsg,
       root_frame: aiResult.root_frame || { file: null, line: null, function: null },
       affected_files: Array.isArray(aiResult.affected_files) ? aiResult.affected_files : [],
-      error_type: aiResult.error_type || 'unknown',
+      error_type: errorType,
+      error_category: categorizeError(rawMsg, errorType),
       isCriticalService: isCritical,
       criticalMultiplierApplied: isCritical && aiResult.severity === 'P1',
       alert_raw: input,
@@ -119,6 +123,7 @@ function getFallbackTriage(input, incident_id) {
     root_frame: { file: null, line: null, function: null },
     affected_files: [],
     error_type: 'unknown',
+    error_category: categorizeError(rawError, 'unknown'),
     isCriticalService: false,
     criticalMultiplierApplied: false,
     alert_raw: input,

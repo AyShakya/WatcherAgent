@@ -17,6 +17,7 @@ import {
   saveIncidentTimeout,
   clearIncidentTimeout,
 } from '../../services/incident-store.js';
+import { categoryLabel } from '../shared/categorize.js';
 
 dotenv.config();
 
@@ -75,20 +76,32 @@ export async function sendApprovalCard(incidentData) {
   try {
     const channel = await client.channels.fetch(CHANNEL_ID);
 
+    const severityColor = incidentData.severity === 'P1' ? 0xff0000
+      : incidentData.severity === 'P2' ? 0xffa500
+      : 0xffdd57;
+
+    const runbookSource = incidentData.runbooks?.[0]?.source || '';
+    const isMemoryRecall = runbookSource === 'HISTORICAL_FIX';
+    const runbookSteps = incidentData.runbooks?.[0]?.steps?.slice(0, 3).join('\n') || 'No automated runbook found.';
+
     const embed = new EmbedBuilder()
-      .setColor(incidentData.severity === 'P1' ? 0xff0000 : 0xffa500)
-      .setTitle(`🚨 Incident: ${incidentData.service}`)
-      .setDescription(incidentData.reasoning || 'No reasoning provided.')
+      .setColor(severityColor)
+      .setTitle(`🚨 ${incidentData.severity} — ${incidentData.service}`)
+      .setDescription(
+        (incidentData.reasoning || 'No reasoning provided.').slice(0, 300)
+      )
       .addFields(
-        { name: 'Severity', value: incidentData.severity ?? 'P2', inline: true },
-        { name: 'Confidence', value: `${incidentData.confidence ?? 50}%`, inline: true },
+        { name: '🏷️ Category',    value: categoryLabel(incidentData.error_category || 'UNKNOWN'), inline: true },
+        { name: '⚡ Severity',    value: incidentData.severity ?? 'P2',                           inline: true },
+        { name: '🎯 Confidence',  value: `${incidentData.confidence ?? 50}%`,                    inline: true },
         {
-          name: 'Suggested Fix',
-          value:
-            incidentData.runbooks?.[0]?.steps?.slice(0, 3).join('\n') ||
-            'No automated runbook found.',
+          name: isMemoryRecall ? '🧠 Memory Recall Fix' : '📋 Suggested Fix',
+          value: isMemoryRecall
+            ? `Replaying fix from **${incidentData.runbooks[0].incident_id}** (${Math.round((incidentData.runbooks[0].relevance || 0.9) * 100)}% match)\n${runbookSteps}`
+            : runbookSteps,
         }
       )
+      .setFooter({ text: `Incident ${incidentData.incident_id}` })
       .setTimestamp();
 
     const row = new ActionRowBuilder().addComponents(
@@ -164,7 +177,21 @@ client.on('interactionCreate', async (interaction) => {
   clearIncidentTimeout(incidentId);
 
   if (action === 'approve') {
-    await interaction.update({ content: '✅ **Fix Accepted.** Deploying PR…', components: [] });
+    const acceptedEmbed = new EmbedBuilder()
+      .setColor(0x00c853)
+      .setTitle(`✅ Fix Approved: ${incidentId}`)
+      .setDescription(`Approved by **${interaction.user.tag}**. Deploying automated PR…`)
+      .setTimestamp();
+
+    await interaction.update({ embeds: [acceptedEmbed], components: [], content: '' });
+
+    // Notify thread so there is an audit trail.
+    const approveThread = interaction.message.thread;
+    if (approveThread) {
+      try {
+        await approveThread.send(`✅ Fix approved by **${interaction.user.tag}**. PR pipeline running…`);
+      } catch (_) {}
+    }
 
     try {
       await fetch(`${ORCHESTRATOR_URL}/internal/discord-approve`, {
@@ -179,33 +206,29 @@ client.on('interactionCreate', async (interaction) => {
       console.error('❌ Failed to notify orchestrator:', err.message);
     }
   } else if (action === 'ignore') {
-    await interaction.update({
-      content: '🗑️ **Incident Ignored.** Archived.',
-      components: [],
-      embeds: [],
-    });
+    // Update the original card in-place with a clear IGNORED state.
+    // Do NOT delete the message — deletion causes the prior channel message
+    // (often a "Fix Accepted") to become visible, misleading the viewer.
+    const ignoredEmbed = new EmbedBuilder()
+      .setColor(0x5c5c5c)
+      .setTitle(`🗑️ Incident Ignored: ${incidentId}`)
+      .setDescription(`Dismissed by **${interaction.user.tag}**. No action will be taken.`)
+      .setTimestamp();
 
-    await removeIncident(incidentId);
+    await interaction.update({ embeds: [ignoredEmbed], components: [], content: '' });
 
+    // Send a thread message so there is an audit trail inside the thread.
     const thread = interaction.message.thread;
-    const message = interaction.message;
-
-    try {
-      if (thread) await thread.delete().catch(async () => thread.setArchived(true).catch(() => {}));
-    } catch (err) {
-      console.error('❌ Failed to clean up thread:', err.message);
-    }
-
-    try {
-      await message.delete();
-    } catch (err) {
-      if (err.code === 50013) {
-        await message
-          .edit({ content: '🗑️ **Incident Ignored & Archived.**', components: [], embeds: [] })
-          .catch(() => {});
-      } else {
-        console.error('❌ Failed to delete message:', err.message);
+    if (thread) {
+      try {
+        await thread.send(`🗑️ Incident dismissed by **${interaction.user.tag}**. Archived with no action.`);
+        await thread.setArchived(true).catch(() => {});
+      } catch (err) {
+        console.warn(`⚠️ Could not update thread on ignore: ${err.message}`);
       }
     }
+
+    await removeIncident(incidentId);
+    console.log(`🗑️ Incident ${incidentId} ignored by ${interaction.user.tag}`);
   }
 });

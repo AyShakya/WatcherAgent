@@ -38,6 +38,8 @@ export const OutputSchema = z.object({
   root_frame:                 z.object({ file: z.string().nullable(), line: z.number().nullable(), function: z.string().nullable() }).optional(),
   affected_files:             z.array(z.string()).optional(),
   error_type:                 z.string().optional(),
+  // Deterministic category tag for grouping/filtering (HTTP_5XX, DATABASE, etc.)
+  error_category:             z.string().optional(),
   ai_explanation:             z.string().nullable().optional(),
   error:                      z.string().optional(),
 }).passthrough();
