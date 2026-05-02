@@ -53,29 +53,29 @@ if (modeArg === 'local') {
   console.log('🔄  Running 5-node pipeline locally...\n');
 
   console.log('▶  Node 01 — Triage Sentinel');
-  const ctx1 = runTriageNode(payload);
+  const ctx1 = await runTriageNode(payload);
   console.log(`   Severity: ${ctx1.severity} | Confidence: ${ctx1.confidence}%`);
   console.log(`   Reasoning: ${ctx1.reasoning?.slice(0, 80)}...\n`);
 
   console.log('▶  Node 02 — Runbook Agent');
-  const ctx2 = await runRunbookNode(ctx1, {});
+  const ctx2 = await runRunbookNode(ctx1);
   console.log(`   Runbooks fetched: ${ctx2.runbooks?.length ?? 0}`);
   console.log(`   Top runbook: ${ctx2.runbooks?.[0]?.title ?? 'none'}\n`);
 
   console.log('▶  Node 03 — HITL Approval');
-  const ctx3 = await runHITLNode(ctx2, {});
-  console.log(`   HITL status: ${ctx3.hitl?.status ?? ctx3.hitl_status ?? 'approved'}`);
-  console.log(`   Approver: ${ctx3.hitl?.approver_name ?? ctx3.hitl_approver ?? 'Alex Chen'}\n`);
+  const ctx3 = await runHITLNode(ctx2);
+  console.log(`   HITL status: ${ctx3.hitl?.status ?? ctx3.hitl_status ?? 'AWAITING_APPROVAL'}`);
+  console.log(`   Discord message: ${ctx3.discord_message_id ?? 'sent'}\n`);
 
-  console.log('▶  Node 04 — War Room Coordinator');
-  const ctx4 = await runWarRoomNode(ctx3, {});
-  console.log(`   Slack channel: ${ctx4.slack_channel ?? 'created'}`);
-  console.log(`   Jira ticket: ${ctx4.jira_ticket ?? 'created'}\n`);
+  console.log('▶  Node 04 — GitHub Fixer (pending HITL approval)');
+  console.log(`   Waiting for Discord approval before fix is deployed.\n`);
+  const ctx4 = ctx3;
 
-  console.log('▶  Node 05 — Compliance Narrator');
-  const ctx5 = await runNarratorNode(ctx4, {});
-  console.log(`   Post-mortem: ${ctx5.postmortem_pdf_url ?? 'generated'}`);
-  console.log(`   Compliance: ${ctx5.compliance_status ?? 'DORA_SOX_COMPLIANT'}\n`);
+  console.log('▶  Node 05 — Memory / Compliance Narrator (preview)');
+  const ctx5 = await runNarratorNode(ctx4);
+
+  console.log(`   Memory updated: ${ctx5.memory_updated ?? false}`);
+  console.log(`   Status: ${ctx5.status ?? 'CLOSED_AND_LEARNED'}\n`);
 
   console.log('─'.repeat(50));
   console.log('✅  Pipeline complete! Full output:\n');
