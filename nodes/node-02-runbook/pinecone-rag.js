@@ -4,6 +4,7 @@
 import { Pinecone } from '@pinecone-database/pinecone';
 import dotenv from 'dotenv';
 import { getEmbedding } from '../shared/ai.js';
+import { normalizeErrorSignature } from '../shared/normalize.js';
 
 dotenv.config();
 
@@ -12,17 +13,6 @@ const INDEX_NAME = process.env.PINECONE_INDEX_NAME || 'guardian-knowledge';
 
 const pc = new Pinecone({ apiKey: PINECONE_API_KEY });
 const SCORE_THRESHOLD = 0.87;
-
-function normalizeErrorSignature(raw) {
-  return raw
-    .replace(/0x[0-9a-fA-F]+/g, '<ADDR>')
-    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '<UUID>')
-    .replace(/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?/g, '<TIMESTAMP>')
-    .replace(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, '<IP>')
-    .replace(/(\.js|\.ts|\.py|\.go|\.java):(\d+)/g, '$1:<LINE>')
-    .replace(/:\d{4,5}\b/g, ':<PORT>')
-    .trim();
-}
 
 /**
  * Queries Pinecone for relevant runbooks and past fixes.
@@ -37,12 +27,12 @@ export async function searchRunbooks(service, errorReasoning) {
 
   try {
     const index = pc.index(INDEX_NAME);
-    
+
     console.log(`🔍 Querying Pinecone RAG for service ${service} using normalized error signature: "${normalizedQuery}"`);
 
     // 1. Generate embedding for the normalized error signature
     const queryEmbedding = await getEmbedding(normalizedQuery, pc);
-    
+
     // 2. Search Pinecone
     const queryFilter = {
       chunk_type: { $eq: 'error_signature' }
@@ -65,7 +55,7 @@ export async function searchRunbooks(service, errorReasoning) {
     if (highConfidenceMatches.length > 0) {
       return highConfidenceMatches.map(match => ({
         title: match.metadata?.title || 'Historical Fix',
-        steps: JSON.parse(match.metadata?.steps || '[]'),
+        steps: (() => { try { return JSON.parse(match.metadata?.steps || '[]'); } catch { return []; } })(),
         fix_diff: match.metadata?.fix_diff || null,
         root_cause: match.metadata?.root_cause || null,
         pr_url: match.metadata?.pr_url || null,

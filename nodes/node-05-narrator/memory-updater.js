@@ -5,6 +5,7 @@
 import { Pinecone } from '@pinecone-database/pinecone';
 import dotenv from 'dotenv';
 import { getEmbedding } from '../shared/ai.js';
+import { normalizeErrorSignature } from '../shared/normalize.js';
 
 dotenv.config();
 
@@ -23,63 +24,102 @@ export async function updateAgentMemory(incidentData) {
   }
 
   const incidentId = incidentData.incident_id || `INC-UNKNOWN-${Date.now()}`;
-  const resolution = incidentData.runbooks && incidentData.runbooks[0] && incidentData.runbooks[0].steps 
-    ? incidentData.runbooks[0].steps.join(', ') 
-    : 'No automated resolution steps recorded.';
+  const normalizedSignature = normalizeErrorSignature(
+    incidentData.raw_error_message || incidentData.reasoning || 'Unknown error'
+  );
+  const fixSteps = incidentData.ai_fix_suggestion?.reasoning
+    ? [incidentData.ai_fix_suggestion.reasoning]
+    : [];
 
-  const content = `
-    Incident: ${incidentId}
-    Service: ${incidentData.service || 'unknown'}
-    Technical Error: ${incidentData.reasoning || 'No technical error provided.'}
-    Original Code: 
-    ${incidentData.original_content || 'N/A'}
-    
-    Resolution Applied: 
-    ${incidentData.ai_fix_suggestion?.new_content || 'N/A'}
-    
-    Resolution Reasoning: 
-    ${incidentData.ai_fix_suggestion?.reasoning || 'No reasoning.'}
-    
-    GitHub PR: ${incidentData.pr_url || 'N/A'}
-  `;
+  const chunks = [
+    {
+      id: `${incidentId}::error_signature`,
+      embedText: `ERROR ${incidentData.error_type || 'runtime'}: ${normalizedSignature}`,
+      metadata: {
+        chunk_type: 'error_signature',
+        incident_id: incidentId,
+        service: incidentData.service || 'unknown',
+        normalized_signature: normalizedSignature,
+        raw_error: incidentData.reasoning || '',
+        priority: incidentData.severity || 'unknown',
+        title: `Error: ${normalizedSignature.slice(0, 80)}`,
+        steps: JSON.stringify(fixSteps),
+        pr_url: incidentData.pr_url || null,
+        source: 'HISTORICAL_FIX',
+        created_at: new Date().toISOString()
+      }
+    },
+    {
+      id: `${incidentId}::root_cause`,
+      embedText: `ROOT CAUSE in ${incidentData.service || 'unknown'}: ${incidentData.ai_fix_suggestion?.reasoning || ''}`,
+      metadata: {
+        chunk_type: 'root_cause',
+        incident_id: incidentId,
+        service: incidentData.service || 'unknown',
+        root_cause: incidentData.ai_fix_suggestion?.reasoning || '',
+        title: `Root cause: ${incidentId}`,
+        steps: JSON.stringify(fixSteps),
+        source: 'HISTORICAL_FIX',
+        created_at: new Date().toISOString()
+      }
+    },
+    {
+      id: `${incidentId}::fix`,
+      embedText: `FIX for ${incidentData.error_type || 'error'} in ${incidentData.service || 'unknown'}: ${incidentData.ai_fix_suggestion?.reasoning || ''}`,
+      metadata: {
+        chunk_type: 'fix',
+        incident_id: incidentId,
+        service: incidentData.service || 'unknown',
+        fix_diff: incidentData.ai_fix_suggestion?.diff || null,
+        fix_file: incidentData.ai_fix_suggestion?.file_path || null,
+        fix_reasoning: incidentData.ai_fix_suggestion?.reasoning || '',
+        pr_url: incidentData.pr_url || null,
+        title: `Fix: ${incidentId}`,
+        steps: JSON.stringify(fixSteps),
+        source: 'HISTORICAL_FIX',
+        created_at: new Date().toISOString()
+      }
+    },
+    {
+      id: `${incidentId}::symptom`,
+      embedText: `SYMPTOM ${incidentData.service || 'unknown'} ${incidentData.severity || 'unknown'}: ${incidentData.reasoning || ''}`,
+      metadata: {
+        chunk_type: 'symptom',
+        incident_id: incidentId,
+        service: incidentData.service || 'unknown',
+        title: `Symptom: ${incidentId}`,
+        steps: JSON.stringify(fixSteps),
+        source: 'HISTORICAL_FIX',
+        created_at: new Date().toISOString()
+      }
+    }
+  ];
 
   try {
-    console.log(`🧠 Updating Pinecone Memory for ${incidentId}...`);
-    
+    console.log(`🧠 Updating Pinecone Memory for ${incidentId} with ${chunks.length} chunks...`);
+
     const index = pc.index(INDEX_NAME);
-    
-    // 1. Generate embedding for the new knowledge
-    const embedding = await getEmbedding(content, pc);
-    
-    if (!embedding || !Array.isArray(embedding) || embedding.length === 0) {
-      console.warn('⚠️ Could not generate valid embedding. Skipping memory update.');
-      return { ...incidentData, memory_updated: false };
+    let successCount = 0;
+
+    for (const chunk of chunks) {
+      const embedding = await getEmbedding(chunk.embedText, pc);
+      await index.upsert({
+        vectors: [{
+          id: chunk.id,
+          values: embedding,
+          metadata: chunk.metadata
+        }]
+      });
+      successCount += 1;
     }
 
-    // 2. Upsert to Pinecone
-    // Using the 'records' wrapper as some v7 sub-versions prefer this format
-    await index.upsert({
-      records: [{
-        id: incidentId,
-        values: embedding,
-        metadata: {
-          title: `Historical Fix: ${incidentId} - ${incidentData.service || 'unknown'}`,
-          content: content,
-          service: incidentData.service || 'unknown',
-          incident_id: incidentId,
-          source: 'HISTORICAL_FIX',
-          created_at: new Date().toISOString()
-        }
-      }]
-    });
-
-    return { 
-      ...incidentData, 
+    return {
+      ...incidentData,
       incident_id: incidentId,
-      memory_updated: true, 
-      memory_indexed_at: new Date().toISOString() 
+      memory_updated: true,
+      chunks_stored: successCount,
+      memory_indexed_at: new Date().toISOString()
     };
-
   } catch (error) {
     console.error('❌ Memory Update Error:', error);
     return { ...incidentData, memory_updated: false, error: error.message };
