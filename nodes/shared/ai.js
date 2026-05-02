@@ -21,7 +21,7 @@ function safeParseJSON(content) {
 /**
  * Common LLM call function via OpenRouter
  */
-export async function callLLM({ prompt, systemPrompt, model = DEFAULT_MODEL, responseFormat = 'json_object' }) {
+export async function callLLM({ prompt, systemPrompt, model = DEFAULT_MODEL, responseFormat = 'json_object', timeoutMs = parseInt(process.env.LLM_TIMEOUT_MS || '30000', 10) }) {
   if (!model) {
     console.error('❌ DEFAULT_LLM_MODEL is not defined in .env');
     throw new Error('DEFAULT_LLM_MODEL is missing from environment variables');
@@ -45,6 +45,9 @@ export async function callLLM({ prompt, systemPrompt, model = DEFAULT_MODEL, res
   }
   messages.push({ role: 'user', content: prompt });
 
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
       model: model,
@@ -56,15 +59,22 @@ export async function callLLM({ prompt, systemPrompt, model = DEFAULT_MODEL, res
         'Content-Type': 'application/json',
         'HTTP-Referer': 'https://github.com/guardian-agent',
         'X-Title': 'Guardian AI SRE'
-      }
+      },
+      signal: controller.signal
     });
 
     const content = response.data.choices[0].message.content;
     return responseFormat === 'json_object' ? safeParseJSON(content) : content;
   } catch (error) {
+    if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
+      throw new Error(`OpenRouter request timed out after ${timeoutMs}ms`);
+    }
+
     const errorData = error.response?.data || error.message;
     console.error(`❌ OpenRouter API Error (${model}):`, JSON.stringify(errorData, null, 2));
     throw new Error(`OpenRouter Error: ${JSON.stringify(errorData)}`);
+  } finally {
+    clearTimeout(timer);
   }
 }
 

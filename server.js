@@ -69,7 +69,8 @@ app.post('/webhook', async (req, res) => {
 
   console.log('🛡️ Webhook Received. Initiating Pipeline...');
 
-  try {
+  const PIPELINE_TIMEOUT = parseInt(process.env.PIPELINE_TIMEOUT_MS || '90000', 10);
+  const pipelinePromise = (async () => {
     const triageInput = validate(T1In, payload, 'Node1 input');
     const triage = validate(T1Out, await runTriageNode(triageInput), 'Node1 output');
 
@@ -79,6 +80,15 @@ app.post('/webhook', async (req, res) => {
     const hitl = validate(T3Out, await runHITLNode(runbook), 'Node3 output');
 
     await saveIncident(hitl.incident_id, hitl);
+    return hitl;
+  })();
+
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Pipeline timeout')), PIPELINE_TIMEOUT);
+  });
+
+  try {
+    const hitl = await Promise.race([pipelinePromise, timeoutPromise]);
 
     res.status(202).json({
       status: 'initiated',
@@ -86,6 +96,11 @@ app.post('/webhook', async (req, res) => {
       severity: hitl.severity
     });
   } catch (error) {
+    if (error.message === 'Pipeline timeout') {
+      console.error(`❌ Pipeline Entry Failed: ${error.message} after ${PIPELINE_TIMEOUT}ms`);
+      return res.status(504).json({ error: 'Pipeline timed out' });
+    }
+
     console.error('❌ Pipeline Entry Failed:', error.message);
     res.status(500).json({ error: 'Pipeline failed to initiate' });
   }
