@@ -9,14 +9,10 @@ import { spawnAgent } from "@/lib/spawnagent.server";
 import { prepareAgentEnv } from "@/lib/prepareEnv.server";
 import { getDecryptedEnvVars } from "./envActions";
 import { headers } from "next/headers";
+import crypto from "crypto";
 
-export async function runAgent(formData: FormData) {
-  const prompt = formData.get("prompt");
+export async function runAgent(formData: FormData): Promise<void> {
   const instanceId = formData.get("instanceId");
-
-  if (typeof prompt !== "string" || !prompt.trim()) {
-    throw new Error("Prompt is required");
-  }
 
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
@@ -47,21 +43,50 @@ export async function runAgent(formData: FormData) {
   const jobId = crypto.randomUUID();
   const userId = session.user.id;
 
+  // Derive final prompt server-side: prefer instance-configured PROMPT, otherwise a safe template using instance name
+  const configPrompt = (decryptedEnv as any)?.PROMPT;
+  const finalPrompt = typeof configPrompt === "string" && configPrompt.trim()
+    ? configPrompt.trim()
+    : `Inspect and fix issues for ${instance.name}`;
+
+  // Create job in DB
+  await prisma.job.create({
+    data: {
+      id: jobId,
+      instanceId: instance.id,
+      userId: userId,
+      status: "running",
+      prompt: finalPrompt,
+    },
+  });
+
   const finalEnv = prepareAgentEnv({
     userEnv,
-    prompt: prompt.trim(),
+    prompt: finalPrompt,
     jobId,
     userId,
   });
 
-  const { containerId } = await spawnAgent({
-    env: finalEnv,
-    jobId,
-    userId,
-  });
+  try {
+    const { containerId } = await spawnAgent({
+      env: finalEnv,
+      jobId,
+      userId,
+    });
 
-  // 🔹 TODO: store job in DB (Supabase)
-  console.log("Started:", { jobId, containerId });
+    // Update job with containerId
+    await prisma.job.update({
+      where: { id: jobId },
+      data: { containerId },
+    });
 
-  return { jobId };
+    console.log("Started:", { jobId, containerId });
+  } catch (error) {
+    console.error("Failed to spawn agent:", error);
+    await prisma.job.update({
+      where: { id: jobId },
+      data: { status: "failed", error: String(error) },
+    });
+    throw error;
+  }
 }

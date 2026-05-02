@@ -36,11 +36,13 @@ import {
   Bot
 } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { runAgent } from "@/actions/runAgent";
 
 export default function Dashboard() {
   const router = useRouter();
   const [userInstances, setUserInstances] = useState<any[]>([]);
   const [loadingInstances, setLoadingInstances] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [bugsData, setBugsData] = useState<any[]>([]);
   const [bugTypesData, setBugTypesData] = useState<any[]>([]);
   const [recentPRs, setRecentPRs] = useState<any[]>([]);
@@ -73,7 +75,7 @@ export default function Dashboard() {
     <div className="flex h-screen bg-[#f8f9ff] text-[#0b1c30] font-sans overflow-hidden">
       
       {/* Sidebar */}
-      <aside className="w-[240px] bg-white border-r border-[#e5eeff] flex-col justify-between hidden md:flex shrink-0">
+      <aside className="w-60 bg-white border-r border-[#e5eeff] flex-col justify-between hidden md:flex shrink-0">
         <div>
           <div className="p-6">
             <Link href="/" className="flex items-center gap-3">
@@ -155,7 +157,7 @@ export default function Dashboard() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         
         {/* Top Header */}
-        <header className="h-[72px] bg-white border-b border-[#e5eeff] flex items-center justify-between px-8 shrink-0 z-10">
+        <header className="h-18 bg-white border-b border-[#e5eeff] flex items-center justify-between px-8 shrink-0 z-10">
           <div className="flex items-center gap-4 flex-1">
             <div className="flex items-center gap-3 font-bold text-lg md:hidden">
               <div className="w-8 h-8 bg-[#131b2e] rounded-md flex items-center justify-center">
@@ -184,7 +186,7 @@ export default function Dashboard() {
 
         {/* Scrollable Dashboard Content */}
         <main className="flex-1 overflow-y-auto p-8">
-          <div className="max-w-[1200px] mx-auto">
+          <div className="max-w-300 mx-auto">
             
             {/* Page Title */}
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
@@ -208,7 +210,7 @@ export default function Dashboard() {
                   <div className="text-5xl font-bold tracking-tight text-[#0b1c30]">{stats.totalBugs || "1,284"}</div>
                   <div className="text-[#10b981] font-semibold text-sm mb-1.5 flex items-center">↑ 12%</div>
                 </div>
-                <div className="h-[120px] bg-[#f8f9ff] rounded border border-[#e5eeff] overflow-hidden">
+                <div style={{ height: 140 }} className="bg-[#f8f9ff] rounded border border-[#e5eeff] overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={bugsData.length ? bugsData : [{week:'1',bugs:10},{week:'2',bugs:15}]}>
                       <Line type="monotone" dataKey="bugs" stroke="#4b41e1" strokeWidth={2} dot={false} />
@@ -287,32 +289,9 @@ export default function Dashboard() {
                         <td colSpan={5} className="py-8 text-center text-[#76777d]">Loading repositories...</td>
                       </tr>
                     ) : userInstances.length === 0 ? (
-                      <tr className="border-b border-[#e5eeff] hover:bg-[#f8f9ff] transition-colors">
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded bg-[#f8f9ff] flex items-center justify-center border border-[#e5eeff]">
-                              <Github className="w-4 h-4 text-[#76777d]" />
-                            </div>
-                            <div>
-                              <div className="font-semibold text-[#0b1c30]">watcher-core-engine</div>
-                              <div className="text-xs text-[#76777d]">main branch · microservices</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-[#d1fae5] text-[#065f46]">Stable</span>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-24 bg-[#e5eeff] h-1.5 rounded-full overflow-hidden">
-                              <div className="bg-[#4b41e1] h-full rounded-full" style={{ width: '92%' }}></div>
-                            </div>
-                            <span className="text-xs font-bold text-[#0b1c30]">92%</span>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6 text-[#45464d] text-xs">2 mins ago</td>
-                        <td className="py-4 px-6 text-right">
-                          <button className="text-[#76777d] hover:text-[#0b1c30]"><MoreVertical className="w-4 h-4 inline" /></button>
+                      <tr>
+                        <td colSpan={5} className="py-12 text-center text-[#76777d]">
+                          No instances yet. Add a repository first, then you can run the agent from the instance rows.
                         </td>
                       </tr>
                     ) : (
@@ -340,9 +319,21 @@ export default function Dashboard() {
                               <span className="text-xs font-bold text-[#0b1c30]">{80 - (idx * 10)}%</span>
                             </div>
                           </td>
-                          <td className="py-4 px-6 text-[#45464d] text-xs">{new Date(instance.createdAt).toLocaleDateString()}</td>
+                          <td className="py-4 px-6 text-[#45464d] text-xs">{instance.createdAt ? new Date(instance.createdAt).toLocaleDateString() : '—'}</td>
                           <td className="py-4 px-6 text-right">
-                            <button className="text-[#76777d] hover:text-[#0b1c30]"><MoreVertical className="w-4 h-4 inline" /></button>
+                            <div className="flex items-center justify-end gap-2">
+                              <form action={runAgent} onSubmit={() => setSubmitting(true)}>
+                                <input type="hidden" name="instanceId" value={instance.id} />
+                                <button
+                                  type="submit"
+                                  disabled={submitting}
+                                  className="px-3 py-1.5 text-xs font-semibold bg-[#4b41e1] text-white rounded hover:bg-[#3a33c7] disabled:opacity-60"
+                                >
+                                  {submitting ? 'Starting…' : 'Run Agent'}
+                                </button>
+                              </form>
+                              <button className="text-[#76777d] hover:text-[#0b1c30]"><MoreVertical className="w-4 h-4 inline" /></button>
+                            </div>
                           </td>
                         </tr>
                       ))

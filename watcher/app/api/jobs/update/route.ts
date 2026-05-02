@@ -1,13 +1,29 @@
 // watcher/app/api/jobs/update/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  try {
+    const body = await req.json();
+    const { jobId, status, result, error } = body;
 
-  const { jobId, status, result } = body;
+    if (!jobId) {
+      return NextResponse.json({ error: "jobId is required" }, { status: 400 });
+    }
 
-  // 🔹 TODO: update in Supabase
-  console.log("Job update:", body);
+    await prisma.job.update({
+      where: { id: jobId },
+      data: {
+        status: status?.toLowerCase() || "completed",
+        result: result ? result : undefined,
+        error: error ? String(error) : undefined,
+      },
+    });
 
-  return NextResponse.json({ ok: true });
+    console.log("Job updated successfully:", jobId, status);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("Error updating job:", err);
+    return NextResponse.json({ error: "Failed to update job" }, { status: 500 });
+  }
 }

@@ -5,8 +5,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // url       = env("DATABASE_URL")
-  // directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -79,9 +77,29 @@ model Instance {
 
   user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   config InstanceConfig?
+  jobs   Job[]
 
   @@index([userId])
   @@map("instance")
+}
+
+model Job {
+  id          String   @id @default(cuid())
+  instanceId  String
+  userId      String
+  status      String   @default("pending") // pending, running, completed, failed
+  prompt      String   @db.Text
+  containerId String?
+  result      Json?
+  error       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  instance    Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([instanceId])
+  @@map("job")
 }
 
 model InstanceConfig {

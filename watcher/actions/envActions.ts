@@ -120,5 +120,6 @@ export async function getDecryptedEnvVars(instanceId: string) {
     GITHUB_TOKEN:                decryptField(config.githubToken),
     GITHUB_REPO_OWNER:           config.githubRepoOwner,
     GITHUB_REPO_NAME:            config.githubRepoName,
+    PROMPT:                      config.prompt,
   };
 }

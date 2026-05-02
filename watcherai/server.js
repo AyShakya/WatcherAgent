@@ -260,6 +260,65 @@ try {
   console.error(`❌ Discord bot failed to initialize: ${error.message}`);
 }
 
+// 🔥 AUTO-TRIGGER WHEN RUN AS CONTAINER JOB
+if (process.env.PROMPT && process.env.JOB_ID) {
+  (async () => {
+    try {
+      console.log("🚀 Running container-triggered job:", process.env.JOB_ID);
+
+      // 👇 You can adapt this to your pipeline input format
+      const payload = {
+        incident_id: process.env.JOB_ID,
+        alert: {
+          message: process.env.PROMPT,
+        },
+      };
+
+      // 🔥 Directly call your pipeline (same as webhook)
+      const triageInput = validate(T1In, payload, 'Node1 input');
+      const triage = validate(T1Out, await runTriageNode(triageInput), 'Node1 output');
+
+      const runbookInput = validate(T2In, triage, 'Node2 input');
+      const runbook = validate(T2Out, await runRunbookNode(runbookInput), 'Node2 output');
+
+      const hitl = validate(T3Out, await runHITLNode(runbook), 'Node3 output');
+
+      await saveIncident(hitl.incident_id, hitl);
+
+      // 🔥 send callback to watcher
+      await fetch(`${process.env.ORCHESTRATOR_URL}/api/jobs/update`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          jobId: process.env.JOB_ID,
+          status: "COMPLETED",
+          result: hitl,
+        }),
+      });
+
+      console.log("✅ Container job completed");
+      process.exit(0);
+
+    } catch (err) {
+      console.error("❌ Container job failed:", err);
+
+      await fetch(`${process.env.ORCHESTRATOR_URL}/api/jobs/update`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId: process.env.JOB_ID,
+          status: "FAILED",
+          error: String(err),
+        }),
+      });
+
+      process.exit(1);
+    }
+  })();
+}
+
 app.listen(PORT, () => {
   console.log(`🚀 Guardian AI SRE running at http://localhost:${PORT}`);
 });

@@ -5,6 +5,9 @@ const REQUIRED_USER_KEYS = [
   "PINECONE_API_KEY",
   "DISCORD_BOT_TOKEN",
   "GITHUB_TOKEN",
+  "GITHUB_REPO_OWNER",
+  "GITHUB_REPO_NAME",
+  "DISCORD_INCIDENT_CHANNEL_ID",
 ];
 
 function validateUserEnv(env: Record<string, string>) {
@@ -30,8 +33,8 @@ export function prepareAgentEnv({
 
   return {
     // --- System defaults ---
-    PORT: process.env.PORT || "3000",
-    INTERNAL_CALLBACK_SECRET: process.env.INTERNAL_CALLBACK_SECRET!,
+    PORT: userEnv.PORT || process.env.PORT || "3000",
+    INTERNAL_CALLBACK_SECRET: process.env.INTERNAL_CALLBACK_SECRET || "default_secret_change_me_in_prod",
     ORCHESTRATOR_URL:
       process.env.ORCHESTRATOR_URL || "http://watcher:3000",
 
@@ -45,13 +48,13 @@ export function prepareAgentEnv({
       process.env.HITL_TIMEOUT_MS || "900000",
 
     DEFAULT_LLM_MODEL:
-      process.env.DEFAULT_LLM_MODEL || "google/gemini-flash-1.5",
+      userEnv.DEFAULT_LLM_MODEL || process.env.DEFAULT_LLM_MODEL || "google/gemini-flash-1.5",
 
     PINECONE_INDEX_NAME:
-      process.env.PINECONE_INDEX_NAME || "guardian-knowledge",
+      userEnv.PINECONE_INDEX_NAME || process.env.PINECONE_INDEX_NAME || "guardian-knowledge",
 
     DISCORD_INCIDENT_CHANNEL_ID:
-      process.env.DISCORD_INCIDENT_CHANNEL_ID || "",
+      userEnv.DISCORD_INCIDENT_CHANNEL_ID || process.env.DISCORD_INCIDENT_CHANNEL_ID || "",
 
     // --- Runtime ---
     PROMPT: prompt,

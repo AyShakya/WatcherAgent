@@ -1,4 +1,4 @@
-// watcher/lib/spawnAgent.server.ts
+// watcher/lib/spawnagent.server.ts
 import "server-only";
 import { docker } from "./docker.server";
 
@@ -13,10 +13,12 @@ export async function spawnAgent({ env, jobId, userId }: SpawnAgentInput) {
     ([k, v]) => `${k}=${v}`
   );
 
+  const imageName = process.env.AGENT_DOCKER_IMAGE || "watcherai-image";
+
   const container = (await docker.createContainer({
-    Image: "watcherai-image",
+    Image: imageName,
     Env: envArray,
-    name: `agent_${userId}_${jobId}`,
+    name: `agent_${userId}_${jobId.replace(/-/g, '_')}`,
 
     HostConfig: {
       Memory: 512 * 1024 * 1024,
