@@ -3,7 +3,9 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { signOut } from "@/lib/auth-client";
+import { getInstances, getBugsData, getBugTypesData, getRecentPRs, getDashboardStats } from "@/actions/dashboard";
 import {
   Eye,
   AlertCircle,
@@ -19,104 +21,30 @@ import {
 } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
-// Mock data for bugs detected over time
-const bugsData = [
-  { week: "Week 1", bugs: 12, fixed: 8 },
-  { week: "Week 2", bugs: 19, fixed: 12 },
-  { week: "Week 3", bugs: 15, fixed: 14 },
-  { week: "Week 4", bugs: 25, fixed: 18 },
-  { week: "Week 5", bugs: 22, fixed: 20 },
-  { week: "Week 6", bugs: 28, fixed: 24 },
-  { week: "Week 7", bugs: 20, fixed: 19 },
-];
-
-// Mock data for bug types
-const bugTypesData = [
-  { name: "Logic Errors", value: 35, color: "#6366f1" },
-  { name: "Type Issues", value: 25, color: "#7c3aed" },
-  { name: "Security", value: 20, color: "#0ea5e9" },
-  { name: "Performance", value: 15, color: "#06b6d4" },
-  { name: "Other", value: 5, color: "#0d9488" },
-];
-
-// Mock data for repositories
-const repositories = [
-  {
-    id: 1,
-    name: "nextjs-saas-starter",
-    owner: "acme",
-    bugs: 8,
-    prs: 3,
-    fixed: 5,
-    status: "Active",
-    lastScan: "2 hours ago",
-  },
-  {
-    id: 2,
-    name: "react-components",
-    owner: "acme",
-    bugs: 12,
-    prs: 5,
-    fixed: 8,
-    status: "Active",
-    lastScan: "30 minutes ago",
-  },
-  {
-    id: 3,
-    name: "typescript-utils",
-    owner: "acme",
-    bugs: 3,
-    prs: 1,
-    fixed: 3,
-    status: "Active",
-    lastScan: "1 hour ago",
-  },
-  {
-    id: 4,
-    name: "api-gateway",
-    owner: "acme",
-    bugs: 15,
-    prs: 6,
-    fixed: 10,
-    status: "Active",
-    lastScan: "45 minutes ago",
-  },
-];
-
-// Mock data for recent PRs
-const recentPRs = [
-  {
-    id: 1,
-    title: "Fix: Handle null reference in user service",
-    repo: "nextjs-saas-starter",
-    status: "merged",
-    created: "2 hours ago",
-  },
-  {
-    id: 2,
-    title: "Security: Update dependencies with vulnerabilities",
-    repo: "react-components",
-    status: "pending",
-    created: "1 hour ago",
-  },
-  {
-    id: 3,
-    title: "Performance: Optimize database queries",
-    repo: "api-gateway",
-    status: "pending",
-    created: "30 minutes ago",
-  },
-  {
-    id: 4,
-    title: "Fix: Resolve type error in authentication module",
-    repo: "typescript-utils",
-    status: "merged",
-    created: "1 day ago",
-  },
-];
-
 export default function Dashboard() {
   const router = useRouter();
+  const [userInstances, setUserInstances] = useState<any[]>([]);
+  const [loadingInstances, setLoadingInstances] = useState(true);
+  const [bugsData, setBugsData] = useState<any[]>([]);
+  const [bugTypesData, setBugTypesData] = useState<any[]>([]);
+  const [recentPRs, setRecentPRs] = useState<any[]>([]);
+  const [stats, setStats] = useState({ totalBugs: 0, totalPRs: 0, fixedBugs: 0 });
+
+  useEffect(() => {
+    Promise.all([
+      getInstances(),
+      getBugsData(),
+      getBugTypesData(),
+      getRecentPRs(),
+      getDashboardStats()
+    ]).then(([instances, bugs, bugTypes, prs, dashboardStats]) => {
+      setUserInstances(instances);
+      setBugsData(bugs);
+      setBugTypesData(bugTypes);
+      setRecentPRs(prs);
+      setStats(dashboardStats);
+    }).catch(console.error).finally(() => setLoadingInstances(false));
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -170,10 +98,10 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="p-6 rounded-xl border border-border bg-card/50 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-muted-foreground font-medium">Repos Watched</span>
+              <span className="text-sm text-muted-foreground font-medium">Instances Watched</span>
               <Eye className="w-4 h-4 text-primary" />
             </div>
-            <div className="text-3xl font-bold">4</div>
+            <div className="text-3xl font-bold">{userInstances.length}</div>
             <p className="text-xs text-muted-foreground mt-2">All synced</p>
           </div>
 
@@ -182,8 +110,8 @@ export default function Dashboard() {
               <span className="text-sm text-muted-foreground font-medium">Bugs Found</span>
               <AlertCircle className="w-4 h-4 text-accent" />
             </div>
-            <div className="text-3xl font-bold">53</div>
-            <p className="text-xs text-muted-foreground mt-2">+12 this week</p>
+            <div className="text-3xl font-bold">{stats.totalBugs}</div>
+            <p className="text-xs text-muted-foreground mt-2">From all instances</p>
           </div>
 
           <div className="p-6 rounded-xl border border-border bg-card/50 backdrop-blur-sm">
@@ -191,8 +119,8 @@ export default function Dashboard() {
               <span className="text-sm text-muted-foreground font-medium">PRs Created</span>
               <GitPullRequest className="w-4 h-4 text-secondary" />
             </div>
-            <div className="text-3xl font-bold">15</div>
-            <p className="text-xs text-muted-foreground mt-2">11 merged</p>
+            <div className="text-3xl font-bold">{stats.totalPRs}</div>
+            <p className="text-xs text-muted-foreground mt-2">To fix bugs</p>
           </div>
 
           <div className="p-6 rounded-xl border border-border bg-card/50 backdrop-blur-sm">
@@ -200,8 +128,8 @@ export default function Dashboard() {
               <span className="text-sm text-muted-foreground font-medium">Bugs Fixed</span>
               <CheckCircle className="w-4 h-4 text-green-500" />
             </div>
-            <div className="text-3xl font-bold">41</div>
-            <p className="text-xs text-muted-foreground mt-2">77% of total</p>
+            <div className="text-3xl font-bold">{stats.fixedBugs}</div>
+            <p className="text-xs text-muted-foreground mt-2">Automatically resolved</p>
           </div>
         </div>
 
@@ -289,60 +217,70 @@ export default function Dashboard() {
 
         {/* Repositories Section */}
         <div className="p-6 rounded-xl border border-border bg-card/50 backdrop-blur-sm mb-8">
-          <h2 className="text-lg font-bold mb-4">Watched Repositories</h2>
+          <h2 className="text-lg font-bold mb-4">Watched Instances ({userInstances.length})</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left py-3 px-4 text-muted-foreground font-medium">Repository</th>
+                  <th className="text-left py-3 px-4 text-muted-foreground font-medium">Instance Name</th>
                   <th className="text-left py-3 px-4 text-muted-foreground font-medium">Bugs</th>
                   <th className="text-left py-3 px-4 text-muted-foreground font-medium">PRs</th>
                   <th className="text-left py-3 px-4 text-muted-foreground font-medium">Fixed</th>
-                  <th className="text-left py-3 px-4 text-muted-foreground font-medium">Last Scan</th>
+                  <th className="text-left py-3 px-4 text-muted-foreground font-medium">Created</th>
                   <th className="text-left py-3 px-4 text-muted-foreground font-medium">Status</th>
                   <th className="text-left py-3 px-4"></th>
                 </tr>
               </thead>
               <tbody>
-                {repositories.map((repo) => (
-                  <tr key={repo.id} className="border-b border-border/50 hover:bg-muted/30 transition">
-                    <td className="py-3 px-4">
-                      <div>
-                        <div className="font-medium">{repo.name}</div>
-                        <div className="text-xs text-muted-foreground">{repo.owner}</div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-accent" />
-                        {repo.bugs}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <GitPullRequest className="w-4 h-4 text-secondary" />
-                        {repo.prs}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                        {repo.fixed}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-muted-foreground">{repo.lastScan}</td>
-                    <td className="py-3 px-4">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
-                        {repo.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <button className="text-muted-foreground hover:text-foreground transition">
-                        <MoreVertical className="w-4 h-4" />
-                      </button>
-                    </td>
+                {loadingInstances ? (
+                  <tr>
+                    <td colSpan={7} className="py-4 text-center text-muted-foreground">Loading instances...</td>
                   </tr>
-                ))}
+                ) : userInstances.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-4 text-center text-muted-foreground">No instances found. Add one to get started.</td>
+                  </tr>
+                ) : (
+                  userInstances.map((instance) => (
+                    <tr key={instance.id} className="border-b border-border/50 hover:bg-muted/30 transition">
+                      <td className="py-3 px-4">
+                        <div>
+                          <div className="font-medium">{instance.name}</div>
+                          <div className="text-xs text-muted-foreground">{instance.id}</div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 text-accent" />
+                          0
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <GitPullRequest className="w-4 h-4 text-secondary" />
+                          0
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          0
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-muted-foreground">{new Date(instance.createdAt).toLocaleDateString()}</td>
+                      <td className="py-3 px-4">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
+                          Active
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <button className="text-muted-foreground hover:text-foreground transition">
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
