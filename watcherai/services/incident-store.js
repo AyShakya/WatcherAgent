@@ -95,5 +95,5 @@ export async function getAllIncidents() {
   return Object.values(incidents)
     .filter((entry) => !entry.expiresAt || now <= new Date(entry.expiresAt).getTime())
     .map((entry) => entry.data)
-    .sort((a, b) => new Date(b.saved_at || 0) - new Date(a.saved_at || 0));
+    .sort((a, b) => new Date(b.hitl?.hitl_initiated_at || b.triggered_at || 0) - new Date(a.hitl?.hitl_initiated_at || a.triggered_at || 0));
 }

@@ -2,11 +2,17 @@
 import { z } from 'zod';
 
 export const HITLPendingSchema = z.object({
-  hitl_status: z.literal('AWAITING_APPROVAL'),
-  discord_message_id: z.string(),
-  discord_thread_id: z.string(),
+  hitl_status: z.enum([
+    'AWAITING_APPROVAL',
+    'SKIPPED_NO_AUTH',
+    'FAILED_BOT_NOT_READY',
+    'FAILED',
+  ]),
+  discord_message_id: z.string().optional(),
+  discord_thread_id: z.string().optional(),
   hitl_initiated_at: z.string(),
-  hitl_expires_at: z.string(),
+  hitl_expires_at: z.string().optional(),
+  discord_error: z.string().optional(),
 });
 
 export const HITLResolvedSchema = z.object({
