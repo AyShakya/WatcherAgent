@@ -12,6 +12,18 @@ const INDEX_NAME = process.env.PINECONE_INDEX_NAME || 'guardian-knowledge';
 
 const pc = new Pinecone({ apiKey: PINECONE_API_KEY });
 
+
+function normalizeErrorSignature(raw) {
+  return raw
+    .replace(/0x[0-9a-fA-F]+/g, '<ADDR>')
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '<UUID>')
+    .replace(/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?/g, '<TIMESTAMP>')
+    .replace(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, '<IP>')
+    .replace(/(\.js|\.ts|\.py|\.go|\.java):(\d+)/g, '$1:<LINE>')
+    .replace(/:\d{4,5}\b/g, ':<PORT>')
+    .trim();
+}
+
 /**
  * Queries Pinecone for relevant runbooks and past fixes.
  */
@@ -21,15 +33,15 @@ export async function searchRunbooks(service, errorReasoning) {
     return getLocalFallback(service);
   }
 
-  const query = `${service} ${errorReasoning} resolution steps and past fixes`;
+  const normalizedQuery = normalizeErrorSignature(errorReasoning);
 
   try {
     const index = pc.index(INDEX_NAME);
     
-    console.log(`🔍 Querying Pinecone RAG for: "${query}"`);
-    
-    // 1. Generate embedding for the query
-    const queryEmbedding = await getEmbedding(query, pc);
+    console.log(`🔍 Querying Pinecone RAG for service ${service} using normalized error signature: "${normalizedQuery}"`);
+
+    // 1. Generate embedding for the normalized error signature
+    const queryEmbedding = await getEmbedding(normalizedQuery, pc);
     
     // 2. Search Pinecone
     const queryResponse = await index.query({
