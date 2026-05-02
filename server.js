@@ -9,6 +9,7 @@ import runRunbookNode from './nodes/node-02-runbook/index.js';
 import runHITLNode from './nodes/node-03-hitl/index.js';
 import runFixerNode from './nodes/node-04-warroom/index.js';
 import runMemoryNode from './nodes/node-05-narrator/index.js';
+import { loginBot } from './nodes/node-03-hitl/discord-bot.js';
 
 // Services
 import { saveIncident, getIncident, removeIncident } from './services/incident-store.js';
@@ -87,6 +88,12 @@ app.post('/internal/discord-approve', async (req, res) => {
     res.status(500).json({ error: 'Failed to deploy fix' });
   }
 });
+
+try {
+  await loginBot();
+} catch (error) {
+  console.error(`❌ Discord bot failed to initialize: ${error.message}`);
+}
 
 app.listen(PORT, () => {
   console.log(`🚀 Guardian AI SRE running at http://localhost:${PORT}`);

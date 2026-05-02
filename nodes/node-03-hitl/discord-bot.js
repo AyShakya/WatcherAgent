@@ -2,38 +2,72 @@
 // Guardian Node 03 — Discord HITL (Human-in-the-Loop)
 // Manages Discord incident threads and approval buttons
 
-import { 
-  Client, 
-  GatewayIntentBits, 
-  ActionRowBuilder, 
-  ButtonBuilder, 
-  ButtonStyle, 
-  EmbedBuilder 
+import {
+  Client,
+  GatewayIntentBits,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  EmbedBuilder
 } from 'discord.js';
 import dotenv from 'dotenv';
+import {
+  getIncident,
+  removeIncident,
+  saveIncidentTimeout,
+  clearIncidentTimeout
+} from '../../services/incident-store.js';
 
 dotenv.config();
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
 
-// These will be loaded from your .env later
 const DISCORD_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CHANNEL_ID = process.env.DISCORD_INCIDENT_CHANNEL_ID;
+const HITL_TIMEOUT_MS = parseInt(process.env.HITL_TIMEOUT_MS || '900000', 10);
 
-/**
- * Sends an incident approval card to Discord.
- * Creates a private thread for the incident.
- */
+let botReady = false;
+
+client.once('ready', () => {
+  console.log(`🤖 Discord bot logged in as ${client.user.tag}`);
+  botReady = true;
+});
+
+export async function loginBot() {
+  if (!DISCORD_TOKEN) {
+    console.warn('⚠️ DISCORD_BOT_TOKEN not set. Discord notifications are disabled.');
+    return;
+  }
+
+  if (botReady) return;
+
+  await client.login(DISCORD_TOKEN);
+
+  await new Promise((resolve, reject) => {
+    if (botReady) {
+      resolve();
+      return;
+    }
+
+    client.once('ready', resolve);
+    setTimeout(() => reject(new Error('Discord bot login timeout')), 15000);
+  });
+}
+
 export async function sendApprovalCard(incidentData) {
   if (!DISCORD_TOKEN || !CHANNEL_ID) {
     console.error('❌ Discord credentials missing. Skipping Discord notification.');
     return { ...incidentData, hitl_status: 'SKIPPED_NO_AUTH' };
   }
 
+  if (!botReady) {
+    console.error('❌ Discord bot is not ready. Was loginBot() called at startup?');
+    return { ...incidentData, hitl_status: 'FAILED_BOT_NOT_READY' };
+  }
+
   try {
     const channel = await client.channels.fetch(CHANNEL_ID);
-    
-    // 1. Create the Embed (The visual card)
+
     const embed = new EmbedBuilder()
       .setColor(incidentData.severity === 'P1' ? 0xFF0000 : 0xFFA500)
       .setTitle(`🚨 Incident Triage: ${incidentData.service}`)
@@ -45,7 +79,6 @@ export async function sendApprovalCard(incidentData) {
       )
       .setTimestamp();
 
-    // 2. Create the Buttons
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId(`approve_${incidentData.incident_id}`)
@@ -57,66 +90,81 @@ export async function sendApprovalCard(incidentData) {
         .setStyle(ButtonStyle.Danger)
     );
 
-    // 3. Send the message
     const message = await channel.send({ embeds: [embed], components: [row] });
 
-    // 4. Start a thread for this incident
     const thread = await message.startThread({
       name: `thread-${incidentData.incident_id}`,
-      autoArchiveDuration: 60,
+      autoArchiveDuration: 60
     });
 
     await thread.send(`Thread started for ${incidentData.incident_id}. Awaiting human decision...`);
 
-    return { 
-      ...incidentData, 
-      discord_message_id: message.id, 
-      discord_thread_id: thread.id,
-      hitl_status: 'AWAITING_APPROVAL' 
-    };
+    const timeout = setTimeout(async () => {
+      const stillPending = getIncident(incidentData.incident_id);
+      if (!stillPending) {
+        return;
+      }
 
+      console.warn(`⏰ HITL timeout for ${incidentData.incident_id}. Auto-cleaning pending incident.`);
+      removeIncident(incidentData.incident_id);
+
+      try {
+        await thread.send(`⏰ **Timeout.** Incident ${incidentData.incident_id} timed out without a human decision.`);
+      } catch (error) {
+        console.warn(`⚠️ Failed to post timeout notice for ${incidentData.incident_id}: ${error.message}`);
+      }
+    }, HITL_TIMEOUT_MS);
+
+    saveIncidentTimeout(incidentData.incident_id, timeout);
+
+    return {
+      ...incidentData,
+      discord_message_id: message.id,
+      discord_thread_id: thread.id,
+      hitl_status: 'AWAITING_APPROVAL'
+    };
   } catch (error) {
     console.error('❌ Discord Bot Error:', error);
     return { ...incidentData, hitl_status: 'FAILED' };
   }
 }
 
-// Handle Button Interactions
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isButton()) return;
 
   const [action, incidentId] = interaction.customId.split('_');
 
+  clearIncidentTimeout(incidentId);
+
   if (action === 'approve') {
     await interaction.update({ content: '✅ **Fix Accepted.** Deploying PR...', components: [] });
-    
-    // Notify the orchestrator to proceed to Phase 4 & 5
+
     try {
       await fetch(`http://localhost:${process.env.PORT || 3000}/internal/discord-approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          incident_id: incidentId, 
-          approver: interaction.user.tag 
+        body: JSON.stringify({
+          incident_id: incidentId,
+          approver: interaction.user.tag
         })
       });
     } catch (err) {
       console.error('❌ Failed to notify orchestrator:', err);
     }
   } else if (action === 'ignore') {
+    removeIncident(incidentId);
     await interaction.reply('🗑️ **Incident Ignored.** Cleaning up...');
-    
+
     const thread = interaction.message.thread;
     const message = interaction.message;
 
-    // 1. Try to delete the thread
     try {
       if (thread) {
         console.log(`🗑️ Attempting to delete thread ${thread.id}`);
         await thread.delete();
       } else {
         const threads = await interaction.channel.threads.fetch();
-        const foundThread = threads.threads.find(t => t.name.includes(incidentId));
+        const foundThread = threads.threads.find((t) => t.name.includes(incidentId));
         if (foundThread) {
           console.log(`🗑️ Found thread by name. Attempting to delete ${foundThread.id}`);
           await foundThread.delete();
@@ -131,7 +179,6 @@ client.on('interactionCreate', async (interaction) => {
       }
     }
 
-    // 2. Try to delete the original message
     try {
       console.log(`🗑️ Attempting to delete original message ${message.id}`);
       await message.delete();
@@ -145,8 +192,3 @@ client.on('interactionCreate', async (interaction) => {
     }
   }
 });
-
-// Login the bot
-if (DISCORD_TOKEN) {
-  client.login(DISCORD_TOKEN);
-}
