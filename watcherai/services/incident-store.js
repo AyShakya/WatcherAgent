@@ -84,8 +84,6 @@ export async function removeIncident(id) {
   delete incidents[id];
   await writeStore(incidents);
 }
-<<<<<<< HEAD
-=======
 
 /**
  * Returns all non-expired incidents as an array, newest first.
@@ -99,4 +97,3 @@ export async function getAllIncidents() {
     .map((entry) => entry.data)
     .sort((a, b) => new Date(b.hitl?.hitl_initiated_at || b.triggered_at || 0) - new Date(a.hitl?.hitl_initiated_at || a.triggered_at || 0));
 }
->>>>>>> e19f96c5ecd53a217f15a751e8cc1f73116861ff
