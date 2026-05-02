@@ -4,7 +4,6 @@
 import { Octokit } from 'octokit';
 import dotenv from 'dotenv';
 import { callLLM } from '../shared/ai.js';
-import { fixerPrompt as userPromptFunc } from '../../prompts/fixer.js';
 
 dotenv.config();
 
@@ -13,10 +12,13 @@ const REPO_OWNER = process.env.GITHUB_REPO_OWNER;
 const REPO_NAME = process.env.GITHUB_REPO_NAME;
 
 const SYSTEM_INSTRUCTIONS = `
-You are a Senior Software Engineer and SRE.
-Your task is to provide a technical code fix or configuration change.
-You MUST return a JSON object with 'file_path', 'new_content', and 'reasoning'.
-Do NOT include any preamble or conversational text.
+You are a Senior Software Engineer and SRE performing root cause analysis and fix generation.
+INVIOLABLE RULES:
+1. You MUST find the EXACT line causing the error before generating a fix.
+2. If you cannot locate the exact line with certainty, set "uncertain": true and explain.
+3. Never rewrite code outside the error scope.
+4. Never change variable names, formatting, or logic unrelated to the fix.
+5. Return ONLY raw JSON — no markdown, no explanation outside the JSON.
 `;
 
 /**
@@ -74,10 +76,6 @@ async function getCandidatePaths(keywords, service, defaultBranch) {
       if (f.type !== 'blob' || f.path.includes('node_modules') || f.path.includes('.git')) return;
       const lowerPath = f.path.toLowerCase();
       if (lowerPath.includes(service.toLowerCase()) || keywords.some(k => lowerPath.includes(k.toLowerCase()))) {
-        candidates.add(f.path);
-      }
-      // Also add common entry points if not already there
-      if (['package.json', 'server.js', 'app.js', 'index.js'].includes(f.path)) {
         candidates.add(f.path);
       }
     });
@@ -146,16 +144,36 @@ ERROR: ${incidentData.raw_error_message || incidentData.reasoning}`,
     }));
 
     const auditPrompt = `
-      ${userPromptFunc(incidentData)}
-      
-      You have audited the following files from the repository:
-      ${audits.join('\n')}
-      
-      TASK:
-      1. Find the specific bug in the code that matches the technical error: ${incidentData.reasoning}.
-      2. If you find multiple potential issues, fix the most critical one first.
-      3. Return a JSON object with 'file_path', 'new_content', and 'reasoning'.
-    `;
+## INCIDENT
+Service: ${incidentData.service}
+Error type: ${incidentData.error_type || 'unknown'}
+Verbatim error: ${incidentData.raw_error_message || incidentData.reasoning}
+Root frame: ${incidentData.root_frame?.file || 'unknown'}:${incidentData.root_frame?.line || 'unknown'}
+Severity: ${incidentData.severity}
+
+## CODE TO AUDIT (with line numbers)
+${audits.join('\n')}
+
+## TASK — complete in order
+STEP 1 — LOCATE: State the exact file and line number causing the error.
+STEP 2 — EXPLAIN: State precisely why that line causes this specific error.
+STEP 3 — FIX: Produce the minimal change.
+STEP 4 — VERIFY: List 2 edge cases your fix might introduce.
+
+## OUTPUT — raw JSON only
+{
+  "file_path": "<relative path>",
+  "root_cause_line": <integer or null>,
+  "root_cause_explanation": "<specific, one paragraph>",
+  "uncertain": <true if you cannot find the exact line>,
+  "uncertainty_reason": "<only if uncertain>",
+  "diff": "<unified diff of changed lines only>",
+  "new_content": "<complete updated content>",
+  "reasoning": "<why this fix resolves the root cause>",
+  "edge_cases": ["<case 1>", "<case 2>"],
+  "confidence": <0.0 to 1.0>
+}
+`;
 
     aiFix = await callLLM({ 
       prompt: auditPrompt, 
