@@ -104,7 +104,8 @@ export async function createFixPR(incidentData) {
       prompt: `Analyze this technical error and return the 3 most specific search terms.
 ERROR: ${incidentData.raw_error_message || incidentData.reasoning}`,
       systemPrompt: 'Return ONLY raw JSON in this exact shape: { "keywords": ["term1", "term2", "term3"] }',
-      responseFormat: 'json_object'
+      responseFormat: 'json_object',
+      maxTokens: 256,
     });
     const keywords = Array.isArray(keywordsResult?.keywords)
       ? keywordsResult.keywords.map((k) => String(k).trim()).filter(Boolean).slice(0, 3)
@@ -130,7 +131,8 @@ ERROR: ${incidentData.raw_error_message || incidentData.reasoning}`,
     const rankedPathsRaw = await callLLM({ 
       prompt: rankingPrompt, 
       systemPrompt: 'Return only a list of file paths.',
-      responseFormat: 'text' 
+      responseFormat: 'text',
+      maxTokens: 512,
     });
     const rankedPaths = rankedPathsRaw.split('\n').map(p => p.trim()).filter(p => p && allPaths.includes(p)).slice(0, 5);
     
@@ -178,7 +180,8 @@ STEP 4 — VERIFY: List 2 edge cases your fix might introduce.
     aiFix = await callLLM({ 
       prompt: auditPrompt, 
       systemPrompt: SYSTEM_INSTRUCTIONS,
-      responseFormat: 'json_object' 
+      responseFormat: 'json_object',
+      maxTokens: 4096,
     });
 
     const validatedPath = rankedPaths.find((p) => p === aiFix.file_path);

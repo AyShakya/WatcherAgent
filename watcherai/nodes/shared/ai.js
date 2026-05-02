@@ -21,7 +21,7 @@ function safeParseJSON(content) {
 /**
  * Common LLM call function via OpenRouter
  */
-export async function callLLM({ prompt, systemPrompt, model = DEFAULT_MODEL, responseFormat = 'json_object', timeoutMs = parseInt(process.env.LLM_TIMEOUT_MS || '30000', 10) }) {
+export async function callLLM({ prompt, systemPrompt, model = DEFAULT_MODEL, responseFormat = 'json_object', maxTokens = 4096, timeoutMs = parseInt(process.env.LLM_TIMEOUT_MS || '30000', 10) }) {
   if (!model) {
     console.error('❌ DEFAULT_LLM_MODEL is not defined in .env');
     throw new Error('DEFAULT_LLM_MODEL is missing from environment variables');
@@ -52,6 +52,7 @@ export async function callLLM({ prompt, systemPrompt, model = DEFAULT_MODEL, res
     const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
       model: model,
       messages: messages,
+      max_tokens: maxTokens,
       response_format: responseFormat === 'json_object' ? { type: 'json_object' } : undefined
     }, {
       headers: {
