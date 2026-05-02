@@ -189,6 +189,16 @@ app.post('/internal/discord-approve', requireInternalToken, async (req, res) => 
 
     await removeIncident(incident_id);
 
+    if (fix.pr_status === 'DUPLICATE_SKIPPED') {
+      console.log(`🔁 Duplicate PR skipped for ${incident_id}. Existing PR: ${fix.pr_url}`);
+      return res.status(200).json({
+        status: 'duplicate_skipped',
+        pr: fix.pr_url,
+        incident_id,
+        note: 'An open PR already exists for this incident branch.',
+      });
+    }
+
     if (fix.pr_status === 'FAILED' || fix.pr_status === 'FAILED_NO_CODE') {
       console.error(`❌ Fix execution failed: ${fix.error || fix.pr_status}`);
       return res.status(500).json({

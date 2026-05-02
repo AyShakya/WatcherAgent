@@ -10,7 +10,10 @@ dotenv.config();
 
 const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
 const INDEX_NAME = process.env.PINECONE_INDEX_NAME || 'watcher-knowledge';
-const SCORE_THRESHOLD = 0.87;
+// Primary threshold for same-service recall; secondary for cross-service recall.
+// 0.87 was too strict and caused memory recall to never trigger.
+const SCORE_THRESHOLD_STRICT   = parseFloat(process.env.PINECONE_SCORE_THRESHOLD       || '0.78');
+const SCORE_THRESHOLD_FALLBACK = parseFloat(process.env.PINECONE_SCORE_THRESHOLD_BROAD || '0.82');
 
 // Lazy-init: only create client if key is present to avoid crash on startup
 let pc = null;
@@ -40,26 +43,39 @@ export async function searchRunbooks(service, errorReasoning) {
 
     const queryEmbedding = await getEmbedding(normalizedQuery, pinecone);
 
-    const queryFilter = {
-      chunk_type: { $eq: 'error_signature' }
+    // Pass 1: strict same-service query
+    const serviceFilter = {
+      chunk_type: { $eq: 'error_signature' },
+      ...(service ? { service: { $eq: service } } : {}),
     };
 
-    if (service) {
-      queryFilter.service = { $eq: service };
-    }
-
-    const queryResponse = await index.query({
+    let queryResponse = await index.query({
       vector: queryEmbedding,
       topK: 5,
       includeMetadata: true,
-      filter: queryFilter
+      filter: serviceFilter,
     });
 
-    const matches = queryResponse?.matches || [];
-    const highConfidenceMatches = matches.filter(match => (match.score || 0) >= SCORE_THRESHOLD);
+    let matches = queryResponse?.matches || [];
+    let hits = matches.filter(m => (m.score || 0) >= SCORE_THRESHOLD_STRICT);
 
-    if (highConfidenceMatches.length > 0) {
-      return highConfidenceMatches.map(match => ({
+    // Pass 2: if no same-service hits, broaden to all services with a tighter
+    //         score cutoff so we don't match completely unrelated incidents.
+    if (hits.length === 0 && service) {
+      console.log(`🔍 No same-service recall hit — retrying without service filter (threshold ${SCORE_THRESHOLD_FALLBACK})`);
+      const broadResponse = await index.query({
+        vector: queryEmbedding,
+        topK: 5,
+        includeMetadata: true,
+        filter: { chunk_type: { $eq: 'error_signature' } },
+      });
+      const broadMatches = broadResponse?.matches || [];
+      hits = broadMatches.filter(m => (m.score || 0) >= SCORE_THRESHOLD_FALLBACK);
+    }
+
+    if (hits.length > 0) {
+      console.log(`🧠 Memory recall: ${hits.length} historical fix(es) found (top score: ${hits[0].score?.toFixed(3)})`);
+      return hits.map(match => ({
         title: match.metadata?.title || 'Historical Fix',
         steps: (() => { try { return JSON.parse(match.metadata?.steps || '[]'); } catch { return []; } })(),
         fix_diff: match.metadata?.fix_diff || null,

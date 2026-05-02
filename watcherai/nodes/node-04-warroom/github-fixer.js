@@ -127,6 +127,30 @@ export async function createFixPR(incidentData) {
   let currentContent = null;
   let aiFix = { file_path: 'N/A', new_content: '', reasoning: 'AI could not identify a fix.' };
 
+  // ── EXISTING OPEN PR GUARD ───────────────────────────────────────────────────
+  // If a guardian/ branch for this exact incident already exists (e.g. from a
+  // previous run that wasn't cleaned up), link to it and skip re-running the
+  // pipeline so we don't open 10 identical PRs against the same file.
+  try {
+    const { data: existingPRs } = await octokit.rest.pulls.list({
+      owner: REPO_OWNER, repo: REPO_NAME, state: 'open', per_page: 50,
+    });
+    const duplicate = existingPRs.find(pr => pr.head.ref === branchName);
+    if (duplicate) {
+      console.warn(`⚠️  Open PR already exists for ${branchName}: ${duplicate.html_url} — skipping duplicate.`);
+      return {
+        ...incidentData,
+        pr_url: duplicate.html_url,
+        pr_status: 'DUPLICATE_SKIPPED',
+        ai_fix_suggestion: { reasoning: `Duplicate of open PR: ${duplicate.html_url}` },
+        fix_initiated_at: new Date().toISOString(),
+      };
+    }
+  } catch (e) {
+    console.warn('⚠️ Could not check for duplicate PRs:', e.message);
+  }
+  // ── END EXISTING OPEN PR GUARD ───────────────────────────────────────────────
+
   // ── MEMORY RECALL FAST-PATH ──────────────────────────────────────────────────
   // If Pinecone returned a HISTORICAL_FIX with a diff from a past resolved
   // incident, we already know the fix. Skip the expensive LLM audit phases and
