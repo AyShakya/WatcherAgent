@@ -47,8 +47,9 @@ export default function Dashboard() {
   const [bugTypesData, setBugTypesData] = useState<any[]>([]);
   const [recentPRs, setRecentPRs] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalBugs: 0, totalPRs: 0, fixedBugs: 0 });
-  const { data: session } = useSession();
-  const userInitial = session?.user?.email ? session.user.email.charAt(0).toUpperCase() : "?";
+  const { data: sessionData, isPending: isSessionLoading } = useSession();
+  const session = sessionData?.user;
+  const userInitial = isSessionLoading ? "..." : (session?.email ? session.email.charAt(0).toUpperCase() : (session?.name ? session.name.charAt(0).toUpperCase() : "?"));
 
   useEffect(() => {
     Promise.all([
@@ -67,8 +68,22 @@ export default function Dashboard() {
   }, []);
 
   const handleSignOut = async () => {
-    await signOut();
-    router.push("/sign-in");
+    try {
+      await signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            router.push("/sign-in");
+          },
+        },
+      });
+      // Aggressive fallback for stuck sessions on localhost
+      setTimeout(() => {
+        window.location.href = "/sign-in";
+      }, 1500);
+    } catch (error) {
+      console.error("Logout error:", error);
+      window.location.href = "/sign-in";
+    }
   };
 
   return (

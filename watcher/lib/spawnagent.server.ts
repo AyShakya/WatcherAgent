@@ -1,6 +1,8 @@
-// watcher/lib/spawnagent.server.ts
 import "server-only";
-import { docker } from "./docker.server";
+import { execFile } from "child_process";
+import { promisify } from "util";
+
+const execFileAsync = promisify(execFile);
 
 type SpawnAgentInput = {
   env: Record<string, string>;
@@ -8,29 +10,19 @@ type SpawnAgentInput = {
   userId: string;
 };
 
-export async function spawnAgent({ env, jobId, userId }: SpawnAgentInput) {
-  const envArray = Object.entries(env).map(
-    ([k, v]) => `${k}=${v}`
-  );
+export async function spawnAgent({ env }: SpawnAgentInput): Promise<{ containerId: string }> {
+  console.log("SPAWN START");
+    const { stdout } = await execFileAsync("node", [
+    "scripts/spawn-agent.js",
+    JSON.stringify(env),
+  ]);
 
-  const imageName = process.env.AGENT_DOCKER_IMAGE || "watcherai-image";
+  const match = stdout.match(/Started:\s*(.+)/);
+  const containerId = match?.[1]?.trim();
 
-  const container = (await docker.createContainer({
-    Image: imageName,
-    Env: envArray,
-    name: `agent_${userId}_${jobId.replace(/-/g, '_')}`,
+  if (!containerId) {
+    throw new Error("spawn-agent.js did not return a container id");
+  }
 
-    HostConfig: {
-      Memory: 512 * 1024 * 1024,
-      NanoCpus: 500000000,
-      AutoRemove: true,
-    },
-  })) as unknown as {
-    start(): Promise<void>;
-    id: string;
-  };
-
-  await container.start();
-
-  return { containerId: container.id };
+  return { containerId };
 }

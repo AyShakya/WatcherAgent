@@ -61,6 +61,10 @@ export function prepareAgentEnv({
     JOB_ID: jobId,
     USER_ID: userId,
 
+    service: "demo-service",
+  alert: "test-alert",
+  triggered_at: new Date().toISOString(),
+
     // 🔥 USER KEYS (MAIN SOURCE)
     ...userEnv,
   };

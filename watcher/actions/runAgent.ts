@@ -1,8 +1,6 @@
 // watcher/app/actions/runAgent.ts
 "use server";
 
-export const runtime = "nodejs";
-
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { spawnAgent } from "@/lib/spawnagent.server";

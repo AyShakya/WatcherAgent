@@ -6,7 +6,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ../nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ../nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro,Z
     depends_on:
       - watcher
 
@@ -15,9 +15,12 @@ services:
       context: ../../
       dockerfile: infra/docker/watcher.Dockerfile
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:Z
     env_file:
       - ../env/watcher.env
       - ../env/watcherai.env
     environment:
       - NODE_ENV=production
+    user: root
+    group_add:
+      - "971"

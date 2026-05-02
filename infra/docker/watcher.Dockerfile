@@ -30,6 +30,7 @@ COPY --from=builder /app ./
 
 # ❌ DO NOT run npm install again (removes override + breaks)
 # RUN npm install --omit=dev  ← remove this
+RUN apk add --no-cache docker-cli
 
 EXPOSE 3000
 
