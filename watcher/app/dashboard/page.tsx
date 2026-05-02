@@ -175,9 +175,7 @@ export default function Dashboard() {
           </div>
           
           <div className="flex items-center gap-5 text-[#45464d]">
-            <button className="hover:text-[#0b1c30] transition-colors"><Bell className="w-5 h-5" /></button>
-            <button className="hover:text-[#0b1c30] transition-colors"><HelpCircle className="w-5 h-5" /></button>
-            <button className="hover:text-[#0b1c30] transition-colors"><Settings className="w-5 h-5" /></button>
+
             <div className="w-8 h-8 rounded-full bg-[#131b2e] flex items-center justify-center ml-2 border-2 border-white shadow-sm">
               <span className="text-white text-xs font-bold">{userInitial}</span>
             </div>
@@ -201,7 +199,7 @@ export default function Dashboard() {
             </div>
 
             {/* Key Metrics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
               
               {/* Card 1 */}
               <div className="bg-white border border-[#e5eeff] rounded-md p-6 shadow-[0px_4px_20px_rgba(11,28,48,0.02)]">
@@ -257,35 +255,12 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Card 3 (Dark Navy) */}
-              <div className="bg-[#131b2e] rounded-md p-6 text-white shadow-[0px_4px_20px_rgba(11,28,48,0.08)] flex flex-col justify-between">
-                <div>
-                  <div className="text-[10px] font-bold tracking-widest uppercase text-[#7c839b] mb-4">System Uptime</div>
-                  <div className="text-5xl font-bold tracking-tight mb-2">99.98%</div>
-                  <div className="text-sm text-[#7c839b]">Active across {userInstances.length || 14} nodes</div>
-                </div>
-                
-                <div>
-                  <div className="flex items-end gap-1.5 h-16 mb-3">
-                    {[80, 100, 90, 100, 100, 70, 95, 30, 85, 100, 90].map((h, i) => (
-                      <div key={i} className={`flex-1 rounded-sm ${h < 50 ? 'bg-[#ef4444]' : 'bg-[#10b981]'}`} style={{ height: `${h}%` }}></div>
-                    ))}
-                  </div>
-                  <div className="text-[10px] text-[#7c839b] uppercase tracking-wider font-semibold">
-                    Last incident: 42 minutes ago (Network Latency)
-                  </div>
-                </div>
-              </div>
-
             </div>
 
             {/* Repositories Section */}
             <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <h2 className="text-[24px] font-semibold tracking-tight text-[#0b1c30]">Connected Repositories</h2>
               <div className="flex gap-3">
-                <Button variant="outline" className="border-[#c6c6cd] text-[#0b1c30] hover:bg-[#f8f9ff] h-9">
-                  Export Report
-                </Button>
                 <Link href="/dashboard/instance">
                   <Button className="bg-[#131b2e] hover:bg-[#0b1c30] text-white h-9">
                     Add Repository
@@ -378,95 +353,56 @@ export default function Dashboard() {
             </div>
 
             {/* Bottom Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="flex flex-col gap-6">
               
               {/* Watcher Insights */}
-              <div className="lg:col-span-2 bg-white border border-[#e5eeff] rounded-md shadow-[0px_4px_20px_rgba(11,28,48,0.02)] flex flex-col">
+              <div className="bg-white border border-[#e5eeff] rounded-md shadow-[0px_4px_20px_rgba(11,28,48,0.02)] flex flex-col">
                 <div className="p-6 border-b border-[#e5eeff] flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 text-[#4b41e1]"><Eye /></div>
-                    <h3 className="font-bold text-lg text-[#0b1c30]">Watcher Insights</h3>
+                    <div className="w-5 h-5 text-[#4b41e1]"><GitPullRequest /></div>
+                    <h3 className="font-bold text-lg text-[#0b1c30]">Recent Pull Requests</h3>
                   </div>
-                  <span className="text-[10px] font-bold tracking-widest uppercase text-[#76777d]">Refreshed 10s ago</span>
+                  <span className="text-[10px] font-bold tracking-widest uppercase text-[#76777d]">{recentPRs.length} PRs</span>
                 </div>
                 
-                <div className="p-6 space-y-4 flex-1">
-                  <div className="flex gap-4">
-                    <div className="w-1 bg-[#4b41e1] rounded-full shrink-0"></div>
-                    <div>
-                      <h4 className="font-semibold text-[#0b1c30] mb-1">Potential Memory Leak Detected</h4>
-                      <p className="text-sm text-[#45464d] mb-3">
-                        Watcher has identified an anomalous memory pattern in <code className="bg-[#f8f9ff] text-[#0b1c30] px-1.5 py-0.5 rounded border border-[#e5eeff] text-xs font-mono">watcher-core-engine/auth-service</code>. A fix has been drafted and is ready for review.
-                      </p>
-                      <a href="#" className="text-sm font-semibold text-[#4b41e1] hover:underline flex items-center gap-1">
-                        View Drafted PR <ExternalLink className="w-3 h-3" />
-                      </a>
+                <div className="p-6 space-y-0 flex-1 overflow-y-auto">
+                  {recentPRs.length === 0 ? (
+                    <div className="text-center py-8 text-[#76777d] text-sm">
+                      No pull requests found. Connect a repository to get started.
                     </div>
-                  </div>
-                  
-                  <div className="h-px bg-[#e5eeff] w-full"></div>
-                  
-                  <div className="flex gap-4">
-                    <div className="w-1 bg-[#e5eeff] rounded-full shrink-0"></div>
-                    <div>
-                      <h4 className="font-semibold text-[#0b1c30] mb-1">Unused Dependencies Cleanup</h4>
-                      <p className="text-sm text-[#45464d]">
-                        Agent 'Zephyr' found 14 redundant npm packages in the UI Kit. Removing these will reduce bundle size by 12%.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Agent Live Streams */}
-              <div className="bg-[#0b1c30] rounded-md shadow-[0px_4px_20px_rgba(11,28,48,0.08)] flex flex-col overflow-hidden text-[#bec6e0] font-mono text-xs">
-                <div className="p-4 border-b border-[#213145] flex items-center gap-2 text-white">
-                  <Bot className="w-4 h-4" />
-                  <h3 className="font-bold font-sans text-sm tracking-wide">Agent Live Streams</h3>
-                </div>
-                
-                <div className="p-4 space-y-3 overflow-y-auto flex-1">
-                  {recentPRs.slice(0, 5).map((pr, idx) => (
-                    <div key={idx} className="flex items-start gap-3">
-                      <span className="text-[#45464d] shrink-0">[{new Date().toISOString().substring(11, 19)}]</span>
-                      <span className="text-[#10b981] font-bold shrink-0">AGENT/TITAN</span>
-                      <span className="text-[#bec6e0]">Creating PR: {pr.title} in {pr.repo}...</span>
-                    </div>
-                  ))}
-                  {recentPRs.length === 0 && (
-                    <>
-                      <div className="flex items-start gap-3">
-                        <span className="text-[#45464d] shrink-0">[14:02:11]</span>
-                        <span className="text-[#10b981] font-bold shrink-0">AGENT/ZEPHYR</span>
-                        <span className="text-[#bec6e0]">Scanning watcher-ui-kit...</span>
+                  ) : (
+                    recentPRs.map((pr, idx) => (
+                      <div key={pr.id}>
+                        <div className="flex gap-4 py-4">
+                          <div className={`w-1 rounded-full shrink-0 ${pr.status === 'merged' ? 'bg-[#8b5cf6]' : pr.status === 'pending' ? 'bg-[#4b41e1]' : 'bg-[#c6c6cd]'}`}></div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="min-w-0">
+                                <h4 className="font-semibold text-[#0b1c30] mb-1 truncate">{pr.title}</h4>
+                                <p className="text-sm text-[#45464d] mb-2">
+                                  <code className="bg-[#f8f9ff] text-[#0b1c30] px-1.5 py-0.5 rounded border border-[#e5eeff] text-xs font-mono">{pr.repo}</code>
+                                  <span className="ml-2 text-[#76777d]">· {pr.created}</span>
+                                </p>
+                              </div>
+                              <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase ${
+                                pr.status === 'merged' ? 'bg-[#ede9fe] text-[#6d28d9]' : 
+                                pr.status === 'pending' ? 'bg-[#dbeafe] text-[#1e40af]' : 
+                                'bg-[#f3f4f6] text-[#6b7280]'
+                              }`}>
+                                {pr.status}
+                              </span>
+                            </div>
+                            {pr.url && (
+                              <a href={pr.url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-[#4b41e1] hover:underline flex items-center gap-1">
+                                View PR <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                        {idx < recentPRs.length - 1 && <div className="h-px bg-[#e5eeff] w-full"></div>}
                       </div>
-                      <div className="flex items-start gap-3">
-                        <span className="text-[#45464d] shrink-0">[14:02:15]</span>
-                        <span className="text-[#10b981] font-bold shrink-0">AGENT/TITAN</span>
-                        <span className="text-[#bec6e0]">Resolving vulnerability CVE-2024-33...</span>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <span className="text-[#45464d] shrink-0">[14:02:18]</span>
-                        <span className="text-[#4b41e1] font-bold shrink-0">CORE/ENGINE</span>
-                        <span className="text-[#bec6e0]">Triggering autonomous CI pipeline #829</span>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <span className="text-[#45464d] shrink-0">[14:02:22]</span>
-                        <span className="text-[#10b981] font-bold shrink-0">AGENT/ZEPHYR</span>
-                        <span className="text-[#bec6e0]">Analysis complete. 0 critical errors found.</span>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <span className="text-[#45464d] shrink-0">[14:02:25]</span>
-                        <span className="text-[#10b981] font-bold shrink-0">AGENT/TITAN</span>
-                        <span className="text-[#bec6e0]">Pushing branch 'fix/security-patch-v4'...</span>
-                      </div>
-                    </>
+                    ))
                   )}
-                </div>
-                
-                <div className="p-3 border-t border-[#213145] bg-[#131b2e] flex items-center justify-between text-[10px] font-sans font-bold tracking-widest uppercase">
-                  <span className="text-[#7c839b]">Agents Active: 4</span>
-                  <span className="text-[#10b981]">All Systems Nominal</span>
                 </div>
               </div>
 

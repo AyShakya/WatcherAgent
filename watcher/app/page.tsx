@@ -65,7 +65,7 @@ export default async function Page() {
               Get Started <ArrowRight className="w-4 h-4" />
             </Button>
           </Link>
-          <Button variant="outline" className="border-[#c6c6cd] text-[#0b1c30] hover:bg-[#f8f9ff] h-12 px-8 text-base font-medium rounded-md flex items-center gap-2">
+          <Button className="bg-[#0b1c30] hover:bg-[#131b2e] text-white h-12 px-8 text-base font-medium rounded-md flex items-center gap-2">
             <Play className="w-4 h-4" />
             Watch Demo
           </Button>
