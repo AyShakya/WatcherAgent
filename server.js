@@ -26,6 +26,23 @@ const app = express();
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
+const INTERNAL_TOKEN = process.env.INTERNAL_CALLBACK_SECRET;
+
+if (!INTERNAL_TOKEN) {
+  console.error('❌ INTERNAL_CALLBACK_SECRET is not set. /internal/discord-approve is disabled.');
+  process.exit(1);
+}
+
+function requireInternalToken(req, res, next) {
+  const token = req.headers['x-internal-token'];
+
+  if (!token || token !== INTERNAL_TOKEN) {
+    console.warn(`⚠️ Unauthorized attempt on /internal/discord-approve from ${req.ip}`);
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  next();
+}
 
 function validate(schema, data, label) {
   const result = schema.safeParse(data);
@@ -78,7 +95,7 @@ app.post('/webhook', async (req, res) => {
  * DISCORD APPROVAL CALLBACK
  * Triggered when a human clicks "Accept & Fix".
  */
-app.post('/internal/discord-approve', async (req, res) => {
+app.post('/internal/discord-approve', requireInternalToken, async (req, res) => {
   const { incident_id, approver } = req.body;
   console.log(`📩 Received internal approval for incident ${incident_id} from ${approver}`);
   
@@ -96,14 +113,33 @@ app.post('/internal/discord-approve', async (req, res) => {
     const fix = validate(T4Out, await runFixerNode(incident), 'Node4 output');
     const learned = validate(T5Out, await runMemoryNode(fix), 'Node5 output');
 
-    if (fix.pr_status === 'FAILED') {
-      console.error(`❌ Fix execution failed: ${fix.error}`);
-    } else {
-      console.log(`🚀 Fix deployed successfully: ${learned.pr_url}`);
+    await removeIncident(incident_id);
+
+    if (fix.pr_status === 'FAILED' || fix.pr_status === 'FAILED_NO_CODE') {
+      console.error(`❌ Fix execution failed: ${fix.error || fix.pr_status}`);
+      return res.status(500).json({
+        status: 'failed',
+        reason: fix.pr_status,
+        error: fix.error || 'PR creation failed',
+        incident_id
+      });
     }
 
-    await removeIncident(incident_id);
-    res.json({ status: 'success', pr: learned.pr_url, error: fix.error });
+    if (fix.pr_status === 'FAILED_INVALID_PATH') {
+      console.error(`❌ Fix execution failed: ${fix.pr_status}`);
+      return res.status(422).json({
+        status: 'failed',
+        reason: 'AI could not locate the file to fix',
+        incident_id
+      });
+    }
+
+    console.log(`🚀 Fix deployed successfully: ${learned.pr_url}`);
+    return res.status(200).json({
+      status: 'success',
+      pr: learned.pr_url,
+      incident_id
+    });
   } catch (error) {
     console.error('❌ Fix Execution Pipeline Crashed:', error.message);
     res.status(500).json({ error: 'Failed to deploy fix' });
