@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Eye, AlertCircle, GitPullRequest, CheckCircle, Zap, Shield, Github } from "lucide-react";
+import { ArrowRight, Eye, Github, Play, CheckCircle2, Shield, Zap, Search, Server } from "lucide-react";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 
@@ -10,373 +10,304 @@ export default async function Page() {
   });
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-hidden">
+    <div className="min-h-screen bg-white text-[#0b1c30] font-sans selection:bg-[#4b41e1]/20">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-              <Eye className="w-5 h-5 text-white" />
+      <nav className="border-b border-[#e5eeff] bg-white relative z-50">
+        <div className="max-w-[1440px] mx-auto px-6 lg:px-12 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-10">
+            <Link href="/" className="flex items-center gap-2">
+              <Eye className="w-5 h-5 text-[#4b41e1]" />
+              <span className="text-xl font-bold tracking-tight">Watcher</span>
+            </Link>
+            <div className="hidden md:flex items-center gap-6">
+              <a href="#solutions" className="text-sm font-medium text-[#45464d] hover:text-[#0b1c30] transition-colors">Solutions</a>
+              <a href="#documentation" className="text-sm font-medium text-[#45464d] hover:text-[#0b1c30] transition-colors">Documentation</a>
+              <a href="#pricing" className="text-sm font-medium text-[#45464d] hover:text-[#0b1c30] transition-colors">Pricing</a>
+              <a href="#enterprise" className="text-sm font-medium text-[#45464d] hover:text-[#0b1c30] transition-colors">Enterprise</a>
             </div>
-            <span className="text-xl font-bold">Watcher</span>
-          </div>
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition">How it Works</a>
-            <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition">Features</a>
-            <a href="/pricing" className="text-sm text-muted-foreground hover:text-foreground transition">Pricing</a>
           </div>
           <div className="flex items-center gap-4">
             {session ? (
               <Link href="/dashboard">
-                <Button variant="ghost" className="text-sm">Dashboard</Button>
+                <Button variant="ghost" className="text-sm font-medium text-[#45464d] hover:text-[#0b1c30]">Dashboard</Button>
               </Link>
             ) : (
               <Link href="/sign-in">
-                <Button variant="ghost" className="text-sm">Sign In</Button>
+                <Button variant="ghost" className="text-sm font-medium text-[#45464d] hover:text-[#0b1c30]">Sign In</Button>
               </Link>
             )}
-            <Button className="bg-primary hover:bg-primary/90 text-white text-sm">Connect GitHub</Button>
+            <Link href="/sign-in">
+              <Button className="bg-[#0b1c30] hover:bg-[#131b2e] text-white text-sm font-medium h-9 px-4 rounded-md">
+                Get Started
+              </Button>
+            </Link>
           </div>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        {/* Gradient blur backgrounds */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/20 rounded-full blur-3xl opacity-40"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-accent/20 rounded-full blur-3xl opacity-40"></div>
+      <section className="pt-24 pb-16 px-6 lg:px-12 text-center max-w-[1440px] mx-auto">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#eff4ff] text-[#4b41e1] rounded-full border border-[#dce9ff] mb-8">
+          <div className="w-2 h-2 rounded-full bg-[#4b41e1]"></div>
+          <span className="text-[10px] font-bold tracking-widest uppercase">Watcher V2.0</span>
         </div>
 
-        <div className="relative max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-secondary/10 border border-secondary/30 rounded-full mb-8">
-            <Eye className="w-4 h-4 text-accent" />
-            <span className="text-sm text-secondary">AI-powered code quality automation</span>
-          </div>
+        <h1 className="text-5xl sm:text-6xl lg:text-[72px] font-bold mb-6 tracking-tight leading-[1.1]">
+          Automated Engineering<br />for Modern Teams
+        </h1>
 
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary via-accent to-secondary">
-            Never Miss a Bug
-            <br />
-            in Your Repos
-          </h1>
+        <p className="text-lg text-[#45464d] max-w-2xl mx-auto mb-10 leading-relaxed">
+          Watcher monitors your repositories 24/7, detects technical debt and vulnerabilities, and raises precision Pull Requests before your team even notices the issue.
+        </p>
 
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto mb-10">
-            Watcher continuously monitors your GitHub repositories, detects errors with AI precision, and automatically creates pull requests with fixes. Code quality on autopilot.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <Button className="bg-primary hover:bg-primary/90 text-white px-8 py-6 text-lg flex items-center gap-2">
-              Connect with GitHub <ArrowRight className="w-5 h-5" />
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
+          <Link href="/sign-in">
+            <Button className="bg-[#0b1c30] hover:bg-[#131b2e] text-white h-12 px-8 text-base font-medium rounded-md flex items-center gap-2">
+              Get Started <ArrowRight className="w-4 h-4" />
             </Button>
-            <Button variant="outline" className="border-border hover:bg-muted px-8 py-6 text-lg flex items-center gap-2">
-              <Github className="w-5 h-5" />
-              View Demo
-            </Button>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-3xl mx-auto pt-8 border-t border-border">
-            <div>
-              <div className="text-3xl font-bold text-primary mb-2">10K+</div>
-              <div className="text-sm text-muted-foreground">Repos Watched</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-accent mb-2">1M+</div>
-              <div className="text-sm text-muted-foreground">Bugs Fixed</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-secondary mb-2">24/7</div>
-              <div className="text-sm text-muted-foreground">Continuous Monitoring</div>
-            </div>
-          </div>
+          </Link>
+          <Button variant="outline" className="border-[#c6c6cd] text-[#0b1c30] hover:bg-[#f8f9ff] h-12 px-8 text-base font-medium rounded-md flex items-center gap-2">
+            <Play className="w-4 h-4" />
+            Watch Demo
+          </Button>
         </div>
-      </section>
 
-      {/* How It Works */}
-      <section id="how-it-works" className="py-20 px-4 sm:px-6 lg:px-8 border-t border-border">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">How Watcher Works</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Four simple steps to automated bug detection and fixing
-            </p>
+        {/* Hero Image Mockup */}
+        <div className="relative mx-auto max-w-5xl rounded-xl border border-[#e5eeff] bg-[#0b1c30] shadow-[0px_20px_40px_rgba(11,28,48,0.1)] overflow-hidden">
+          <div className="h-10 bg-[#131b2e] border-b border-[#213145] flex items-center px-4 gap-2">
+            <div className="w-3 h-3 rounded-full bg-[#ef4444]"></div>
+            <div className="w-3 h-3 rounded-full bg-[#f59e0b]"></div>
+            <div className="w-3 h-3 rounded-full bg-[#10b981]"></div>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="p-8 rounded-xl border border-border bg-card/50 backdrop-blur-sm hover:border-primary/50 transition">
-              <div className="text-4xl font-bold text-primary/30 mb-4">01</div>
-              <Eye className="w-8 h-8 text-primary mb-4" />
-              <h3 className="text-xl font-bold mb-3">Watch</h3>
-              <p className="text-muted-foreground text-sm">
-                Connect your GitHub repos with one click. Watcher starts monitoring immediately.
-              </p>
+          <div className="p-8 pb-0 aspect-[16/9] flex flex-col">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-white mb-2">Powerful Features</h2>
+              <p className="text-[#7c839b]">Everything you need for automated code quality and security</p>
             </div>
-
-            <div className="p-8 rounded-xl border border-border bg-card/50 backdrop-blur-sm hover:border-accent/50 transition">
-              <div className="text-4xl font-bold text-accent/30 mb-4">02</div>
-              <AlertCircle className="w-8 h-8 text-accent mb-4" />
-              <h3 className="text-xl font-bold mb-3">Detect</h3>
-              <p className="text-muted-foreground text-sm">
-                AI analyzes code for bugs, vulnerabilities, and quality issues in real-time.
-              </p>
-            </div>
-
-            <div className="p-8 rounded-xl border border-border bg-card/50 backdrop-blur-sm hover:border-secondary/50 transition">
-              <div className="text-4xl font-bold text-secondary/30 mb-4">03</div>
-              <Zap className="w-8 h-8 text-secondary mb-4" />
-              <h3 className="text-xl font-bold mb-3">Fix</h3>
-              <p className="text-muted-foreground text-sm">
-                Intelligent solutions are generated and applied to fix the detected issues.
-              </p>
-            </div>
-
-            <div className="p-8 rounded-xl border border-border bg-card/50 backdrop-blur-sm hover:border-primary/50 transition">
-              <div className="text-4xl font-bold text-primary/30 mb-4">04</div>
-              <GitPullRequest className="w-8 h-8 text-primary mb-4" />
-              <h3 className="text-xl font-bold mb-3">Review</h3>
-              <p className="text-muted-foreground text-sm">
-                Pull requests are created automatically for your team to review and merge.
-              </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-[#131b2e] border border-[#213145] rounded-lg p-6">
+                <div className="w-10 h-10 rounded bg-[#213145] flex items-center justify-center mb-4"><Search className="w-5 h-5 text-[#4b41e1]" /></div>
+                <h3 className="text-white font-bold mb-2">24/7 Monitoring</h3>
+                <div className="h-2 bg-[#213145] rounded mb-2 w-3/4"></div>
+                <div className="h-2 bg-[#213145] rounded w-1/2"></div>
+              </div>
+              <div className="bg-[#131b2e] border border-[#213145] rounded-lg p-6">
+                <div className="w-10 h-10 rounded bg-[#213145] flex items-center justify-center mb-4"><Shield className="w-5 h-5 text-[#10b981]" /></div>
+                <h3 className="text-white font-bold mb-2">Security First</h3>
+                <div className="h-2 bg-[#213145] rounded mb-2 w-5/6"></div>
+                <div className="h-2 bg-[#213145] rounded w-2/3"></div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 border-t border-border">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Powerful Features</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Everything you need for automated code quality and security
+      <section className="py-24 px-6 lg:px-12 bg-[#f8f9ff]">
+        <div className="max-w-[1440px] mx-auto text-center mb-16">
+          <h2 className="text-[32px] md:text-[40px] font-bold mb-4 tracking-tight">Engineered for Reliability</h2>
+          <p className="text-[#45464d] text-lg max-w-2xl mx-auto">
+            From real-time monitoring to automated remediation, Watcher handles the repetitive parts of engineering.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-[1440px] mx-auto">
+          <div className="bg-white p-8 rounded-xl border border-[#e5eeff] shadow-[0px_4px_20px_rgba(11,28,48,0.02)]">
+            <div className="w-12 h-12 bg-[#eff4ff] rounded-lg flex items-center justify-center mb-6">
+              <Search className="w-6 h-6 text-[#4b41e1]" />
+            </div>
+            <h3 className="text-xl font-bold mb-3">Continuous Monitoring</h3>
+            <p className="text-[#45464d] mb-6">
+              24/7 surveillance across all repositories. Watcher identifies patterns that lead to production failures before they occur.
             </p>
+            <ul className="space-y-3 text-sm font-medium text-[#0b1c30]">
+              <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[#4b41e1]" /> Real-time alerting</li>
+              <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[#4b41e1]" /> Pattern recognition</li>
+            </ul>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="p-8 rounded-xl border border-border bg-card/50 backdrop-blur-sm hover:border-primary/50 transition">
-              <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center mb-4">
-                <Eye className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">24/7 Monitoring</h3>
-              <p className="text-muted-foreground">
-                Continuously watches your repositories for errors, bugs, and code quality issues around the clock.
-              </p>
+          <div className="bg-white p-8 rounded-xl border border-[#e5eeff] shadow-[0px_4px_20px_rgba(11,28,48,0.02)]">
+            <div className="w-12 h-12 bg-[#eff4ff] rounded-lg flex items-center justify-center mb-6">
+              <Zap className="w-6 h-6 text-[#4b41e1]" />
             </div>
+            <h3 className="text-xl font-bold mb-3">Automated Remediation</h3>
+            <p className="text-[#45464d] mb-6">
+              When a bug is found, Watcher doesn't just alert—it fixes. Automated PRs with detailed explanations for every change.
+            </p>
+            <ul className="space-y-3 text-sm font-medium text-[#0b1c30]">
+              <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[#4b41e1]" /> Smart bug detection</li>
+              <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[#4b41e1]" /> Auto-generated PRs</li>
+            </ul>
+          </div>
 
-            {/* Feature 2 */}
-            <div className="p-8 rounded-xl border border-border bg-card/50 backdrop-blur-sm hover:border-accent/50 transition">
-              <div className="w-12 h-12 bg-gradient-to-br from-accent to-primary rounded-lg flex items-center justify-center mb-4">
-                <AlertCircle className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Smart Detection</h3>
-              <p className="text-muted-foreground">
-                AI-powered analysis catches null references, type errors, logic bugs, and security vulnerabilities instantly.
-              </p>
+          <div className="bg-white p-8 rounded-xl border border-[#e5eeff] shadow-[0px_4px_20px_rgba(11,28,48,0.02)]">
+            <div className="w-12 h-12 bg-[#eff4ff] rounded-lg flex items-center justify-center mb-6">
+              <Shield className="w-6 h-6 text-[#4b41e1]" />
             </div>
-
-            {/* Feature 3 */}
-            <div className="p-8 rounded-xl border border-border bg-card/50 backdrop-blur-sm hover:border-secondary/50 transition">
-              <div className="w-12 h-12 bg-gradient-to-br from-secondary to-accent rounded-lg flex items-center justify-center mb-4">
-                <Zap className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Automatic Fixes</h3>
-              <p className="text-muted-foreground">
-                Generates intelligent solutions and applies fixes automatically with detailed explanations.
-              </p>
-            </div>
-
-            {/* Feature 4 */}
-            <div className="p-8 rounded-xl border border-border bg-card/50 backdrop-blur-sm hover:border-primary/50 transition">
-              <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center mb-4">
-                <GitPullRequest className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Auto Pull Requests</h3>
-              <p className="text-muted-foreground">
-                Creates well-formed PRs with test results, diffs, and context. Your team reviews and merges.
-              </p>
-            </div>
-
-            {/* Feature 5 */}
-            <div className="p-8 rounded-xl border border-border bg-card/50 backdrop-blur-sm hover:border-accent/50 transition">
-              <div className="w-12 h-12 bg-gradient-to-br from-accent to-primary rounded-lg flex items-center justify-center mb-4">
-                <Shield className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">Security First</h3>
-              <p className="text-muted-foreground">
-                Detects security vulnerabilities and creates PRs to fix them before they become issues.
-              </p>
-            </div>
-
-            {/* Feature 6 */}
-            <div className="p-8 rounded-xl border border-border bg-card/50 backdrop-blur-sm hover:border-secondary/50 transition">
-              <div className="w-12 h-12 bg-gradient-to-br from-secondary to-accent rounded-lg flex items-center justify-center mb-4">
-                <Github className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">GitHub Native</h3>
-              <p className="text-muted-foreground">
-                Deep GitHub integration with no additional setup. Works with your existing workflows.
-              </p>
-            </div>
+            <h3 className="text-xl font-bold mb-3">Enterprise Security</h3>
+            <p className="text-[#45464d] mb-6">
+              Stay ahead of CVEs and structural vulnerabilities. Built-in guard ensures your system design remains resilient.
+            </p>
+            <ul className="space-y-3 text-sm font-medium text-[#0b1c30]">
+              <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[#4b41e1]" /> Vulnerability patching</li>
+              <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[#4b41e1]" /> Architecture enforcement</li>
+            </ul>
           </div>
         </div>
       </section>
 
-      {/* Use Cases Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 border-t border-border">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Perfect For</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Teams that care about code quality and want to ship faster
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="p-8 rounded-xl border border-border bg-gradient-to-br from-primary/10 to-accent/10 backdrop-blur-sm">
-              <h3 className="text-2xl font-bold mb-3">Open Source Projects</h3>
-              <p className="text-muted-foreground mb-4">
-                Maintain code quality and security across your open source repositories. Keep contributors happy with automated quality checks.
-              </p>
-              <div className="flex items-center gap-2 text-primary hover:text-accent transition cursor-pointer">
-                <span className="font-semibold">Learn more</span>
-                <ArrowRight className="w-4 h-4" />
+      {/* How It Works Section */}
+      <section className="py-24 px-6 lg:px-12 max-w-[1440px] mx-auto">
+        <h2 className="text-[32px] md:text-[40px] font-bold mb-16 tracking-tight">How Watcher Works</h2>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div className="space-y-8">
+            <div className="flex gap-4">
+              <div className="w-10 h-10 rounded bg-[#0b1c30] text-white flex items-center justify-center font-bold shrink-0">1</div>
+              <div>
+                <h3 className="text-xl font-bold mb-2">Watch</h3>
+                <p className="text-[#45464d]">Connect your GitHub organization. Watcher instantly indexes your code and understands your architecture.</p>
               </div>
             </div>
-
-            <div className="p-8 rounded-xl border border-border bg-gradient-to-br from-accent/10 to-secondary/10 backdrop-blur-sm">
-              <h3 className="text-2xl font-bold mb-3">Enterprise Teams</h3>
-              <p className="text-muted-foreground mb-4">
-                Ensure code quality standards across your organization. Reduce security vulnerabilities and technical debt automatically.
-              </p>
-              <div className="flex items-center gap-2 text-accent hover:text-primary transition cursor-pointer">
-                <span className="font-semibold">Learn more</span>
-                <ArrowRight className="w-4 h-4" />
+            
+            <div className="flex gap-4">
+              <div className="w-10 h-10 rounded bg-[#0b1c30] text-white flex items-center justify-center font-bold shrink-0">2</div>
+              <div>
+                <h3 className="text-xl font-bold mb-2">Detect</h3>
+                <p className="text-[#45464d]">Using semantic analysis, Watcher identifies security flaws, performance bottlenecks, and logical errors.</p>
               </div>
             </div>
-
-            <div className="p-8 rounded-xl border border-border bg-gradient-to-br from-secondary/10 to-primary/10 backdrop-blur-sm">
-              <h3 className="text-2xl font-bold mb-3">Startups & Growth Teams</h3>
-              <p className="text-muted-foreground mb-4">
-                Ship faster with confidence. Let Watcher catch bugs before they reach production while your team focuses on features.
-              </p>
-              <div className="flex items-center gap-2 text-secondary hover:text-accent transition cursor-pointer">
-                <span className="font-semibold">Learn more</span>
-                <ArrowRight className="w-4 h-4" />
+            
+            <div className="flex gap-4">
+              <div className="w-10 h-10 rounded bg-[#0b1c30] text-white flex items-center justify-center font-bold shrink-0">3</div>
+              <div>
+                <h3 className="text-xl font-bold mb-2">Fix</h3>
+                <p className="text-[#45464d]">Watcher develops a solution, tests it in a virtual sandbox, and creates a polished Pull Request.</p>
               </div>
             </div>
-
-            <div className="p-8 rounded-xl border border-border bg-gradient-to-br from-primary/10 to-secondary/10 backdrop-blur-sm">
-              <h3 className="text-2xl font-bold mb-3">Security-First Organizations</h3>
-              <p className="text-muted-foreground mb-4">
-                Get continuous vulnerability scanning and automated fixes. Never let security issues slip through to production.
-              </p>
-              <div className="flex items-center gap-2 text-primary hover:text-secondary transition cursor-pointer">
-                <span className="font-semibold">Learn more</span>
-                <ArrowRight className="w-4 h-4" />
+            
+            <div className="flex gap-4">
+              <div className="w-10 h-10 rounded bg-[#0b1c30] text-white flex items-center justify-center font-bold shrink-0">4</div>
+              <div>
+                <h3 className="text-xl font-bold mb-2">Review</h3>
+                <p className="text-[#45464d]">Your team reviews the PR. Approve to merge, or provide feedback for Watcher to refine the fix.</p>
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Social Proof */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 border-t border-border">
-        <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-12">Trusted by Developers</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-8 items-center">
-            {['React', 'Vue', 'Next.js', 'Svelte', 'TypeScript', 'Open Source'].map((name) => (
-              <div key={name} className="flex items-center justify-center">
-                <div className="w-24 h-12 bg-muted/30 rounded-lg flex items-center justify-center border border-border hover:border-primary/30 transition">
-                  <div className="text-center">
-                    <div className="text-sm font-semibold text-muted-foreground">{name}</div>
-                  </div>
+          
+          <div className="bg-[#0b1c30] rounded-xl p-8 aspect-square flex items-center justify-center border border-[#213145] shadow-2xl">
+            {/* Minimal mockup illustration */}
+            <div className="w-full max-w-sm bg-[#131b2e] rounded-lg border border-[#213145] p-6 shadow-2xl">
+              <div className="flex justify-between items-center mb-6">
+                <div className="h-4 w-24 bg-[#213145] rounded"></div>
+                <div className="px-2 py-1 rounded bg-[#4b41e1]/20 text-[#4b41e1] text-[10px] font-bold">PR CREATED</div>
+              </div>
+              <div className="space-y-4">
+                <div className="h-2 w-full bg-[#213145] rounded"></div>
+                <div className="h-2 w-5/6 bg-[#213145] rounded"></div>
+                <div className="h-2 w-4/6 bg-[#213145] rounded"></div>
+                <div className="mt-6 flex justify-end gap-2">
+                  <div className="h-8 w-20 bg-[#213145] rounded"></div>
+                  <div className="h-8 w-20 bg-[#10b981] rounded"></div>
                 </div>
               </div>
-            ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Deep GitHub Integration */}
+      <section className="bg-[#0b1c30] text-white py-24 px-6 lg:px-12">
+        <div className="max-w-[1440px] mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-[32px] md:text-[40px] font-bold mb-4 tracking-tight">Deep GitHub Integration</h2>
+            <p className="text-[#7c839b] text-lg max-w-2xl mx-auto">
+              Works natively with your existing tools. No complex configuration required.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <div className="inline-block bg-[#131b2e] border border-[#213145] rounded-md px-3 py-1.5 mb-6 font-mono text-sm text-[#bec6e0]">
+                $ npx install @watcher-ai/cli
+              </div>
+              <h3 className="text-2xl font-bold mb-4">Local Environment Support</h3>
+              <p className="text-[#bec6e0] mb-8 leading-relaxed">
+                Run Watcher locally to audit code before pushing. Fully compatible with GitHub Actions, GitLab CI, and custom local environments.
+              </p>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-[#131b2e] border border-[#213145] rounded-lg p-4 flex items-center gap-3">
+                  <Github className="w-5 h-5 text-white" />
+                  <span className="font-semibold text-sm">CI/CD Ready</span>
+                </div>
+                <div className="bg-[#131b2e] border border-[#213145] rounded-lg p-4 flex items-center gap-3">
+                  <Server className="w-5 h-5 text-[#4b41e1]" />
+                  <span className="font-semibold text-sm">SOC2 Compliant</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-[#131b2e] rounded-xl p-8 border border-[#213145] shadow-2xl relative overflow-hidden text-center aspect-video flex flex-col justify-center">
+              <h3 className="text-4xl font-bold mb-2 text-[#4b41e1]">Never Miss a Bug</h3>
+              <h3 className="text-4xl font-bold text-white mb-6">In Your Repos</h3>
+              <p className="text-[#7c839b] max-w-md mx-auto mb-8 text-sm">Watcher is actively monitoring over 10K repositories and resolving issues before they impact production.</p>
+              <div className="flex justify-center gap-8">
+                <div>
+                  <div className="text-xl font-bold text-white">10K+</div>
+                  <div className="text-[10px] text-[#7c839b] font-bold tracking-widest uppercase">Repos</div>
+                </div>
+                <div>
+                  <div className="text-xl font-bold text-white">1M+</div>
+                  <div className="text-[10px] text-[#7c839b] font-bold tracking-widest uppercase">Fixes</div>
+                </div>
+                <div>
+                  <div className="text-xl font-bold text-white">24/7</div>
+                  <div className="text-[10px] text-[#7c839b] font-bold tracking-widest uppercase">Active</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center relative">
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/20 rounded-full blur-3xl opacity-40"></div>
-            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-accent/20 rounded-full blur-3xl opacity-40"></div>
-          </div>
+      <section className="py-24 px-6 lg:px-12 bg-[#f8f9ff]">
+        <div className="max-w-[1440px] mx-auto text-center">
+          <h2 className="text-[32px] md:text-[40px] font-bold mb-6 tracking-tight">Ready to automate your code quality?</h2>
+          <p className="text-[#45464d] text-lg max-w-2xl mx-auto mb-10">
+            Join over 500 engineering teams who have automated their maintenance lifecycle with Watcher.
+          </p>
 
-          <div className="relative">
-            <h2 className="text-4xl sm:text-5xl font-bold mb-6">Ready to Fix Bugs Automatically?</h2>
-            <p className="text-lg text-muted-foreground mb-8">
-              Start watching your repos today. No credit card required.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button className="bg-primary hover:bg-primary/90 text-white px-8 py-6 text-lg w-full sm:w-auto flex items-center justify-center gap-2">
-                Connect GitHub Now <Github className="w-5 h-5" />
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link href="/sign-in">
+              <Button className="bg-[#000000] hover:bg-[#1a1c1c] text-white h-12 px-8 text-base font-medium rounded-md">
+                Start Free Trial
               </Button>
-              <Button variant="outline" className="border-border hover:bg-muted px-8 py-6 text-lg w-full sm:w-auto">
-                Watch Demo
-              </Button>
-            </div>
-
-            <p className="text-sm text-muted-foreground mt-6">
-              First 5 repos are free. Always. No payment required.
-            </p>
+            </Link>
+            <Button variant="outline" className="border-[#c6c6cd] text-[#0b1c30] hover:bg-white h-12 px-8 text-base font-medium rounded-md bg-white">
+              Talk to Sales
+            </Button>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-6 h-6 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-                  <Eye className="w-4 h-4 text-white" />
-                </div>
-                <span className="font-bold">Watcher</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Automated code quality and bug detection for GitHub.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Product</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#features" className="hover:text-foreground transition">Features</a></li>
-                <li><a href="#" className="hover:text-foreground transition">Pricing</a></li>
-                <li><a href="#" className="hover:text-foreground transition">Docs</a></li>
-                <li><a href="#" className="hover:text-foreground transition">API</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition">Blog</a></li>
-                <li><a href="#" className="hover:text-foreground transition">GitHub</a></li>
-                <li><a href="#" className="hover:text-foreground transition">Contact</a></li>
-                <li><a href="#" className="hover:text-foreground transition">Support</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Legal</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition">Privacy</a></li>
-                <li><a href="#" className="hover:text-foreground transition">Terms</a></li>
-                <li><a href="#" className="hover:text-foreground transition">Security</a></li>
-              </ul>
-            </div>
+      <footer className="border-t border-[#e5eeff] py-12 px-6 lg:px-12 bg-white">
+        <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+          <div>
+            <Link href="/" className="flex items-center gap-2 mb-2">
+              <Eye className="w-4 h-4 text-[#4b41e1]" />
+              <span className="font-bold tracking-tight">Watcher</span>
+            </Link>
+            <p className="text-xs text-[#76777d]">© 2026 WATCHER. AI ENGINEERED FOR PRECISION.</p>
           </div>
-          <div className="border-t border-border pt-8 flex flex-col sm:flex-row items-center justify-between">
-            <p className="text-sm text-muted-foreground">© 2026 Watcher. All rights reserved.</p>
-            <div className="flex items-center gap-6 mt-4 sm:mt-0">
-              <a href="#" className="text-muted-foreground hover:text-foreground transition text-sm">Twitter</a>
-              <a href="#" className="text-muted-foreground hover:text-foreground transition text-sm">GitHub</a>
-              <a href="#" className="text-muted-foreground hover:text-foreground transition text-sm">Discord</a>
-            </div>
+          
+          <div className="flex gap-6 text-[10px] tracking-widest font-bold uppercase text-[#76777d]">
+            <a href="#" className="hover:text-[#0b1c30]">Terms of Service</a>
+            <a href="#" className="hover:text-[#0b1c30]">Privacy Policy</a>
+            <a href="#" className="hover:text-[#0b1c30]">Security</a>
+            <a href="#" className="hover:text-[#0b1c30]">System Status</a>
           </div>
         </div>
       </footer>
