@@ -136,7 +136,17 @@ ERROR: ${incidentData.raw_error_message || incidentData.reasoning}`,
     });
     const rankedPaths = rankedPathsRaw.split('\n').map(p => p.trim()).filter(p => p && allPaths.includes(p)).slice(0, 5);
     
-    console.log(`🎯 AI selected top candidates for audit: ${rankedPaths.join(', ')}`);
+    console.log(`🎯 AI selected top candidates for audit: ${rankedPaths.join(', ') || '(none)'}`);
+
+    if (rankedPaths.length === 0) {
+      console.warn('⚠️ No candidate files found in repo for this incident. Skipping code fix.');
+      return {
+        ...incidentData,
+        pr_status: 'FAILED_INVALID_PATH',
+        ai_fix_suggestion: { file_path: null, reasoning: 'No matching files found in repository.' },
+        fix_initiated_at: new Date().toISOString(),
+      };
+    }
 
     // Phase 3: Deep Audit & Fix
     console.log('🕵️ Phase 3: Auditing code and generating fix...');
@@ -286,6 +296,6 @@ ${aiFix.diff ? '' : '_Full file replacement — see file changes tab for complet
 
   } catch (error) {
     console.error('❌ GitHub API Error:', error.message);
-    return { ...incidentData, pr_status: 'FAILED', error: error.message };
+    return { ...incidentData, pr_status: 'FAILED', error: error.message, fix_initiated_at: new Date().toISOString() };
   }
 }
