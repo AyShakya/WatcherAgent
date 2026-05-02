@@ -5,11 +5,16 @@ import { z } from 'zod';
 
 const RunbookSchema = z.object({
   title:       z.string(),
-  url:         z.string(),
   steps:       z.array(z.string()),
-  lastUpdated: z.string(),
-  owner:       z.string(),
-  source:      z.string().optional(),
+  source:      z.string(),
+  relevance:   z.number().min(0).max(1).optional(),
+  fix_diff:    z.string().nullable().optional(),
+  root_cause:  z.string().nullable().optional(),
+  pr_url:      z.string().nullable().optional(),
+  incident_id: z.string().optional(),
+  url:         z.string().optional(),
+  lastUpdated: z.string().optional(),
+  owner:       z.string().optional(),
 });
 
 export const InputSchema = z.object({
