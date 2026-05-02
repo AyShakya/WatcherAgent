@@ -1,10 +1,18 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { signOut } from "@/lib/auth-client";
+import { signOut, useSession } from "@/lib/auth-client";
 import { getInstances, getBugsData, getBugTypesData, getRecentPRs, getDashboardStats } from "@/actions/dashboard";
 import {
   Eye,
@@ -37,6 +45,8 @@ export default function Dashboard() {
   const [bugTypesData, setBugTypesData] = useState<any[]>([]);
   const [recentPRs, setRecentPRs] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalBugs: 0, totalPRs: 0, fixedBugs: 0 });
+  const { data: session } = useSession();
+  const userInitial = session?.user?.email ? session.user.email.charAt(0).toUpperCase() : "?";
 
   useEffect(() => {
     Promise.all([
@@ -107,6 +117,37 @@ export default function Dashboard() {
               New Pipeline
             </button>
           </Link>
+          <Dialog>
+            <DialogTrigger asChild>
+              <button
+                className="w-full mt-4 py-2.5 bg-[#131b2e] hover:bg-[#0b1c30] text-white text-xs font-bold tracking-widest uppercase rounded-md transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                Sign Out
+              </button>
+            </DialogTrigger>
+            <DialogContent className="bg-white border border-[#e5eeff] rounded-lg shadow-[0px_4px_20px_rgba(11,28,48,0.08)] max-w-sm">
+              <DialogHeader>
+                <DialogTitle className="text-[#0b1c30] text-lg font-bold">Are you sure you want to log out?</DialogTitle>
+                <DialogDescription className="text-[#45464d] text-sm mt-1">
+                  You will be redirected to the sign-in page and will need to authenticate again to access your dashboard.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex justify-end gap-3 mt-6">
+                <DialogTrigger asChild>
+                  <button className="px-4 py-2 rounded-md border border-[#c6c6cd] text-[#45464d] text-sm font-medium hover:bg-[#f8f9ff] transition-colors cursor-pointer">
+                    Cancel
+                  </button>
+                </DialogTrigger>
+                <button
+                  onClick={handleSignOut}
+                  className="px-4 py-2 rounded-md bg-[#131b2e] hover:bg-[#0b1c30] text-white text-sm font-medium transition-colors cursor-pointer"
+                >
+                  Log Out
+                </button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </aside>
 
@@ -137,8 +178,8 @@ export default function Dashboard() {
             <button className="hover:text-[#0b1c30] transition-colors"><Bell className="w-5 h-5" /></button>
             <button className="hover:text-[#0b1c30] transition-colors"><HelpCircle className="w-5 h-5" /></button>
             <button className="hover:text-[#0b1c30] transition-colors"><Settings className="w-5 h-5" /></button>
-            <div className="w-8 h-8 rounded-full bg-[#131b2e] flex items-center justify-center ml-2 border-2 border-white shadow-sm cursor-pointer" onClick={handleSignOut}>
-              <span className="text-white text-xs font-bold">JD</span>
+            <div className="w-8 h-8 rounded-full bg-[#131b2e] flex items-center justify-center ml-2 border-2 border-white shadow-sm">
+              <span className="text-white text-xs font-bold">{userInitial}</span>
             </div>
           </div>
         </header>

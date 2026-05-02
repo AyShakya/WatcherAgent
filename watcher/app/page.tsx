@@ -29,18 +29,17 @@ export default async function Page() {
           <div className="flex items-center gap-4">
             {session ? (
               <Link href="/dashboard">
-                <Button variant="ghost" className="text-sm font-medium text-[#45464d] hover:text-[#0b1c30]">Dashboard</Button>
+                <Button className="bg-[#0b1c30] hover:bg-[#131b2e] text-white text-sm font-medium h-9 px-4 rounded-md">
+                  Dashboard
+                </Button>
               </Link>
             ) : (
               <Link href="/sign-in">
-                <Button variant="ghost" className="text-sm font-medium text-[#45464d] hover:text-[#0b1c30]">Sign In</Button>
+                <Button className="bg-[#0b1c30] hover:bg-[#131b2e] text-white text-sm font-medium h-9 px-4 rounded-md">
+                  Get Started
+                </Button>
               </Link>
             )}
-            <Link href="/sign-in">
-              <Button className="bg-[#0b1c30] hover:bg-[#131b2e] text-white text-sm font-medium h-9 px-4 rounded-md">
-                Get Started
-              </Button>
-            </Link>
           </div>
         </div>
       </nav>
