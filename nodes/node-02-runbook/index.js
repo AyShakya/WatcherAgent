@@ -14,10 +14,14 @@ export async function fetchRunbook(input) {
   return {
     ...input,
     runbooks: results.map(r => ({
-      title: r.title,
-      steps: r.content.split('\n').map(step => step.trim()).filter(Boolean),
+      title: r.title || 'Historical Fix',
+      steps: r.steps || [],
+      fix_diff: r.fix_diff || null,
+      root_cause: r.root_cause || null,
+      pr_url: r.pr_url || null,
       source: r.source,
-      relevance: r.relevance
+      relevance: r.relevance,
+      incident_id: r.incident_id,
     })),
     runbook_retrieved_at: new Date().toISOString()
   };
