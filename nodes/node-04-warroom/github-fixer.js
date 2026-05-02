@@ -226,27 +226,25 @@ STEP 4 — VERIFY: List 2 edge cases your fix might introduce.
 
     const postmortemBody = `
 # 🛡️ Guardian Incident Postmortem: ${incidentData.incident_id}
-**Status:** ${fixApplied ? 'RESOLVED' : 'AWAITING_MANUAL_FIX'} (Automated Pipeline)
-
-## 🚨 Incident Summary
+## Incident summary
 - **Service:** ${incidentData.service}
 - **Severity:** ${incidentData.severity}
+- **Status:** ${fixApplied ? 'RESOLVED' : 'AWAITING_MANUAL_FIX'}
 
-## 🔍 Root Cause Analysis
+## Root cause
 ${incidentData.reasoning}
 
-## 🛠️ ${fixApplied ? 'Applied Code Fix' : 'Suggested Code Fix (Manual Needed)'}
+## Fix applied
 **File:** \`${aiFix.file_path || 'N/A'}\`
 **Reasoning:** ${aiFix.reasoning || 'N/A'}
-
+\`\`\`diff
+${(aiFix.diff || aiFix.new_content || 'No diff generated.').slice(0, 8000)}
 \`\`\`
-${aiFix.new_content || 'No technical fix generated.'}
-\`\`\`
+${aiFix.diff ? '' : '_Full file replacement — see file changes tab for complete diff._'}
 
-## ✅ Audit Trail
+## Audit trail
 - **Approver:** ${incidentData.hitl?.approver || 'Human-in-the-Loop'}
-- **Decision:** ACCEPTED
-- **PR Created At:** ${new Date().toISOString()}
+- **PR created:** ${new Date().toISOString()}
     `;
 
     await octokit.rest.repos.createOrUpdateFileContents({
