@@ -10,6 +10,11 @@ import { normalizeErrorSignature } from '../shared/normalize.js';
 dotenv.config();
 
 const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
+<<<<<<< HEAD
+const INDEX_NAME = process.env.PINECONE_INDEX_NAME || 'guardian-knowledge';
+
+const pc = new Pinecone({ apiKey: PINECONE_API_KEY });
+=======
 const INDEX_NAME = process.env.PINECONE_INDEX_NAME || 'watcher-knowledge';
 
 // Lazy-init: only create client if key is present to avoid crash on startup
@@ -19,6 +24,7 @@ function getPineconeClient() {
   if (!pc) pc = new Pinecone({ apiKey: PINECONE_API_KEY });
   return pc;
 }
+>>>>>>> e19f96c5ecd53a217f15a751e8cc1f73116861ff
 
 /**
  * Updates Pinecone RAG with the latest successful fix.
@@ -117,6 +123,15 @@ export async function updateAgentMemory(incidentData) {
   ];
 
   try {
+<<<<<<< HEAD
+    console.log(`🧠 Updating Pinecone Memory for ${incidentId} with ${chunks.length} chunks...`);
+
+    const index = pc.index(INDEX_NAME);
+    let successCount = 0;
+
+    for (const chunk of chunks) {
+      const embedding = await getEmbedding(chunk.embedText, pc);
+=======
     const pinecone = getPineconeClient();
     if (!pinecone) {
       console.warn('⚠️  PINECONE_API_KEY not set — skipping memory update.');
@@ -130,6 +145,7 @@ export async function updateAgentMemory(incidentData) {
 
     for (const chunk of chunks) {
       const embedding = await getEmbedding(chunk.embedText, pinecone);
+>>>>>>> e19f96c5ecd53a217f15a751e8cc1f73116861ff
       await index.upsert({
         records: [{
           id: chunk.id,

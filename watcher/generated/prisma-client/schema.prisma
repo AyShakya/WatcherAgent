@@ -112,5 +112,8 @@ model InstanceConfig {
   githubRepoOwner String?
   githubRepoName  String?
 
+  // Custom Prompt
+  prompt String? @db.Text
+
   @@map("instance_config")
 }

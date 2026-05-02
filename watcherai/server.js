@@ -18,13 +18,32 @@ import { OutputSchema as T5Out } from './nodes/node-05-narrator/schema.js';
 import { loginBot } from './nodes/node-03-hitl/discord-bot.js';
 
 // Services
+<<<<<<< HEAD
+import { saveIncident, getIncident, removeIncident } from './services/incident-store.js';
+=======
 import { saveIncident, getIncident, removeIncident, getAllIncidents } from './services/incident-store.js';
+>>>>>>> e19f96c5ecd53a217f15a751e8cc1f73116861ff
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
 
+<<<<<<< HEAD
+const PORT = process.env.PORT || 3000;
+const INTERNAL_TOKEN = process.env.INTERNAL_CALLBACK_SECRET;
+
+if (!INTERNAL_TOKEN) {
+  console.error('❌ INTERNAL_CALLBACK_SECRET is not set. /internal/discord-approve is disabled.');
+  process.exit(1);
+}
+
+function requireInternalToken(req, res, next) {
+  const token = req.headers['x-internal-token'];
+
+  if (!token || token !== INTERNAL_TOKEN) {
+    console.warn(`⚠️ Unauthorized attempt on /internal/discord-approve from ${req.ip}`);
+=======
 const PORT = process.env.PORT || 3001;
 const INTERNAL_TOKEN = process.env.INTERNAL_CALLBACK_SECRET;
 
@@ -39,6 +58,7 @@ function requireInternalToken(req, res, next) {
   const token = req.headers['x-internal-token'];
   if (!token || token !== INTERNAL_TOKEN) {
     console.warn(`⚠️ Unauthorized attempt on internal route from ${req.ip}`);
+>>>>>>> e19f96c5ecd53a217f15a751e8cc1f73116861ff
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
@@ -162,6 +182,8 @@ app.post('/internal/discord-approve', requireInternalToken, async (req, res) => 
   }
 });
 
+<<<<<<< HEAD
+=======
 /**
  * INCIDENTS API — consumed by the Watcher UI dashboard
  */
@@ -185,6 +207,7 @@ app.post('/internal/discord-ignore', requireInternalToken, async (req, res) => {
   res.json({ status: 'ignored', incident_id });
 });
 
+>>>>>>> e19f96c5ecd53a217f15a751e8cc1f73116861ff
 try {
   await loginBot();
 } catch (error) {

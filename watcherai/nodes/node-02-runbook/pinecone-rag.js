@@ -9,6 +9,13 @@ import { normalizeErrorSignature } from '../shared/normalize.js';
 dotenv.config();
 
 const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
+<<<<<<< HEAD
+const INDEX_NAME = process.env.PINECONE_INDEX_NAME || 'guardian-knowledge';
+
+const pc = new Pinecone({ apiKey: PINECONE_API_KEY });
+const SCORE_THRESHOLD = 0.87;
+
+=======
 const INDEX_NAME = process.env.PINECONE_INDEX_NAME || 'watcher-knowledge';
 const SCORE_THRESHOLD = 0.87;
 
@@ -20,26 +27,41 @@ function getPineconeClient() {
   return pc;
 }
 
+>>>>>>> e19f96c5ecd53a217f15a751e8cc1f73116861ff
 /**
  * Queries Pinecone for relevant runbooks and past fixes.
  */
 export async function searchRunbooks(service, errorReasoning) {
+<<<<<<< HEAD
+  if (!PINECONE_API_KEY) {
+    console.warn('⚠️ PINECONE_API_KEY not set. Using local knowledge fallback.');
+    return getLocalFallback(service);
+=======
   const pinecone = getPineconeClient();
 
   if (!pinecone) {
     console.warn('⚠️  PINECONE_API_KEY not set — using built-in runbook fallback.');
     return getLocalFallback(service, errorReasoning);
+>>>>>>> e19f96c5ecd53a217f15a751e8cc1f73116861ff
   }
 
   const normalizedQuery = normalizeErrorSignature(errorReasoning);
 
   try {
+<<<<<<< HEAD
+    const index = pc.index(INDEX_NAME);
+=======
     const index = pinecone.index(INDEX_NAME);
+>>>>>>> e19f96c5ecd53a217f15a751e8cc1f73116861ff
 
     console.log(`🔍 Querying Pinecone RAG for service ${service} using normalized error signature: "${normalizedQuery}"`);
 
     // 1. Generate embedding for the normalized error signature
+<<<<<<< HEAD
+    const queryEmbedding = await getEmbedding(normalizedQuery, pc);
+=======
     const queryEmbedding = await getEmbedding(normalizedQuery, pinecone);
+>>>>>>> e19f96c5ecd53a217f15a751e8cc1f73116861ff
 
     // 2. Search Pinecone
     const queryFilter = {
@@ -76,6 +98,29 @@ export async function searchRunbooks(service, errorReasoning) {
     return [];
 
   } catch (error) {
+<<<<<<< HEAD
+    console.error('❌ Pinecone RAG Search Error:', error);
+    return getLocalFallback(service);
+  }
+}
+
+function getLocalFallback(service) {
+  return [
+    {
+      title: 'Universal Emergency Procedure',
+      steps: [
+        'Check application logs.',
+        'Verify environment variables.',
+        'Escalate to service owner.'
+      ],
+      fix_diff: null,
+      root_cause: null,
+      pr_url: null,
+      source: 'LOCAL_FALLBACK',
+      relevance: 0.5
+    }
+  ];
+=======
     console.error('❌ Pinecone RAG Search Error:', error.message);
     return getLocalFallback(service, errorReasoning);
   }
@@ -178,4 +223,5 @@ function getLocalFallback(service, reasoning = '') {
     fix_diff: null, root_cause: null, pr_url: null,
     source: 'LOCAL_RUNBOOK', relevance: 0.60,
   }];
+>>>>>>> e19f96c5ecd53a217f15a751e8cc1f73116861ff
 }

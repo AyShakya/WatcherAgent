@@ -6929,6 +6929,7 @@ export namespace Prisma {
     githubToken: string | null
     githubRepoOwner: string | null
     githubRepoName: string | null
+    prompt: string | null
   }
 
   export type InstanceConfigMaxAggregateOutputType = {
@@ -6946,6 +6947,7 @@ export namespace Prisma {
     githubToken: string | null
     githubRepoOwner: string | null
     githubRepoName: string | null
+    prompt: string | null
   }
 
   export type InstanceConfigCountAggregateOutputType = {
@@ -6963,6 +6965,7 @@ export namespace Prisma {
     githubToken: number
     githubRepoOwner: number
     githubRepoName: number
+    prompt: number
     _all: number
   }
 
@@ -6990,6 +6993,7 @@ export namespace Prisma {
     githubToken?: true
     githubRepoOwner?: true
     githubRepoName?: true
+    prompt?: true
   }
 
   export type InstanceConfigMaxAggregateInputType = {
@@ -7007,6 +7011,7 @@ export namespace Prisma {
     githubToken?: true
     githubRepoOwner?: true
     githubRepoName?: true
+    prompt?: true
   }
 
   export type InstanceConfigCountAggregateInputType = {
@@ -7024,6 +7029,7 @@ export namespace Prisma {
     githubToken?: true
     githubRepoOwner?: true
     githubRepoName?: true
+    prompt?: true
     _all?: true
   }
 
@@ -7128,6 +7134,7 @@ export namespace Prisma {
     githubToken: string | null
     githubRepoOwner: string | null
     githubRepoName: string | null
+    prompt: string | null
     _count: InstanceConfigCountAggregateOutputType | null
     _avg: InstanceConfigAvgAggregateOutputType | null
     _sum: InstanceConfigSumAggregateOutputType | null
@@ -7164,6 +7171,7 @@ export namespace Prisma {
     githubToken?: boolean
     githubRepoOwner?: boolean
     githubRepoName?: boolean
+    prompt?: boolean
     instance?: boolean | InstanceDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["instanceConfig"]>
 
@@ -7182,6 +7190,7 @@ export namespace Prisma {
     githubToken?: boolean
     githubRepoOwner?: boolean
     githubRepoName?: boolean
+    prompt?: boolean
     instance?: boolean | InstanceDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["instanceConfig"]>
 
@@ -7200,6 +7209,7 @@ export namespace Prisma {
     githubToken?: boolean
     githubRepoOwner?: boolean
     githubRepoName?: boolean
+    prompt?: boolean
     instance?: boolean | InstanceDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["instanceConfig"]>
 
@@ -7218,9 +7228,10 @@ export namespace Prisma {
     githubToken?: boolean
     githubRepoOwner?: boolean
     githubRepoName?: boolean
+    prompt?: boolean
   }
 
-  export type InstanceConfigOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "instanceId" | "createdAt" | "updatedAt" | "port" | "openrouterApiKey" | "defaultLlmModel" | "pineconeApiKey" | "pineconeIndexName" | "discordBotToken" | "discordIncidentChannelId" | "githubToken" | "githubRepoOwner" | "githubRepoName", ExtArgs["result"]["instanceConfig"]>
+  export type InstanceConfigOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "instanceId" | "createdAt" | "updatedAt" | "port" | "openrouterApiKey" | "defaultLlmModel" | "pineconeApiKey" | "pineconeIndexName" | "discordBotToken" | "discordIncidentChannelId" | "githubToken" | "githubRepoOwner" | "githubRepoName" | "prompt", ExtArgs["result"]["instanceConfig"]>
   export type InstanceConfigInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     instance?: boolean | InstanceDefaultArgs<ExtArgs>
   }
@@ -7251,6 +7262,7 @@ export namespace Prisma {
       githubToken: string | null
       githubRepoOwner: string | null
       githubRepoName: string | null
+      prompt: string | null
     }, ExtArgs["result"]["instanceConfig"]>
     composites: {}
   }
@@ -7689,6 +7701,7 @@ export namespace Prisma {
     readonly githubToken: FieldRef<"InstanceConfig", 'String'>
     readonly githubRepoOwner: FieldRef<"InstanceConfig", 'String'>
     readonly githubRepoName: FieldRef<"InstanceConfig", 'String'>
+    readonly prompt: FieldRef<"InstanceConfig", 'String'>
   }
     
 
@@ -8205,7 +8218,8 @@ export namespace Prisma {
     discordIncidentChannelId: 'discordIncidentChannelId',
     githubToken: 'githubToken',
     githubRepoOwner: 'githubRepoOwner',
-    githubRepoName: 'githubRepoName'
+    githubRepoName: 'githubRepoName',
+    prompt: 'prompt'
   };
 
   export type InstanceConfigScalarFieldEnum = (typeof InstanceConfigScalarFieldEnum)[keyof typeof InstanceConfigScalarFieldEnum]
@@ -8675,6 +8689,7 @@ export namespace Prisma {
     githubToken?: StringNullableFilter<"InstanceConfig"> | string | null
     githubRepoOwner?: StringNullableFilter<"InstanceConfig"> | string | null
     githubRepoName?: StringNullableFilter<"InstanceConfig"> | string | null
+    prompt?: StringNullableFilter<"InstanceConfig"> | string | null
     instance?: XOR<InstanceScalarRelationFilter, InstanceWhereInput>
   }
 
@@ -8693,6 +8708,7 @@ export namespace Prisma {
     githubToken?: SortOrderInput | SortOrder
     githubRepoOwner?: SortOrderInput | SortOrder
     githubRepoName?: SortOrderInput | SortOrder
+    prompt?: SortOrderInput | SortOrder
     instance?: InstanceOrderByWithRelationInput
   }
 
@@ -8714,6 +8730,7 @@ export namespace Prisma {
     githubToken?: StringNullableFilter<"InstanceConfig"> | string | null
     githubRepoOwner?: StringNullableFilter<"InstanceConfig"> | string | null
     githubRepoName?: StringNullableFilter<"InstanceConfig"> | string | null
+    prompt?: StringNullableFilter<"InstanceConfig"> | string | null
     instance?: XOR<InstanceScalarRelationFilter, InstanceWhereInput>
   }, "id" | "instanceId">
 
@@ -8732,6 +8749,7 @@ export namespace Prisma {
     githubToken?: SortOrderInput | SortOrder
     githubRepoOwner?: SortOrderInput | SortOrder
     githubRepoName?: SortOrderInput | SortOrder
+    prompt?: SortOrderInput | SortOrder
     _count?: InstanceConfigCountOrderByAggregateInput
     _avg?: InstanceConfigAvgOrderByAggregateInput
     _max?: InstanceConfigMaxOrderByAggregateInput
@@ -8757,6 +8775,7 @@ export namespace Prisma {
     githubToken?: StringNullableWithAggregatesFilter<"InstanceConfig"> | string | null
     githubRepoOwner?: StringNullableWithAggregatesFilter<"InstanceConfig"> | string | null
     githubRepoName?: StringNullableWithAggregatesFilter<"InstanceConfig"> | string | null
+    prompt?: StringNullableWithAggregatesFilter<"InstanceConfig"> | string | null
   }
 
   export type UserCreateInput = {
@@ -9164,6 +9183,7 @@ export namespace Prisma {
     githubToken?: string | null
     githubRepoOwner?: string | null
     githubRepoName?: string | null
+    prompt?: string | null
     instance: InstanceCreateNestedOneWithoutConfigInput
   }
 
@@ -9182,6 +9202,7 @@ export namespace Prisma {
     githubToken?: string | null
     githubRepoOwner?: string | null
     githubRepoName?: string | null
+    prompt?: string | null
   }
 
   export type InstanceConfigUpdateInput = {
@@ -9198,6 +9219,7 @@ export namespace Prisma {
     githubToken?: NullableStringFieldUpdateOperationsInput | string | null
     githubRepoOwner?: NullableStringFieldUpdateOperationsInput | string | null
     githubRepoName?: NullableStringFieldUpdateOperationsInput | string | null
+    prompt?: NullableStringFieldUpdateOperationsInput | string | null
     instance?: InstanceUpdateOneRequiredWithoutConfigNestedInput
   }
 
@@ -9216,6 +9238,7 @@ export namespace Prisma {
     githubToken?: NullableStringFieldUpdateOperationsInput | string | null
     githubRepoOwner?: NullableStringFieldUpdateOperationsInput | string | null
     githubRepoName?: NullableStringFieldUpdateOperationsInput | string | null
+    prompt?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type InstanceConfigCreateManyInput = {
@@ -9233,6 +9256,7 @@ export namespace Prisma {
     githubToken?: string | null
     githubRepoOwner?: string | null
     githubRepoName?: string | null
+    prompt?: string | null
   }
 
   export type InstanceConfigUpdateManyMutationInput = {
@@ -9249,6 +9273,7 @@ export namespace Prisma {
     githubToken?: NullableStringFieldUpdateOperationsInput | string | null
     githubRepoOwner?: NullableStringFieldUpdateOperationsInput | string | null
     githubRepoName?: NullableStringFieldUpdateOperationsInput | string | null
+    prompt?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type InstanceConfigUncheckedUpdateManyInput = {
@@ -9266,6 +9291,7 @@ export namespace Prisma {
     githubToken?: NullableStringFieldUpdateOperationsInput | string | null
     githubRepoOwner?: NullableStringFieldUpdateOperationsInput | string | null
     githubRepoName?: NullableStringFieldUpdateOperationsInput | string | null
+    prompt?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type StringFilter<$PrismaModel = never> = {
@@ -9635,6 +9661,7 @@ export namespace Prisma {
     githubToken?: SortOrder
     githubRepoOwner?: SortOrder
     githubRepoName?: SortOrder
+    prompt?: SortOrder
   }
 
   export type InstanceConfigAvgOrderByAggregateInput = {
@@ -9656,6 +9683,7 @@ export namespace Prisma {
     githubToken?: SortOrder
     githubRepoOwner?: SortOrder
     githubRepoName?: SortOrder
+    prompt?: SortOrder
   }
 
   export type InstanceConfigMinOrderByAggregateInput = {
@@ -9673,6 +9701,7 @@ export namespace Prisma {
     githubToken?: SortOrder
     githubRepoOwner?: SortOrder
     githubRepoName?: SortOrder
+    prompt?: SortOrder
   }
 
   export type InstanceConfigSumOrderByAggregateInput = {
@@ -10470,6 +10499,7 @@ export namespace Prisma {
     githubToken?: string | null
     githubRepoOwner?: string | null
     githubRepoName?: string | null
+    prompt?: string | null
   }
 
   export type InstanceConfigUncheckedCreateWithoutInstanceInput = {
@@ -10486,6 +10516,7 @@ export namespace Prisma {
     githubToken?: string | null
     githubRepoOwner?: string | null
     githubRepoName?: string | null
+    prompt?: string | null
   }
 
   export type InstanceConfigCreateOrConnectWithoutInstanceInput = {
@@ -10553,6 +10584,7 @@ export namespace Prisma {
     githubToken?: NullableStringFieldUpdateOperationsInput | string | null
     githubRepoOwner?: NullableStringFieldUpdateOperationsInput | string | null
     githubRepoName?: NullableStringFieldUpdateOperationsInput | string | null
+    prompt?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type InstanceConfigUncheckedUpdateWithoutInstanceInput = {
@@ -10569,6 +10601,7 @@ export namespace Prisma {
     githubToken?: NullableStringFieldUpdateOperationsInput | string | null
     githubRepoOwner?: NullableStringFieldUpdateOperationsInput | string | null
     githubRepoName?: NullableStringFieldUpdateOperationsInput | string | null
+    prompt?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type InstanceCreateWithoutConfigInput = {
