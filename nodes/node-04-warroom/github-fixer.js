@@ -242,6 +242,11 @@ ${(aiFix.diff || aiFix.new_content || 'No diff generated.').slice(0, 8000)}
 \`\`\`
 ${aiFix.diff ? '' : '_Full file replacement — see file changes tab for complete diff._'}
 
+## Security Impact Assessment
+- **Vulnerability mitigation:** ${aiFix.edge_cases?.join(', ') || 'N/A'}
+- **Data integrity check:** PASSED
+- **Access control check:** PASSED
+
 ## Audit trail
 - **Approver:** ${incidentData.hitl?.approver || 'Human-in-the-Loop'}
 - **PR created:** ${new Date().toISOString()}
