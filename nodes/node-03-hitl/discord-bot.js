@@ -25,6 +25,7 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBit
 const DISCORD_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CHANNEL_ID = process.env.DISCORD_INCIDENT_CHANNEL_ID;
 const HITL_TIMEOUT_MS = parseInt(process.env.HITL_TIMEOUT_MS || '900000', 10);
+const ORCHESTRATOR_URL = process.env.ORCHESTRATOR_URL || `http://localhost:${process.env.PORT || 3000}`;
 
 let botReady = false;
 
@@ -117,11 +118,16 @@ export async function sendApprovalCard(incidentData) {
 
     saveIncidentTimeout(incidentData.incident_id, timeout);
 
+    const initiatedAt = new Date();
+    const expiresAt = new Date(initiatedAt.getTime() + HITL_TIMEOUT_MS);
+
     return {
       ...incidentData,
       discord_message_id: message.id,
       discord_thread_id: thread.id,
-      hitl_status: 'AWAITING_APPROVAL'
+      hitl_status: 'AWAITING_APPROVAL',
+      hitl_initiated_at: initiatedAt.toISOString(),
+      hitl_expires_at: expiresAt.toISOString()
     };
   } catch (error) {
     console.error('❌ Discord Bot Error:', error);
@@ -140,9 +146,12 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.update({ content: '✅ **Fix Accepted.** Deploying PR...', components: [] });
 
     try {
-      await fetch(`http://localhost:${process.env.PORT || 3000}/internal/discord-approve`, {
+      await fetch(`${ORCHESTRATOR_URL}/internal/discord-approve`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Internal-Token': process.env.INTERNAL_CALLBACK_SECRET || ''
+        },
         body: JSON.stringify({
           incident_id: incidentId,
           approver: interaction.user.tag
