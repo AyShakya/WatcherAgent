@@ -33,6 +33,16 @@ export type Account = $Result.DefaultSelection<Prisma.$AccountPayload>
  * 
  */
 export type Verification = $Result.DefaultSelection<Prisma.$VerificationPayload>
+/**
+ * Model Instance
+ * 
+ */
+export type Instance = $Result.DefaultSelection<Prisma.$InstancePayload>
+/**
+ * Model InstanceConfig
+ * 
+ */
+export type InstanceConfig = $Result.DefaultSelection<Prisma.$InstanceConfigPayload>
 
 /**
  * ##  Prisma Client ʲˢ
@@ -194,6 +204,26 @@ export class PrismaClient<
     * ```
     */
   get verification(): Prisma.VerificationDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.instance`: Exposes CRUD operations for the **Instance** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Instances
+    * const instances = await prisma.instance.findMany()
+    * ```
+    */
+  get instance(): Prisma.InstanceDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.instanceConfig`: Exposes CRUD operations for the **InstanceConfig** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more InstanceConfigs
+    * const instanceConfigs = await prisma.instanceConfig.findMany()
+    * ```
+    */
+  get instanceConfig(): Prisma.InstanceConfigDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -631,7 +661,9 @@ export namespace Prisma {
     User: 'User',
     Session: 'Session',
     Account: 'Account',
-    Verification: 'Verification'
+    Verification: 'Verification',
+    Instance: 'Instance',
+    InstanceConfig: 'InstanceConfig'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -647,7 +679,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "session" | "account" | "verification"
+      modelProps: "user" | "session" | "account" | "verification" | "instance" | "instanceConfig"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -947,6 +979,154 @@ export namespace Prisma {
           }
         }
       }
+      Instance: {
+        payload: Prisma.$InstancePayload<ExtArgs>
+        fields: Prisma.InstanceFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.InstanceFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstancePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.InstanceFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstancePayload>
+          }
+          findFirst: {
+            args: Prisma.InstanceFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstancePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.InstanceFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstancePayload>
+          }
+          findMany: {
+            args: Prisma.InstanceFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstancePayload>[]
+          }
+          create: {
+            args: Prisma.InstanceCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstancePayload>
+          }
+          createMany: {
+            args: Prisma.InstanceCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.InstanceCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstancePayload>[]
+          }
+          delete: {
+            args: Prisma.InstanceDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstancePayload>
+          }
+          update: {
+            args: Prisma.InstanceUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstancePayload>
+          }
+          deleteMany: {
+            args: Prisma.InstanceDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.InstanceUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.InstanceUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstancePayload>[]
+          }
+          upsert: {
+            args: Prisma.InstanceUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstancePayload>
+          }
+          aggregate: {
+            args: Prisma.InstanceAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateInstance>
+          }
+          groupBy: {
+            args: Prisma.InstanceGroupByArgs<ExtArgs>
+            result: $Utils.Optional<InstanceGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.InstanceCountArgs<ExtArgs>
+            result: $Utils.Optional<InstanceCountAggregateOutputType> | number
+          }
+        }
+      }
+      InstanceConfig: {
+        payload: Prisma.$InstanceConfigPayload<ExtArgs>
+        fields: Prisma.InstanceConfigFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.InstanceConfigFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstanceConfigPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.InstanceConfigFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstanceConfigPayload>
+          }
+          findFirst: {
+            args: Prisma.InstanceConfigFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstanceConfigPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.InstanceConfigFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstanceConfigPayload>
+          }
+          findMany: {
+            args: Prisma.InstanceConfigFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstanceConfigPayload>[]
+          }
+          create: {
+            args: Prisma.InstanceConfigCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstanceConfigPayload>
+          }
+          createMany: {
+            args: Prisma.InstanceConfigCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.InstanceConfigCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstanceConfigPayload>[]
+          }
+          delete: {
+            args: Prisma.InstanceConfigDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstanceConfigPayload>
+          }
+          update: {
+            args: Prisma.InstanceConfigUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstanceConfigPayload>
+          }
+          deleteMany: {
+            args: Prisma.InstanceConfigDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.InstanceConfigUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.InstanceConfigUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstanceConfigPayload>[]
+          }
+          upsert: {
+            args: Prisma.InstanceConfigUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InstanceConfigPayload>
+          }
+          aggregate: {
+            args: Prisma.InstanceConfigAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateInstanceConfig>
+          }
+          groupBy: {
+            args: Prisma.InstanceConfigGroupByArgs<ExtArgs>
+            result: $Utils.Optional<InstanceConfigGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.InstanceConfigCountArgs<ExtArgs>
+            result: $Utils.Optional<InstanceConfigCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -1059,6 +1239,8 @@ export namespace Prisma {
     session?: SessionOmit
     account?: AccountOmit
     verification?: VerificationOmit
+    instance?: InstanceOmit
+    instanceConfig?: InstanceConfigOmit
   }
 
   /* Types for Logging */
@@ -1141,11 +1323,13 @@ export namespace Prisma {
   export type UserCountOutputType = {
     sessions: number
     accounts: number
+    instances: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     sessions?: boolean | UserCountOutputTypeCountSessionsArgs
     accounts?: boolean | UserCountOutputTypeCountAccountsArgs
+    instances?: boolean | UserCountOutputTypeCountInstancesArgs
   }
 
   // Custom InputTypes
@@ -1171,6 +1355,13 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountAccountsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: AccountWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountInstancesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: InstanceWhereInput
   }
 
 
@@ -1360,6 +1551,7 @@ export namespace Prisma {
     updatedAt?: boolean
     sessions?: boolean | User$sessionsArgs<ExtArgs>
     accounts?: boolean | User$accountsArgs<ExtArgs>
+    instances?: boolean | User$instancesArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -1397,6 +1589,7 @@ export namespace Prisma {
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     sessions?: boolean | User$sessionsArgs<ExtArgs>
     accounts?: boolean | User$accountsArgs<ExtArgs>
+    instances?: boolean | User$instancesArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -1407,6 +1600,7 @@ export namespace Prisma {
     objects: {
       sessions: Prisma.$SessionPayload<ExtArgs>[]
       accounts: Prisma.$AccountPayload<ExtArgs>[]
+      instances: Prisma.$InstancePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -1812,6 +2006,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     sessions<T extends User$sessionsArgs<ExtArgs> = {}>(args?: Subset<T, User$sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     accounts<T extends User$accountsArgs<ExtArgs> = {}>(args?: Subset<T, User$accountsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AccountPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    instances<T extends User$instancesArgs<ExtArgs> = {}>(args?: Subset<T, User$instancesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InstancePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2286,6 +2481,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: AccountScalarFieldEnum | AccountScalarFieldEnum[]
+  }
+
+  /**
+   * User.instances
+   */
+  export type User$instancesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Instance
+     */
+    select?: InstanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Instance
+     */
+    omit?: InstanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceInclude<ExtArgs> | null
+    where?: InstanceWhereInput
+    orderBy?: InstanceOrderByWithRelationInput | InstanceOrderByWithRelationInput[]
+    cursor?: InstanceWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: InstanceScalarFieldEnum | InstanceScalarFieldEnum[]
   }
 
   /**
@@ -5590,6 +5809,2306 @@ export namespace Prisma {
 
 
   /**
+   * Model Instance
+   */
+
+  export type AggregateInstance = {
+    _count: InstanceCountAggregateOutputType | null
+    _min: InstanceMinAggregateOutputType | null
+    _max: InstanceMaxAggregateOutputType | null
+  }
+
+  export type InstanceMinAggregateOutputType = {
+    id: string | null
+    name: string | null
+    userId: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type InstanceMaxAggregateOutputType = {
+    id: string | null
+    name: string | null
+    userId: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type InstanceCountAggregateOutputType = {
+    id: number
+    name: number
+    userId: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type InstanceMinAggregateInputType = {
+    id?: true
+    name?: true
+    userId?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type InstanceMaxAggregateInputType = {
+    id?: true
+    name?: true
+    userId?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type InstanceCountAggregateInputType = {
+    id?: true
+    name?: true
+    userId?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type InstanceAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Instance to aggregate.
+     */
+    where?: InstanceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Instances to fetch.
+     */
+    orderBy?: InstanceOrderByWithRelationInput | InstanceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: InstanceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Instances from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Instances.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Instances
+    **/
+    _count?: true | InstanceCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: InstanceMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: InstanceMaxAggregateInputType
+  }
+
+  export type GetInstanceAggregateType<T extends InstanceAggregateArgs> = {
+        [P in keyof T & keyof AggregateInstance]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateInstance[P]>
+      : GetScalarType<T[P], AggregateInstance[P]>
+  }
+
+
+
+
+  export type InstanceGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: InstanceWhereInput
+    orderBy?: InstanceOrderByWithAggregationInput | InstanceOrderByWithAggregationInput[]
+    by: InstanceScalarFieldEnum[] | InstanceScalarFieldEnum
+    having?: InstanceScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: InstanceCountAggregateInputType | true
+    _min?: InstanceMinAggregateInputType
+    _max?: InstanceMaxAggregateInputType
+  }
+
+  export type InstanceGroupByOutputType = {
+    id: string
+    name: string
+    userId: string
+    createdAt: Date
+    updatedAt: Date
+    _count: InstanceCountAggregateOutputType | null
+    _min: InstanceMinAggregateOutputType | null
+    _max: InstanceMaxAggregateOutputType | null
+  }
+
+  type GetInstanceGroupByPayload<T extends InstanceGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<InstanceGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof InstanceGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], InstanceGroupByOutputType[P]>
+            : GetScalarType<T[P], InstanceGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type InstanceSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    name?: boolean
+    userId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    config?: boolean | Instance$configArgs<ExtArgs>
+  }, ExtArgs["result"]["instance"]>
+
+  export type InstanceSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    name?: boolean
+    userId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["instance"]>
+
+  export type InstanceSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    name?: boolean
+    userId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["instance"]>
+
+  export type InstanceSelectScalar = {
+    id?: boolean
+    name?: boolean
+    userId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type InstanceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "userId" | "createdAt" | "updatedAt", ExtArgs["result"]["instance"]>
+  export type InstanceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    config?: boolean | Instance$configArgs<ExtArgs>
+  }
+  export type InstanceIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type InstanceIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $InstancePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Instance"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+      config: Prisma.$InstanceConfigPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      name: string
+      userId: string
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["instance"]>
+    composites: {}
+  }
+
+  type InstanceGetPayload<S extends boolean | null | undefined | InstanceDefaultArgs> = $Result.GetResult<Prisma.$InstancePayload, S>
+
+  type InstanceCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<InstanceFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: InstanceCountAggregateInputType | true
+    }
+
+  export interface InstanceDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Instance'], meta: { name: 'Instance' } }
+    /**
+     * Find zero or one Instance that matches the filter.
+     * @param {InstanceFindUniqueArgs} args - Arguments to find a Instance
+     * @example
+     * // Get one Instance
+     * const instance = await prisma.instance.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends InstanceFindUniqueArgs>(args: SelectSubset<T, InstanceFindUniqueArgs<ExtArgs>>): Prisma__InstanceClient<$Result.GetResult<Prisma.$InstancePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one Instance that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {InstanceFindUniqueOrThrowArgs} args - Arguments to find a Instance
+     * @example
+     * // Get one Instance
+     * const instance = await prisma.instance.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends InstanceFindUniqueOrThrowArgs>(args: SelectSubset<T, InstanceFindUniqueOrThrowArgs<ExtArgs>>): Prisma__InstanceClient<$Result.GetResult<Prisma.$InstancePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Instance that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InstanceFindFirstArgs} args - Arguments to find a Instance
+     * @example
+     * // Get one Instance
+     * const instance = await prisma.instance.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends InstanceFindFirstArgs>(args?: SelectSubset<T, InstanceFindFirstArgs<ExtArgs>>): Prisma__InstanceClient<$Result.GetResult<Prisma.$InstancePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Instance that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InstanceFindFirstOrThrowArgs} args - Arguments to find a Instance
+     * @example
+     * // Get one Instance
+     * const instance = await prisma.instance.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends InstanceFindFirstOrThrowArgs>(args?: SelectSubset<T, InstanceFindFirstOrThrowArgs<ExtArgs>>): Prisma__InstanceClient<$Result.GetResult<Prisma.$InstancePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Instances that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InstanceFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Instances
+     * const instances = await prisma.instance.findMany()
+     * 
+     * // Get first 10 Instances
+     * const instances = await prisma.instance.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const instanceWithIdOnly = await prisma.instance.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends InstanceFindManyArgs>(args?: SelectSubset<T, InstanceFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InstancePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a Instance.
+     * @param {InstanceCreateArgs} args - Arguments to create a Instance.
+     * @example
+     * // Create one Instance
+     * const Instance = await prisma.instance.create({
+     *   data: {
+     *     // ... data to create a Instance
+     *   }
+     * })
+     * 
+     */
+    create<T extends InstanceCreateArgs>(args: SelectSubset<T, InstanceCreateArgs<ExtArgs>>): Prisma__InstanceClient<$Result.GetResult<Prisma.$InstancePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many Instances.
+     * @param {InstanceCreateManyArgs} args - Arguments to create many Instances.
+     * @example
+     * // Create many Instances
+     * const instance = await prisma.instance.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends InstanceCreateManyArgs>(args?: SelectSubset<T, InstanceCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many Instances and returns the data saved in the database.
+     * @param {InstanceCreateManyAndReturnArgs} args - Arguments to create many Instances.
+     * @example
+     * // Create many Instances
+     * const instance = await prisma.instance.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many Instances and only return the `id`
+     * const instanceWithIdOnly = await prisma.instance.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends InstanceCreateManyAndReturnArgs>(args?: SelectSubset<T, InstanceCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InstancePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a Instance.
+     * @param {InstanceDeleteArgs} args - Arguments to delete one Instance.
+     * @example
+     * // Delete one Instance
+     * const Instance = await prisma.instance.delete({
+     *   where: {
+     *     // ... filter to delete one Instance
+     *   }
+     * })
+     * 
+     */
+    delete<T extends InstanceDeleteArgs>(args: SelectSubset<T, InstanceDeleteArgs<ExtArgs>>): Prisma__InstanceClient<$Result.GetResult<Prisma.$InstancePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one Instance.
+     * @param {InstanceUpdateArgs} args - Arguments to update one Instance.
+     * @example
+     * // Update one Instance
+     * const instance = await prisma.instance.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends InstanceUpdateArgs>(args: SelectSubset<T, InstanceUpdateArgs<ExtArgs>>): Prisma__InstanceClient<$Result.GetResult<Prisma.$InstancePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more Instances.
+     * @param {InstanceDeleteManyArgs} args - Arguments to filter Instances to delete.
+     * @example
+     * // Delete a few Instances
+     * const { count } = await prisma.instance.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends InstanceDeleteManyArgs>(args?: SelectSubset<T, InstanceDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Instances.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InstanceUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Instances
+     * const instance = await prisma.instance.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends InstanceUpdateManyArgs>(args: SelectSubset<T, InstanceUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Instances and returns the data updated in the database.
+     * @param {InstanceUpdateManyAndReturnArgs} args - Arguments to update many Instances.
+     * @example
+     * // Update many Instances
+     * const instance = await prisma.instance.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more Instances and only return the `id`
+     * const instanceWithIdOnly = await prisma.instance.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends InstanceUpdateManyAndReturnArgs>(args: SelectSubset<T, InstanceUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InstancePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one Instance.
+     * @param {InstanceUpsertArgs} args - Arguments to update or create a Instance.
+     * @example
+     * // Update or create a Instance
+     * const instance = await prisma.instance.upsert({
+     *   create: {
+     *     // ... data to create a Instance
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Instance we want to update
+     *   }
+     * })
+     */
+    upsert<T extends InstanceUpsertArgs>(args: SelectSubset<T, InstanceUpsertArgs<ExtArgs>>): Prisma__InstanceClient<$Result.GetResult<Prisma.$InstancePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of Instances.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InstanceCountArgs} args - Arguments to filter Instances to count.
+     * @example
+     * // Count the number of Instances
+     * const count = await prisma.instance.count({
+     *   where: {
+     *     // ... the filter for the Instances we want to count
+     *   }
+     * })
+    **/
+    count<T extends InstanceCountArgs>(
+      args?: Subset<T, InstanceCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], InstanceCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Instance.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InstanceAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends InstanceAggregateArgs>(args: Subset<T, InstanceAggregateArgs>): Prisma.PrismaPromise<GetInstanceAggregateType<T>>
+
+    /**
+     * Group by Instance.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InstanceGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends InstanceGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: InstanceGroupByArgs['orderBy'] }
+        : { orderBy?: InstanceGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, InstanceGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetInstanceGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Instance model
+   */
+  readonly fields: InstanceFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Instance.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__InstanceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    config<T extends Instance$configArgs<ExtArgs> = {}>(args?: Subset<T, Instance$configArgs<ExtArgs>>): Prisma__InstanceConfigClient<$Result.GetResult<Prisma.$InstanceConfigPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Instance model
+   */
+  interface InstanceFieldRefs {
+    readonly id: FieldRef<"Instance", 'String'>
+    readonly name: FieldRef<"Instance", 'String'>
+    readonly userId: FieldRef<"Instance", 'String'>
+    readonly createdAt: FieldRef<"Instance", 'DateTime'>
+    readonly updatedAt: FieldRef<"Instance", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Instance findUnique
+   */
+  export type InstanceFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Instance
+     */
+    select?: InstanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Instance
+     */
+    omit?: InstanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceInclude<ExtArgs> | null
+    /**
+     * Filter, which Instance to fetch.
+     */
+    where: InstanceWhereUniqueInput
+  }
+
+  /**
+   * Instance findUniqueOrThrow
+   */
+  export type InstanceFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Instance
+     */
+    select?: InstanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Instance
+     */
+    omit?: InstanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceInclude<ExtArgs> | null
+    /**
+     * Filter, which Instance to fetch.
+     */
+    where: InstanceWhereUniqueInput
+  }
+
+  /**
+   * Instance findFirst
+   */
+  export type InstanceFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Instance
+     */
+    select?: InstanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Instance
+     */
+    omit?: InstanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceInclude<ExtArgs> | null
+    /**
+     * Filter, which Instance to fetch.
+     */
+    where?: InstanceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Instances to fetch.
+     */
+    orderBy?: InstanceOrderByWithRelationInput | InstanceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Instances.
+     */
+    cursor?: InstanceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Instances from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Instances.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Instances.
+     */
+    distinct?: InstanceScalarFieldEnum | InstanceScalarFieldEnum[]
+  }
+
+  /**
+   * Instance findFirstOrThrow
+   */
+  export type InstanceFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Instance
+     */
+    select?: InstanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Instance
+     */
+    omit?: InstanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceInclude<ExtArgs> | null
+    /**
+     * Filter, which Instance to fetch.
+     */
+    where?: InstanceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Instances to fetch.
+     */
+    orderBy?: InstanceOrderByWithRelationInput | InstanceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Instances.
+     */
+    cursor?: InstanceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Instances from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Instances.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Instances.
+     */
+    distinct?: InstanceScalarFieldEnum | InstanceScalarFieldEnum[]
+  }
+
+  /**
+   * Instance findMany
+   */
+  export type InstanceFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Instance
+     */
+    select?: InstanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Instance
+     */
+    omit?: InstanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceInclude<ExtArgs> | null
+    /**
+     * Filter, which Instances to fetch.
+     */
+    where?: InstanceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Instances to fetch.
+     */
+    orderBy?: InstanceOrderByWithRelationInput | InstanceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Instances.
+     */
+    cursor?: InstanceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Instances from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Instances.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Instances.
+     */
+    distinct?: InstanceScalarFieldEnum | InstanceScalarFieldEnum[]
+  }
+
+  /**
+   * Instance create
+   */
+  export type InstanceCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Instance
+     */
+    select?: InstanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Instance
+     */
+    omit?: InstanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceInclude<ExtArgs> | null
+    /**
+     * The data needed to create a Instance.
+     */
+    data: XOR<InstanceCreateInput, InstanceUncheckedCreateInput>
+  }
+
+  /**
+   * Instance createMany
+   */
+  export type InstanceCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Instances.
+     */
+    data: InstanceCreateManyInput | InstanceCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Instance createManyAndReturn
+   */
+  export type InstanceCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Instance
+     */
+    select?: InstanceSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Instance
+     */
+    omit?: InstanceOmit<ExtArgs> | null
+    /**
+     * The data used to create many Instances.
+     */
+    data: InstanceCreateManyInput | InstanceCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * Instance update
+   */
+  export type InstanceUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Instance
+     */
+    select?: InstanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Instance
+     */
+    omit?: InstanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceInclude<ExtArgs> | null
+    /**
+     * The data needed to update a Instance.
+     */
+    data: XOR<InstanceUpdateInput, InstanceUncheckedUpdateInput>
+    /**
+     * Choose, which Instance to update.
+     */
+    where: InstanceWhereUniqueInput
+  }
+
+  /**
+   * Instance updateMany
+   */
+  export type InstanceUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Instances.
+     */
+    data: XOR<InstanceUpdateManyMutationInput, InstanceUncheckedUpdateManyInput>
+    /**
+     * Filter which Instances to update
+     */
+    where?: InstanceWhereInput
+    /**
+     * Limit how many Instances to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * Instance updateManyAndReturn
+   */
+  export type InstanceUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Instance
+     */
+    select?: InstanceSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Instance
+     */
+    omit?: InstanceOmit<ExtArgs> | null
+    /**
+     * The data used to update Instances.
+     */
+    data: XOR<InstanceUpdateManyMutationInput, InstanceUncheckedUpdateManyInput>
+    /**
+     * Filter which Instances to update
+     */
+    where?: InstanceWhereInput
+    /**
+     * Limit how many Instances to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * Instance upsert
+   */
+  export type InstanceUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Instance
+     */
+    select?: InstanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Instance
+     */
+    omit?: InstanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceInclude<ExtArgs> | null
+    /**
+     * The filter to search for the Instance to update in case it exists.
+     */
+    where: InstanceWhereUniqueInput
+    /**
+     * In case the Instance found by the `where` argument doesn't exist, create a new Instance with this data.
+     */
+    create: XOR<InstanceCreateInput, InstanceUncheckedCreateInput>
+    /**
+     * In case the Instance was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<InstanceUpdateInput, InstanceUncheckedUpdateInput>
+  }
+
+  /**
+   * Instance delete
+   */
+  export type InstanceDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Instance
+     */
+    select?: InstanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Instance
+     */
+    omit?: InstanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceInclude<ExtArgs> | null
+    /**
+     * Filter which Instance to delete.
+     */
+    where: InstanceWhereUniqueInput
+  }
+
+  /**
+   * Instance deleteMany
+   */
+  export type InstanceDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Instances to delete
+     */
+    where?: InstanceWhereInput
+    /**
+     * Limit how many Instances to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * Instance.config
+   */
+  export type Instance$configArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InstanceConfig
+     */
+    select?: InstanceConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InstanceConfig
+     */
+    omit?: InstanceConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceConfigInclude<ExtArgs> | null
+    where?: InstanceConfigWhereInput
+  }
+
+  /**
+   * Instance without action
+   */
+  export type InstanceDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Instance
+     */
+    select?: InstanceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Instance
+     */
+    omit?: InstanceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model InstanceConfig
+   */
+
+  export type AggregateInstanceConfig = {
+    _count: InstanceConfigCountAggregateOutputType | null
+    _avg: InstanceConfigAvgAggregateOutputType | null
+    _sum: InstanceConfigSumAggregateOutputType | null
+    _min: InstanceConfigMinAggregateOutputType | null
+    _max: InstanceConfigMaxAggregateOutputType | null
+  }
+
+  export type InstanceConfigAvgAggregateOutputType = {
+    port: number | null
+  }
+
+  export type InstanceConfigSumAggregateOutputType = {
+    port: number | null
+  }
+
+  export type InstanceConfigMinAggregateOutputType = {
+    id: string | null
+    instanceId: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    port: number | null
+    openrouterApiKey: string | null
+    defaultLlmModel: string | null
+    pineconeApiKey: string | null
+    pineconeIndexName: string | null
+    discordBotToken: string | null
+    discordIncidentChannelId: string | null
+    githubToken: string | null
+    githubRepoOwner: string | null
+    githubRepoName: string | null
+  }
+
+  export type InstanceConfigMaxAggregateOutputType = {
+    id: string | null
+    instanceId: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+    port: number | null
+    openrouterApiKey: string | null
+    defaultLlmModel: string | null
+    pineconeApiKey: string | null
+    pineconeIndexName: string | null
+    discordBotToken: string | null
+    discordIncidentChannelId: string | null
+    githubToken: string | null
+    githubRepoOwner: string | null
+    githubRepoName: string | null
+  }
+
+  export type InstanceConfigCountAggregateOutputType = {
+    id: number
+    instanceId: number
+    createdAt: number
+    updatedAt: number
+    port: number
+    openrouterApiKey: number
+    defaultLlmModel: number
+    pineconeApiKey: number
+    pineconeIndexName: number
+    discordBotToken: number
+    discordIncidentChannelId: number
+    githubToken: number
+    githubRepoOwner: number
+    githubRepoName: number
+    _all: number
+  }
+
+
+  export type InstanceConfigAvgAggregateInputType = {
+    port?: true
+  }
+
+  export type InstanceConfigSumAggregateInputType = {
+    port?: true
+  }
+
+  export type InstanceConfigMinAggregateInputType = {
+    id?: true
+    instanceId?: true
+    createdAt?: true
+    updatedAt?: true
+    port?: true
+    openrouterApiKey?: true
+    defaultLlmModel?: true
+    pineconeApiKey?: true
+    pineconeIndexName?: true
+    discordBotToken?: true
+    discordIncidentChannelId?: true
+    githubToken?: true
+    githubRepoOwner?: true
+    githubRepoName?: true
+  }
+
+  export type InstanceConfigMaxAggregateInputType = {
+    id?: true
+    instanceId?: true
+    createdAt?: true
+    updatedAt?: true
+    port?: true
+    openrouterApiKey?: true
+    defaultLlmModel?: true
+    pineconeApiKey?: true
+    pineconeIndexName?: true
+    discordBotToken?: true
+    discordIncidentChannelId?: true
+    githubToken?: true
+    githubRepoOwner?: true
+    githubRepoName?: true
+  }
+
+  export type InstanceConfigCountAggregateInputType = {
+    id?: true
+    instanceId?: true
+    createdAt?: true
+    updatedAt?: true
+    port?: true
+    openrouterApiKey?: true
+    defaultLlmModel?: true
+    pineconeApiKey?: true
+    pineconeIndexName?: true
+    discordBotToken?: true
+    discordIncidentChannelId?: true
+    githubToken?: true
+    githubRepoOwner?: true
+    githubRepoName?: true
+    _all?: true
+  }
+
+  export type InstanceConfigAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which InstanceConfig to aggregate.
+     */
+    where?: InstanceConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of InstanceConfigs to fetch.
+     */
+    orderBy?: InstanceConfigOrderByWithRelationInput | InstanceConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: InstanceConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` InstanceConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` InstanceConfigs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned InstanceConfigs
+    **/
+    _count?: true | InstanceConfigCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: InstanceConfigAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: InstanceConfigSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: InstanceConfigMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: InstanceConfigMaxAggregateInputType
+  }
+
+  export type GetInstanceConfigAggregateType<T extends InstanceConfigAggregateArgs> = {
+        [P in keyof T & keyof AggregateInstanceConfig]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateInstanceConfig[P]>
+      : GetScalarType<T[P], AggregateInstanceConfig[P]>
+  }
+
+
+
+
+  export type InstanceConfigGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: InstanceConfigWhereInput
+    orderBy?: InstanceConfigOrderByWithAggregationInput | InstanceConfigOrderByWithAggregationInput[]
+    by: InstanceConfigScalarFieldEnum[] | InstanceConfigScalarFieldEnum
+    having?: InstanceConfigScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: InstanceConfigCountAggregateInputType | true
+    _avg?: InstanceConfigAvgAggregateInputType
+    _sum?: InstanceConfigSumAggregateInputType
+    _min?: InstanceConfigMinAggregateInputType
+    _max?: InstanceConfigMaxAggregateInputType
+  }
+
+  export type InstanceConfigGroupByOutputType = {
+    id: string
+    instanceId: string
+    createdAt: Date
+    updatedAt: Date
+    port: number | null
+    openrouterApiKey: string | null
+    defaultLlmModel: string | null
+    pineconeApiKey: string | null
+    pineconeIndexName: string | null
+    discordBotToken: string | null
+    discordIncidentChannelId: string | null
+    githubToken: string | null
+    githubRepoOwner: string | null
+    githubRepoName: string | null
+    _count: InstanceConfigCountAggregateOutputType | null
+    _avg: InstanceConfigAvgAggregateOutputType | null
+    _sum: InstanceConfigSumAggregateOutputType | null
+    _min: InstanceConfigMinAggregateOutputType | null
+    _max: InstanceConfigMaxAggregateOutputType | null
+  }
+
+  type GetInstanceConfigGroupByPayload<T extends InstanceConfigGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<InstanceConfigGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof InstanceConfigGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], InstanceConfigGroupByOutputType[P]>
+            : GetScalarType<T[P], InstanceConfigGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type InstanceConfigSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    instanceId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    port?: boolean
+    openrouterApiKey?: boolean
+    defaultLlmModel?: boolean
+    pineconeApiKey?: boolean
+    pineconeIndexName?: boolean
+    discordBotToken?: boolean
+    discordIncidentChannelId?: boolean
+    githubToken?: boolean
+    githubRepoOwner?: boolean
+    githubRepoName?: boolean
+    instance?: boolean | InstanceDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["instanceConfig"]>
+
+  export type InstanceConfigSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    instanceId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    port?: boolean
+    openrouterApiKey?: boolean
+    defaultLlmModel?: boolean
+    pineconeApiKey?: boolean
+    pineconeIndexName?: boolean
+    discordBotToken?: boolean
+    discordIncidentChannelId?: boolean
+    githubToken?: boolean
+    githubRepoOwner?: boolean
+    githubRepoName?: boolean
+    instance?: boolean | InstanceDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["instanceConfig"]>
+
+  export type InstanceConfigSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    instanceId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    port?: boolean
+    openrouterApiKey?: boolean
+    defaultLlmModel?: boolean
+    pineconeApiKey?: boolean
+    pineconeIndexName?: boolean
+    discordBotToken?: boolean
+    discordIncidentChannelId?: boolean
+    githubToken?: boolean
+    githubRepoOwner?: boolean
+    githubRepoName?: boolean
+    instance?: boolean | InstanceDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["instanceConfig"]>
+
+  export type InstanceConfigSelectScalar = {
+    id?: boolean
+    instanceId?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    port?: boolean
+    openrouterApiKey?: boolean
+    defaultLlmModel?: boolean
+    pineconeApiKey?: boolean
+    pineconeIndexName?: boolean
+    discordBotToken?: boolean
+    discordIncidentChannelId?: boolean
+    githubToken?: boolean
+    githubRepoOwner?: boolean
+    githubRepoName?: boolean
+  }
+
+  export type InstanceConfigOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "instanceId" | "createdAt" | "updatedAt" | "port" | "openrouterApiKey" | "defaultLlmModel" | "pineconeApiKey" | "pineconeIndexName" | "discordBotToken" | "discordIncidentChannelId" | "githubToken" | "githubRepoOwner" | "githubRepoName", ExtArgs["result"]["instanceConfig"]>
+  export type InstanceConfigInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    instance?: boolean | InstanceDefaultArgs<ExtArgs>
+  }
+  export type InstanceConfigIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    instance?: boolean | InstanceDefaultArgs<ExtArgs>
+  }
+  export type InstanceConfigIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    instance?: boolean | InstanceDefaultArgs<ExtArgs>
+  }
+
+  export type $InstanceConfigPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "InstanceConfig"
+    objects: {
+      instance: Prisma.$InstancePayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      instanceId: string
+      createdAt: Date
+      updatedAt: Date
+      port: number | null
+      openrouterApiKey: string | null
+      defaultLlmModel: string | null
+      pineconeApiKey: string | null
+      pineconeIndexName: string | null
+      discordBotToken: string | null
+      discordIncidentChannelId: string | null
+      githubToken: string | null
+      githubRepoOwner: string | null
+      githubRepoName: string | null
+    }, ExtArgs["result"]["instanceConfig"]>
+    composites: {}
+  }
+
+  type InstanceConfigGetPayload<S extends boolean | null | undefined | InstanceConfigDefaultArgs> = $Result.GetResult<Prisma.$InstanceConfigPayload, S>
+
+  type InstanceConfigCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<InstanceConfigFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: InstanceConfigCountAggregateInputType | true
+    }
+
+  export interface InstanceConfigDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['InstanceConfig'], meta: { name: 'InstanceConfig' } }
+    /**
+     * Find zero or one InstanceConfig that matches the filter.
+     * @param {InstanceConfigFindUniqueArgs} args - Arguments to find a InstanceConfig
+     * @example
+     * // Get one InstanceConfig
+     * const instanceConfig = await prisma.instanceConfig.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends InstanceConfigFindUniqueArgs>(args: SelectSubset<T, InstanceConfigFindUniqueArgs<ExtArgs>>): Prisma__InstanceConfigClient<$Result.GetResult<Prisma.$InstanceConfigPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one InstanceConfig that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {InstanceConfigFindUniqueOrThrowArgs} args - Arguments to find a InstanceConfig
+     * @example
+     * // Get one InstanceConfig
+     * const instanceConfig = await prisma.instanceConfig.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends InstanceConfigFindUniqueOrThrowArgs>(args: SelectSubset<T, InstanceConfigFindUniqueOrThrowArgs<ExtArgs>>): Prisma__InstanceConfigClient<$Result.GetResult<Prisma.$InstanceConfigPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first InstanceConfig that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InstanceConfigFindFirstArgs} args - Arguments to find a InstanceConfig
+     * @example
+     * // Get one InstanceConfig
+     * const instanceConfig = await prisma.instanceConfig.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends InstanceConfigFindFirstArgs>(args?: SelectSubset<T, InstanceConfigFindFirstArgs<ExtArgs>>): Prisma__InstanceConfigClient<$Result.GetResult<Prisma.$InstanceConfigPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first InstanceConfig that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InstanceConfigFindFirstOrThrowArgs} args - Arguments to find a InstanceConfig
+     * @example
+     * // Get one InstanceConfig
+     * const instanceConfig = await prisma.instanceConfig.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends InstanceConfigFindFirstOrThrowArgs>(args?: SelectSubset<T, InstanceConfigFindFirstOrThrowArgs<ExtArgs>>): Prisma__InstanceConfigClient<$Result.GetResult<Prisma.$InstanceConfigPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more InstanceConfigs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InstanceConfigFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all InstanceConfigs
+     * const instanceConfigs = await prisma.instanceConfig.findMany()
+     * 
+     * // Get first 10 InstanceConfigs
+     * const instanceConfigs = await prisma.instanceConfig.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const instanceConfigWithIdOnly = await prisma.instanceConfig.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends InstanceConfigFindManyArgs>(args?: SelectSubset<T, InstanceConfigFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InstanceConfigPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a InstanceConfig.
+     * @param {InstanceConfigCreateArgs} args - Arguments to create a InstanceConfig.
+     * @example
+     * // Create one InstanceConfig
+     * const InstanceConfig = await prisma.instanceConfig.create({
+     *   data: {
+     *     // ... data to create a InstanceConfig
+     *   }
+     * })
+     * 
+     */
+    create<T extends InstanceConfigCreateArgs>(args: SelectSubset<T, InstanceConfigCreateArgs<ExtArgs>>): Prisma__InstanceConfigClient<$Result.GetResult<Prisma.$InstanceConfigPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many InstanceConfigs.
+     * @param {InstanceConfigCreateManyArgs} args - Arguments to create many InstanceConfigs.
+     * @example
+     * // Create many InstanceConfigs
+     * const instanceConfig = await prisma.instanceConfig.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends InstanceConfigCreateManyArgs>(args?: SelectSubset<T, InstanceConfigCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many InstanceConfigs and returns the data saved in the database.
+     * @param {InstanceConfigCreateManyAndReturnArgs} args - Arguments to create many InstanceConfigs.
+     * @example
+     * // Create many InstanceConfigs
+     * const instanceConfig = await prisma.instanceConfig.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many InstanceConfigs and only return the `id`
+     * const instanceConfigWithIdOnly = await prisma.instanceConfig.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends InstanceConfigCreateManyAndReturnArgs>(args?: SelectSubset<T, InstanceConfigCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InstanceConfigPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a InstanceConfig.
+     * @param {InstanceConfigDeleteArgs} args - Arguments to delete one InstanceConfig.
+     * @example
+     * // Delete one InstanceConfig
+     * const InstanceConfig = await prisma.instanceConfig.delete({
+     *   where: {
+     *     // ... filter to delete one InstanceConfig
+     *   }
+     * })
+     * 
+     */
+    delete<T extends InstanceConfigDeleteArgs>(args: SelectSubset<T, InstanceConfigDeleteArgs<ExtArgs>>): Prisma__InstanceConfigClient<$Result.GetResult<Prisma.$InstanceConfigPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one InstanceConfig.
+     * @param {InstanceConfigUpdateArgs} args - Arguments to update one InstanceConfig.
+     * @example
+     * // Update one InstanceConfig
+     * const instanceConfig = await prisma.instanceConfig.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends InstanceConfigUpdateArgs>(args: SelectSubset<T, InstanceConfigUpdateArgs<ExtArgs>>): Prisma__InstanceConfigClient<$Result.GetResult<Prisma.$InstanceConfigPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more InstanceConfigs.
+     * @param {InstanceConfigDeleteManyArgs} args - Arguments to filter InstanceConfigs to delete.
+     * @example
+     * // Delete a few InstanceConfigs
+     * const { count } = await prisma.instanceConfig.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends InstanceConfigDeleteManyArgs>(args?: SelectSubset<T, InstanceConfigDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more InstanceConfigs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InstanceConfigUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many InstanceConfigs
+     * const instanceConfig = await prisma.instanceConfig.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends InstanceConfigUpdateManyArgs>(args: SelectSubset<T, InstanceConfigUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more InstanceConfigs and returns the data updated in the database.
+     * @param {InstanceConfigUpdateManyAndReturnArgs} args - Arguments to update many InstanceConfigs.
+     * @example
+     * // Update many InstanceConfigs
+     * const instanceConfig = await prisma.instanceConfig.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more InstanceConfigs and only return the `id`
+     * const instanceConfigWithIdOnly = await prisma.instanceConfig.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends InstanceConfigUpdateManyAndReturnArgs>(args: SelectSubset<T, InstanceConfigUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InstanceConfigPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one InstanceConfig.
+     * @param {InstanceConfigUpsertArgs} args - Arguments to update or create a InstanceConfig.
+     * @example
+     * // Update or create a InstanceConfig
+     * const instanceConfig = await prisma.instanceConfig.upsert({
+     *   create: {
+     *     // ... data to create a InstanceConfig
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the InstanceConfig we want to update
+     *   }
+     * })
+     */
+    upsert<T extends InstanceConfigUpsertArgs>(args: SelectSubset<T, InstanceConfigUpsertArgs<ExtArgs>>): Prisma__InstanceConfigClient<$Result.GetResult<Prisma.$InstanceConfigPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of InstanceConfigs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InstanceConfigCountArgs} args - Arguments to filter InstanceConfigs to count.
+     * @example
+     * // Count the number of InstanceConfigs
+     * const count = await prisma.instanceConfig.count({
+     *   where: {
+     *     // ... the filter for the InstanceConfigs we want to count
+     *   }
+     * })
+    **/
+    count<T extends InstanceConfigCountArgs>(
+      args?: Subset<T, InstanceConfigCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], InstanceConfigCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a InstanceConfig.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InstanceConfigAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends InstanceConfigAggregateArgs>(args: Subset<T, InstanceConfigAggregateArgs>): Prisma.PrismaPromise<GetInstanceConfigAggregateType<T>>
+
+    /**
+     * Group by InstanceConfig.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InstanceConfigGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends InstanceConfigGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: InstanceConfigGroupByArgs['orderBy'] }
+        : { orderBy?: InstanceConfigGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, InstanceConfigGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetInstanceConfigGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the InstanceConfig model
+   */
+  readonly fields: InstanceConfigFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for InstanceConfig.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__InstanceConfigClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    instance<T extends InstanceDefaultArgs<ExtArgs> = {}>(args?: Subset<T, InstanceDefaultArgs<ExtArgs>>): Prisma__InstanceClient<$Result.GetResult<Prisma.$InstancePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the InstanceConfig model
+   */
+  interface InstanceConfigFieldRefs {
+    readonly id: FieldRef<"InstanceConfig", 'String'>
+    readonly instanceId: FieldRef<"InstanceConfig", 'String'>
+    readonly createdAt: FieldRef<"InstanceConfig", 'DateTime'>
+    readonly updatedAt: FieldRef<"InstanceConfig", 'DateTime'>
+    readonly port: FieldRef<"InstanceConfig", 'Int'>
+    readonly openrouterApiKey: FieldRef<"InstanceConfig", 'String'>
+    readonly defaultLlmModel: FieldRef<"InstanceConfig", 'String'>
+    readonly pineconeApiKey: FieldRef<"InstanceConfig", 'String'>
+    readonly pineconeIndexName: FieldRef<"InstanceConfig", 'String'>
+    readonly discordBotToken: FieldRef<"InstanceConfig", 'String'>
+    readonly discordIncidentChannelId: FieldRef<"InstanceConfig", 'String'>
+    readonly githubToken: FieldRef<"InstanceConfig", 'String'>
+    readonly githubRepoOwner: FieldRef<"InstanceConfig", 'String'>
+    readonly githubRepoName: FieldRef<"InstanceConfig", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * InstanceConfig findUnique
+   */
+  export type InstanceConfigFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InstanceConfig
+     */
+    select?: InstanceConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InstanceConfig
+     */
+    omit?: InstanceConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which InstanceConfig to fetch.
+     */
+    where: InstanceConfigWhereUniqueInput
+  }
+
+  /**
+   * InstanceConfig findUniqueOrThrow
+   */
+  export type InstanceConfigFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InstanceConfig
+     */
+    select?: InstanceConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InstanceConfig
+     */
+    omit?: InstanceConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which InstanceConfig to fetch.
+     */
+    where: InstanceConfigWhereUniqueInput
+  }
+
+  /**
+   * InstanceConfig findFirst
+   */
+  export type InstanceConfigFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InstanceConfig
+     */
+    select?: InstanceConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InstanceConfig
+     */
+    omit?: InstanceConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which InstanceConfig to fetch.
+     */
+    where?: InstanceConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of InstanceConfigs to fetch.
+     */
+    orderBy?: InstanceConfigOrderByWithRelationInput | InstanceConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for InstanceConfigs.
+     */
+    cursor?: InstanceConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` InstanceConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` InstanceConfigs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of InstanceConfigs.
+     */
+    distinct?: InstanceConfigScalarFieldEnum | InstanceConfigScalarFieldEnum[]
+  }
+
+  /**
+   * InstanceConfig findFirstOrThrow
+   */
+  export type InstanceConfigFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InstanceConfig
+     */
+    select?: InstanceConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InstanceConfig
+     */
+    omit?: InstanceConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which InstanceConfig to fetch.
+     */
+    where?: InstanceConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of InstanceConfigs to fetch.
+     */
+    orderBy?: InstanceConfigOrderByWithRelationInput | InstanceConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for InstanceConfigs.
+     */
+    cursor?: InstanceConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` InstanceConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` InstanceConfigs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of InstanceConfigs.
+     */
+    distinct?: InstanceConfigScalarFieldEnum | InstanceConfigScalarFieldEnum[]
+  }
+
+  /**
+   * InstanceConfig findMany
+   */
+  export type InstanceConfigFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InstanceConfig
+     */
+    select?: InstanceConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InstanceConfig
+     */
+    omit?: InstanceConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceConfigInclude<ExtArgs> | null
+    /**
+     * Filter, which InstanceConfigs to fetch.
+     */
+    where?: InstanceConfigWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of InstanceConfigs to fetch.
+     */
+    orderBy?: InstanceConfigOrderByWithRelationInput | InstanceConfigOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing InstanceConfigs.
+     */
+    cursor?: InstanceConfigWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` InstanceConfigs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` InstanceConfigs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of InstanceConfigs.
+     */
+    distinct?: InstanceConfigScalarFieldEnum | InstanceConfigScalarFieldEnum[]
+  }
+
+  /**
+   * InstanceConfig create
+   */
+  export type InstanceConfigCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InstanceConfig
+     */
+    select?: InstanceConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InstanceConfig
+     */
+    omit?: InstanceConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceConfigInclude<ExtArgs> | null
+    /**
+     * The data needed to create a InstanceConfig.
+     */
+    data: XOR<InstanceConfigCreateInput, InstanceConfigUncheckedCreateInput>
+  }
+
+  /**
+   * InstanceConfig createMany
+   */
+  export type InstanceConfigCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many InstanceConfigs.
+     */
+    data: InstanceConfigCreateManyInput | InstanceConfigCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * InstanceConfig createManyAndReturn
+   */
+  export type InstanceConfigCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InstanceConfig
+     */
+    select?: InstanceConfigSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the InstanceConfig
+     */
+    omit?: InstanceConfigOmit<ExtArgs> | null
+    /**
+     * The data used to create many InstanceConfigs.
+     */
+    data: InstanceConfigCreateManyInput | InstanceConfigCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceConfigIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * InstanceConfig update
+   */
+  export type InstanceConfigUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InstanceConfig
+     */
+    select?: InstanceConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InstanceConfig
+     */
+    omit?: InstanceConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceConfigInclude<ExtArgs> | null
+    /**
+     * The data needed to update a InstanceConfig.
+     */
+    data: XOR<InstanceConfigUpdateInput, InstanceConfigUncheckedUpdateInput>
+    /**
+     * Choose, which InstanceConfig to update.
+     */
+    where: InstanceConfigWhereUniqueInput
+  }
+
+  /**
+   * InstanceConfig updateMany
+   */
+  export type InstanceConfigUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update InstanceConfigs.
+     */
+    data: XOR<InstanceConfigUpdateManyMutationInput, InstanceConfigUncheckedUpdateManyInput>
+    /**
+     * Filter which InstanceConfigs to update
+     */
+    where?: InstanceConfigWhereInput
+    /**
+     * Limit how many InstanceConfigs to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * InstanceConfig updateManyAndReturn
+   */
+  export type InstanceConfigUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InstanceConfig
+     */
+    select?: InstanceConfigSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the InstanceConfig
+     */
+    omit?: InstanceConfigOmit<ExtArgs> | null
+    /**
+     * The data used to update InstanceConfigs.
+     */
+    data: XOR<InstanceConfigUpdateManyMutationInput, InstanceConfigUncheckedUpdateManyInput>
+    /**
+     * Filter which InstanceConfigs to update
+     */
+    where?: InstanceConfigWhereInput
+    /**
+     * Limit how many InstanceConfigs to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceConfigIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * InstanceConfig upsert
+   */
+  export type InstanceConfigUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InstanceConfig
+     */
+    select?: InstanceConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InstanceConfig
+     */
+    omit?: InstanceConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceConfigInclude<ExtArgs> | null
+    /**
+     * The filter to search for the InstanceConfig to update in case it exists.
+     */
+    where: InstanceConfigWhereUniqueInput
+    /**
+     * In case the InstanceConfig found by the `where` argument doesn't exist, create a new InstanceConfig with this data.
+     */
+    create: XOR<InstanceConfigCreateInput, InstanceConfigUncheckedCreateInput>
+    /**
+     * In case the InstanceConfig was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<InstanceConfigUpdateInput, InstanceConfigUncheckedUpdateInput>
+  }
+
+  /**
+   * InstanceConfig delete
+   */
+  export type InstanceConfigDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InstanceConfig
+     */
+    select?: InstanceConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InstanceConfig
+     */
+    omit?: InstanceConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceConfigInclude<ExtArgs> | null
+    /**
+     * Filter which InstanceConfig to delete.
+     */
+    where: InstanceConfigWhereUniqueInput
+  }
+
+  /**
+   * InstanceConfig deleteMany
+   */
+  export type InstanceConfigDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which InstanceConfigs to delete
+     */
+    where?: InstanceConfigWhereInput
+    /**
+     * Limit how many InstanceConfigs to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * InstanceConfig without action
+   */
+  export type InstanceConfigDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InstanceConfig
+     */
+    select?: InstanceConfigSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InstanceConfig
+     */
+    omit?: InstanceConfigOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InstanceConfigInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -5659,6 +8178,37 @@ export namespace Prisma {
   };
 
   export type VerificationScalarFieldEnum = (typeof VerificationScalarFieldEnum)[keyof typeof VerificationScalarFieldEnum]
+
+
+  export const InstanceScalarFieldEnum: {
+    id: 'id',
+    name: 'name',
+    userId: 'userId',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type InstanceScalarFieldEnum = (typeof InstanceScalarFieldEnum)[keyof typeof InstanceScalarFieldEnum]
+
+
+  export const InstanceConfigScalarFieldEnum: {
+    id: 'id',
+    instanceId: 'instanceId',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt',
+    port: 'port',
+    openrouterApiKey: 'openrouterApiKey',
+    defaultLlmModel: 'defaultLlmModel',
+    pineconeApiKey: 'pineconeApiKey',
+    pineconeIndexName: 'pineconeIndexName',
+    discordBotToken: 'discordBotToken',
+    discordIncidentChannelId: 'discordIncidentChannelId',
+    githubToken: 'githubToken',
+    githubRepoOwner: 'githubRepoOwner',
+    githubRepoName: 'githubRepoName'
+  };
+
+  export type InstanceConfigScalarFieldEnum = (typeof InstanceConfigScalarFieldEnum)[keyof typeof InstanceConfigScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -5737,6 +8287,20 @@ export namespace Prisma {
    */
   export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
     
+
+
+  /**
+   * Reference to a field of type 'Float'
+   */
+  export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+    
+
+
+  /**
+   * Reference to a field of type 'Float[]'
+   */
+  export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
+    
   /**
    * Deep Input Types
    */
@@ -5755,6 +8319,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"User"> | Date | string
     sessions?: SessionListRelationFilter
     accounts?: AccountListRelationFilter
+    instances?: InstanceListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -5767,6 +8332,7 @@ export namespace Prisma {
     updatedAt?: SortOrder
     sessions?: SessionOrderByRelationAggregateInput
     accounts?: AccountOrderByRelationAggregateInput
+    instances?: InstanceOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -5782,6 +8348,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"User"> | Date | string
     sessions?: SessionListRelationFilter
     accounts?: AccountListRelationFilter
+    instances?: InstanceListRelationFilter
   }, "id" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -6032,6 +8599,166 @@ export namespace Prisma {
     updatedAt?: DateTimeNullableWithAggregatesFilter<"Verification"> | Date | string | null
   }
 
+  export type InstanceWhereInput = {
+    AND?: InstanceWhereInput | InstanceWhereInput[]
+    OR?: InstanceWhereInput[]
+    NOT?: InstanceWhereInput | InstanceWhereInput[]
+    id?: StringFilter<"Instance"> | string
+    name?: StringFilter<"Instance"> | string
+    userId?: StringFilter<"Instance"> | string
+    createdAt?: DateTimeFilter<"Instance"> | Date | string
+    updatedAt?: DateTimeFilter<"Instance"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    config?: XOR<InstanceConfigNullableScalarRelationFilter, InstanceConfigWhereInput> | null
+  }
+
+  export type InstanceOrderByWithRelationInput = {
+    id?: SortOrder
+    name?: SortOrder
+    userId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    user?: UserOrderByWithRelationInput
+    config?: InstanceConfigOrderByWithRelationInput
+  }
+
+  export type InstanceWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: InstanceWhereInput | InstanceWhereInput[]
+    OR?: InstanceWhereInput[]
+    NOT?: InstanceWhereInput | InstanceWhereInput[]
+    name?: StringFilter<"Instance"> | string
+    userId?: StringFilter<"Instance"> | string
+    createdAt?: DateTimeFilter<"Instance"> | Date | string
+    updatedAt?: DateTimeFilter<"Instance"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    config?: XOR<InstanceConfigNullableScalarRelationFilter, InstanceConfigWhereInput> | null
+  }, "id">
+
+  export type InstanceOrderByWithAggregationInput = {
+    id?: SortOrder
+    name?: SortOrder
+    userId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: InstanceCountOrderByAggregateInput
+    _max?: InstanceMaxOrderByAggregateInput
+    _min?: InstanceMinOrderByAggregateInput
+  }
+
+  export type InstanceScalarWhereWithAggregatesInput = {
+    AND?: InstanceScalarWhereWithAggregatesInput | InstanceScalarWhereWithAggregatesInput[]
+    OR?: InstanceScalarWhereWithAggregatesInput[]
+    NOT?: InstanceScalarWhereWithAggregatesInput | InstanceScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Instance"> | string
+    name?: StringWithAggregatesFilter<"Instance"> | string
+    userId?: StringWithAggregatesFilter<"Instance"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"Instance"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"Instance"> | Date | string
+  }
+
+  export type InstanceConfigWhereInput = {
+    AND?: InstanceConfigWhereInput | InstanceConfigWhereInput[]
+    OR?: InstanceConfigWhereInput[]
+    NOT?: InstanceConfigWhereInput | InstanceConfigWhereInput[]
+    id?: StringFilter<"InstanceConfig"> | string
+    instanceId?: StringFilter<"InstanceConfig"> | string
+    createdAt?: DateTimeFilter<"InstanceConfig"> | Date | string
+    updatedAt?: DateTimeFilter<"InstanceConfig"> | Date | string
+    port?: IntNullableFilter<"InstanceConfig"> | number | null
+    openrouterApiKey?: StringNullableFilter<"InstanceConfig"> | string | null
+    defaultLlmModel?: StringNullableFilter<"InstanceConfig"> | string | null
+    pineconeApiKey?: StringNullableFilter<"InstanceConfig"> | string | null
+    pineconeIndexName?: StringNullableFilter<"InstanceConfig"> | string | null
+    discordBotToken?: StringNullableFilter<"InstanceConfig"> | string | null
+    discordIncidentChannelId?: StringNullableFilter<"InstanceConfig"> | string | null
+    githubToken?: StringNullableFilter<"InstanceConfig"> | string | null
+    githubRepoOwner?: StringNullableFilter<"InstanceConfig"> | string | null
+    githubRepoName?: StringNullableFilter<"InstanceConfig"> | string | null
+    instance?: XOR<InstanceScalarRelationFilter, InstanceWhereInput>
+  }
+
+  export type InstanceConfigOrderByWithRelationInput = {
+    id?: SortOrder
+    instanceId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    port?: SortOrderInput | SortOrder
+    openrouterApiKey?: SortOrderInput | SortOrder
+    defaultLlmModel?: SortOrderInput | SortOrder
+    pineconeApiKey?: SortOrderInput | SortOrder
+    pineconeIndexName?: SortOrderInput | SortOrder
+    discordBotToken?: SortOrderInput | SortOrder
+    discordIncidentChannelId?: SortOrderInput | SortOrder
+    githubToken?: SortOrderInput | SortOrder
+    githubRepoOwner?: SortOrderInput | SortOrder
+    githubRepoName?: SortOrderInput | SortOrder
+    instance?: InstanceOrderByWithRelationInput
+  }
+
+  export type InstanceConfigWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    instanceId?: string
+    AND?: InstanceConfigWhereInput | InstanceConfigWhereInput[]
+    OR?: InstanceConfigWhereInput[]
+    NOT?: InstanceConfigWhereInput | InstanceConfigWhereInput[]
+    createdAt?: DateTimeFilter<"InstanceConfig"> | Date | string
+    updatedAt?: DateTimeFilter<"InstanceConfig"> | Date | string
+    port?: IntNullableFilter<"InstanceConfig"> | number | null
+    openrouterApiKey?: StringNullableFilter<"InstanceConfig"> | string | null
+    defaultLlmModel?: StringNullableFilter<"InstanceConfig"> | string | null
+    pineconeApiKey?: StringNullableFilter<"InstanceConfig"> | string | null
+    pineconeIndexName?: StringNullableFilter<"InstanceConfig"> | string | null
+    discordBotToken?: StringNullableFilter<"InstanceConfig"> | string | null
+    discordIncidentChannelId?: StringNullableFilter<"InstanceConfig"> | string | null
+    githubToken?: StringNullableFilter<"InstanceConfig"> | string | null
+    githubRepoOwner?: StringNullableFilter<"InstanceConfig"> | string | null
+    githubRepoName?: StringNullableFilter<"InstanceConfig"> | string | null
+    instance?: XOR<InstanceScalarRelationFilter, InstanceWhereInput>
+  }, "id" | "instanceId">
+
+  export type InstanceConfigOrderByWithAggregationInput = {
+    id?: SortOrder
+    instanceId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    port?: SortOrderInput | SortOrder
+    openrouterApiKey?: SortOrderInput | SortOrder
+    defaultLlmModel?: SortOrderInput | SortOrder
+    pineconeApiKey?: SortOrderInput | SortOrder
+    pineconeIndexName?: SortOrderInput | SortOrder
+    discordBotToken?: SortOrderInput | SortOrder
+    discordIncidentChannelId?: SortOrderInput | SortOrder
+    githubToken?: SortOrderInput | SortOrder
+    githubRepoOwner?: SortOrderInput | SortOrder
+    githubRepoName?: SortOrderInput | SortOrder
+    _count?: InstanceConfigCountOrderByAggregateInput
+    _avg?: InstanceConfigAvgOrderByAggregateInput
+    _max?: InstanceConfigMaxOrderByAggregateInput
+    _min?: InstanceConfigMinOrderByAggregateInput
+    _sum?: InstanceConfigSumOrderByAggregateInput
+  }
+
+  export type InstanceConfigScalarWhereWithAggregatesInput = {
+    AND?: InstanceConfigScalarWhereWithAggregatesInput | InstanceConfigScalarWhereWithAggregatesInput[]
+    OR?: InstanceConfigScalarWhereWithAggregatesInput[]
+    NOT?: InstanceConfigScalarWhereWithAggregatesInput | InstanceConfigScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"InstanceConfig"> | string
+    instanceId?: StringWithAggregatesFilter<"InstanceConfig"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"InstanceConfig"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"InstanceConfig"> | Date | string
+    port?: IntNullableWithAggregatesFilter<"InstanceConfig"> | number | null
+    openrouterApiKey?: StringNullableWithAggregatesFilter<"InstanceConfig"> | string | null
+    defaultLlmModel?: StringNullableWithAggregatesFilter<"InstanceConfig"> | string | null
+    pineconeApiKey?: StringNullableWithAggregatesFilter<"InstanceConfig"> | string | null
+    pineconeIndexName?: StringNullableWithAggregatesFilter<"InstanceConfig"> | string | null
+    discordBotToken?: StringNullableWithAggregatesFilter<"InstanceConfig"> | string | null
+    discordIncidentChannelId?: StringNullableWithAggregatesFilter<"InstanceConfig"> | string | null
+    githubToken?: StringNullableWithAggregatesFilter<"InstanceConfig"> | string | null
+    githubRepoOwner?: StringNullableWithAggregatesFilter<"InstanceConfig"> | string | null
+    githubRepoName?: StringNullableWithAggregatesFilter<"InstanceConfig"> | string | null
+  }
+
   export type UserCreateInput = {
     id: string
     name: string
@@ -6042,6 +8769,7 @@ export namespace Prisma {
     updatedAt: Date | string
     sessions?: SessionCreateNestedManyWithoutUserInput
     accounts?: AccountCreateNestedManyWithoutUserInput
+    instances?: InstanceCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -6054,6 +8782,7 @@ export namespace Prisma {
     updatedAt: Date | string
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
+    instances?: InstanceUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserUpdateInput = {
@@ -6066,6 +8795,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     sessions?: SessionUpdateManyWithoutUserNestedInput
     accounts?: AccountUpdateManyWithoutUserNestedInput
+    instances?: InstanceUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -6078,6 +8808,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
+    instances?: InstanceUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -6360,6 +9091,183 @@ export namespace Prisma {
     updatedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
+  export type InstanceCreateInput = {
+    id?: string
+    name: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutInstancesInput
+    config?: InstanceConfigCreateNestedOneWithoutInstanceInput
+  }
+
+  export type InstanceUncheckedCreateInput = {
+    id?: string
+    name: string
+    userId: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    config?: InstanceConfigUncheckedCreateNestedOneWithoutInstanceInput
+  }
+
+  export type InstanceUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutInstancesNestedInput
+    config?: InstanceConfigUpdateOneWithoutInstanceNestedInput
+  }
+
+  export type InstanceUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    config?: InstanceConfigUncheckedUpdateOneWithoutInstanceNestedInput
+  }
+
+  export type InstanceCreateManyInput = {
+    id?: string
+    name: string
+    userId: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type InstanceUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InstanceUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InstanceConfigCreateInput = {
+    id?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    port?: number | null
+    openrouterApiKey?: string | null
+    defaultLlmModel?: string | null
+    pineconeApiKey?: string | null
+    pineconeIndexName?: string | null
+    discordBotToken?: string | null
+    discordIncidentChannelId?: string | null
+    githubToken?: string | null
+    githubRepoOwner?: string | null
+    githubRepoName?: string | null
+    instance: InstanceCreateNestedOneWithoutConfigInput
+  }
+
+  export type InstanceConfigUncheckedCreateInput = {
+    id?: string
+    instanceId: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    port?: number | null
+    openrouterApiKey?: string | null
+    defaultLlmModel?: string | null
+    pineconeApiKey?: string | null
+    pineconeIndexName?: string | null
+    discordBotToken?: string | null
+    discordIncidentChannelId?: string | null
+    githubToken?: string | null
+    githubRepoOwner?: string | null
+    githubRepoName?: string | null
+  }
+
+  export type InstanceConfigUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    port?: NullableIntFieldUpdateOperationsInput | number | null
+    openrouterApiKey?: NullableStringFieldUpdateOperationsInput | string | null
+    defaultLlmModel?: NullableStringFieldUpdateOperationsInput | string | null
+    pineconeApiKey?: NullableStringFieldUpdateOperationsInput | string | null
+    pineconeIndexName?: NullableStringFieldUpdateOperationsInput | string | null
+    discordBotToken?: NullableStringFieldUpdateOperationsInput | string | null
+    discordIncidentChannelId?: NullableStringFieldUpdateOperationsInput | string | null
+    githubToken?: NullableStringFieldUpdateOperationsInput | string | null
+    githubRepoOwner?: NullableStringFieldUpdateOperationsInput | string | null
+    githubRepoName?: NullableStringFieldUpdateOperationsInput | string | null
+    instance?: InstanceUpdateOneRequiredWithoutConfigNestedInput
+  }
+
+  export type InstanceConfigUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    instanceId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    port?: NullableIntFieldUpdateOperationsInput | number | null
+    openrouterApiKey?: NullableStringFieldUpdateOperationsInput | string | null
+    defaultLlmModel?: NullableStringFieldUpdateOperationsInput | string | null
+    pineconeApiKey?: NullableStringFieldUpdateOperationsInput | string | null
+    pineconeIndexName?: NullableStringFieldUpdateOperationsInput | string | null
+    discordBotToken?: NullableStringFieldUpdateOperationsInput | string | null
+    discordIncidentChannelId?: NullableStringFieldUpdateOperationsInput | string | null
+    githubToken?: NullableStringFieldUpdateOperationsInput | string | null
+    githubRepoOwner?: NullableStringFieldUpdateOperationsInput | string | null
+    githubRepoName?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type InstanceConfigCreateManyInput = {
+    id?: string
+    instanceId: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    port?: number | null
+    openrouterApiKey?: string | null
+    defaultLlmModel?: string | null
+    pineconeApiKey?: string | null
+    pineconeIndexName?: string | null
+    discordBotToken?: string | null
+    discordIncidentChannelId?: string | null
+    githubToken?: string | null
+    githubRepoOwner?: string | null
+    githubRepoName?: string | null
+  }
+
+  export type InstanceConfigUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    port?: NullableIntFieldUpdateOperationsInput | number | null
+    openrouterApiKey?: NullableStringFieldUpdateOperationsInput | string | null
+    defaultLlmModel?: NullableStringFieldUpdateOperationsInput | string | null
+    pineconeApiKey?: NullableStringFieldUpdateOperationsInput | string | null
+    pineconeIndexName?: NullableStringFieldUpdateOperationsInput | string | null
+    discordBotToken?: NullableStringFieldUpdateOperationsInput | string | null
+    discordIncidentChannelId?: NullableStringFieldUpdateOperationsInput | string | null
+    githubToken?: NullableStringFieldUpdateOperationsInput | string | null
+    githubRepoOwner?: NullableStringFieldUpdateOperationsInput | string | null
+    githubRepoName?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type InstanceConfigUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    instanceId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    port?: NullableIntFieldUpdateOperationsInput | number | null
+    openrouterApiKey?: NullableStringFieldUpdateOperationsInput | string | null
+    defaultLlmModel?: NullableStringFieldUpdateOperationsInput | string | null
+    pineconeApiKey?: NullableStringFieldUpdateOperationsInput | string | null
+    pineconeIndexName?: NullableStringFieldUpdateOperationsInput | string | null
+    discordBotToken?: NullableStringFieldUpdateOperationsInput | string | null
+    discordIncidentChannelId?: NullableStringFieldUpdateOperationsInput | string | null
+    githubToken?: NullableStringFieldUpdateOperationsInput | string | null
+    githubRepoOwner?: NullableStringFieldUpdateOperationsInput | string | null
+    githubRepoName?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -6418,6 +9326,12 @@ export namespace Prisma {
     none?: AccountWhereInput
   }
 
+  export type InstanceListRelationFilter = {
+    every?: InstanceWhereInput
+    some?: InstanceWhereInput
+    none?: InstanceWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -6428,6 +9342,10 @@ export namespace Prisma {
   }
 
   export type AccountOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type InstanceOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -6657,6 +9575,126 @@ export namespace Prisma {
     updatedAt?: SortOrder
   }
 
+  export type InstanceConfigNullableScalarRelationFilter = {
+    is?: InstanceConfigWhereInput | null
+    isNot?: InstanceConfigWhereInput | null
+  }
+
+  export type InstanceCountOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    userId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type InstanceMaxOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    userId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type InstanceMinOrderByAggregateInput = {
+    id?: SortOrder
+    name?: SortOrder
+    userId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type IntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type InstanceScalarRelationFilter = {
+    is?: InstanceWhereInput
+    isNot?: InstanceWhereInput
+  }
+
+  export type InstanceConfigCountOrderByAggregateInput = {
+    id?: SortOrder
+    instanceId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    port?: SortOrder
+    openrouterApiKey?: SortOrder
+    defaultLlmModel?: SortOrder
+    pineconeApiKey?: SortOrder
+    pineconeIndexName?: SortOrder
+    discordBotToken?: SortOrder
+    discordIncidentChannelId?: SortOrder
+    githubToken?: SortOrder
+    githubRepoOwner?: SortOrder
+    githubRepoName?: SortOrder
+  }
+
+  export type InstanceConfigAvgOrderByAggregateInput = {
+    port?: SortOrder
+  }
+
+  export type InstanceConfigMaxOrderByAggregateInput = {
+    id?: SortOrder
+    instanceId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    port?: SortOrder
+    openrouterApiKey?: SortOrder
+    defaultLlmModel?: SortOrder
+    pineconeApiKey?: SortOrder
+    pineconeIndexName?: SortOrder
+    discordBotToken?: SortOrder
+    discordIncidentChannelId?: SortOrder
+    githubToken?: SortOrder
+    githubRepoOwner?: SortOrder
+    githubRepoName?: SortOrder
+  }
+
+  export type InstanceConfigMinOrderByAggregateInput = {
+    id?: SortOrder
+    instanceId?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    port?: SortOrder
+    openrouterApiKey?: SortOrder
+    defaultLlmModel?: SortOrder
+    pineconeApiKey?: SortOrder
+    pineconeIndexName?: SortOrder
+    discordBotToken?: SortOrder
+    discordIncidentChannelId?: SortOrder
+    githubToken?: SortOrder
+    githubRepoOwner?: SortOrder
+    githubRepoName?: SortOrder
+  }
+
+  export type InstanceConfigSumOrderByAggregateInput = {
+    port?: SortOrder
+  }
+
+  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
+  }
+
   export type SessionCreateNestedManyWithoutUserInput = {
     create?: XOR<SessionCreateWithoutUserInput, SessionUncheckedCreateWithoutUserInput> | SessionCreateWithoutUserInput[] | SessionUncheckedCreateWithoutUserInput[]
     connectOrCreate?: SessionCreateOrConnectWithoutUserInput | SessionCreateOrConnectWithoutUserInput[]
@@ -6671,6 +9709,13 @@ export namespace Prisma {
     connect?: AccountWhereUniqueInput | AccountWhereUniqueInput[]
   }
 
+  export type InstanceCreateNestedManyWithoutUserInput = {
+    create?: XOR<InstanceCreateWithoutUserInput, InstanceUncheckedCreateWithoutUserInput> | InstanceCreateWithoutUserInput[] | InstanceUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: InstanceCreateOrConnectWithoutUserInput | InstanceCreateOrConnectWithoutUserInput[]
+    createMany?: InstanceCreateManyUserInputEnvelope
+    connect?: InstanceWhereUniqueInput | InstanceWhereUniqueInput[]
+  }
+
   export type SessionUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<SessionCreateWithoutUserInput, SessionUncheckedCreateWithoutUserInput> | SessionCreateWithoutUserInput[] | SessionUncheckedCreateWithoutUserInput[]
     connectOrCreate?: SessionCreateOrConnectWithoutUserInput | SessionCreateOrConnectWithoutUserInput[]
@@ -6683,6 +9728,13 @@ export namespace Prisma {
     connectOrCreate?: AccountCreateOrConnectWithoutUserInput | AccountCreateOrConnectWithoutUserInput[]
     createMany?: AccountCreateManyUserInputEnvelope
     connect?: AccountWhereUniqueInput | AccountWhereUniqueInput[]
+  }
+
+  export type InstanceUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<InstanceCreateWithoutUserInput, InstanceUncheckedCreateWithoutUserInput> | InstanceCreateWithoutUserInput[] | InstanceUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: InstanceCreateOrConnectWithoutUserInput | InstanceCreateOrConnectWithoutUserInput[]
+    createMany?: InstanceCreateManyUserInputEnvelope
+    connect?: InstanceWhereUniqueInput | InstanceWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -6729,6 +9781,20 @@ export namespace Prisma {
     deleteMany?: AccountScalarWhereInput | AccountScalarWhereInput[]
   }
 
+  export type InstanceUpdateManyWithoutUserNestedInput = {
+    create?: XOR<InstanceCreateWithoutUserInput, InstanceUncheckedCreateWithoutUserInput> | InstanceCreateWithoutUserInput[] | InstanceUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: InstanceCreateOrConnectWithoutUserInput | InstanceCreateOrConnectWithoutUserInput[]
+    upsert?: InstanceUpsertWithWhereUniqueWithoutUserInput | InstanceUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: InstanceCreateManyUserInputEnvelope
+    set?: InstanceWhereUniqueInput | InstanceWhereUniqueInput[]
+    disconnect?: InstanceWhereUniqueInput | InstanceWhereUniqueInput[]
+    delete?: InstanceWhereUniqueInput | InstanceWhereUniqueInput[]
+    connect?: InstanceWhereUniqueInput | InstanceWhereUniqueInput[]
+    update?: InstanceUpdateWithWhereUniqueWithoutUserInput | InstanceUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: InstanceUpdateManyWithWhereWithoutUserInput | InstanceUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: InstanceScalarWhereInput | InstanceScalarWhereInput[]
+  }
+
   export type SessionUncheckedUpdateManyWithoutUserNestedInput = {
     create?: XOR<SessionCreateWithoutUserInput, SessionUncheckedCreateWithoutUserInput> | SessionCreateWithoutUserInput[] | SessionUncheckedCreateWithoutUserInput[]
     connectOrCreate?: SessionCreateOrConnectWithoutUserInput | SessionCreateOrConnectWithoutUserInput[]
@@ -6755,6 +9821,20 @@ export namespace Prisma {
     update?: AccountUpdateWithWhereUniqueWithoutUserInput | AccountUpdateWithWhereUniqueWithoutUserInput[]
     updateMany?: AccountUpdateManyWithWhereWithoutUserInput | AccountUpdateManyWithWhereWithoutUserInput[]
     deleteMany?: AccountScalarWhereInput | AccountScalarWhereInput[]
+  }
+
+  export type InstanceUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<InstanceCreateWithoutUserInput, InstanceUncheckedCreateWithoutUserInput> | InstanceCreateWithoutUserInput[] | InstanceUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: InstanceCreateOrConnectWithoutUserInput | InstanceCreateOrConnectWithoutUserInput[]
+    upsert?: InstanceUpsertWithWhereUniqueWithoutUserInput | InstanceUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: InstanceCreateManyUserInputEnvelope
+    set?: InstanceWhereUniqueInput | InstanceWhereUniqueInput[]
+    disconnect?: InstanceWhereUniqueInput | InstanceWhereUniqueInput[]
+    delete?: InstanceWhereUniqueInput | InstanceWhereUniqueInput[]
+    connect?: InstanceWhereUniqueInput | InstanceWhereUniqueInput[]
+    update?: InstanceUpdateWithWhereUniqueWithoutUserInput | InstanceUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: InstanceUpdateManyWithWhereWithoutUserInput | InstanceUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: InstanceScalarWhereInput | InstanceScalarWhereInput[]
   }
 
   export type UserCreateNestedOneWithoutSessionsInput = {
@@ -6787,6 +9867,74 @@ export namespace Prisma {
     upsert?: UserUpsertWithoutAccountsInput
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutAccountsInput, UserUpdateWithoutAccountsInput>, UserUncheckedUpdateWithoutAccountsInput>
+  }
+
+  export type UserCreateNestedOneWithoutInstancesInput = {
+    create?: XOR<UserCreateWithoutInstancesInput, UserUncheckedCreateWithoutInstancesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutInstancesInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type InstanceConfigCreateNestedOneWithoutInstanceInput = {
+    create?: XOR<InstanceConfigCreateWithoutInstanceInput, InstanceConfigUncheckedCreateWithoutInstanceInput>
+    connectOrCreate?: InstanceConfigCreateOrConnectWithoutInstanceInput
+    connect?: InstanceConfigWhereUniqueInput
+  }
+
+  export type InstanceConfigUncheckedCreateNestedOneWithoutInstanceInput = {
+    create?: XOR<InstanceConfigCreateWithoutInstanceInput, InstanceConfigUncheckedCreateWithoutInstanceInput>
+    connectOrCreate?: InstanceConfigCreateOrConnectWithoutInstanceInput
+    connect?: InstanceConfigWhereUniqueInput
+  }
+
+  export type UserUpdateOneRequiredWithoutInstancesNestedInput = {
+    create?: XOR<UserCreateWithoutInstancesInput, UserUncheckedCreateWithoutInstancesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutInstancesInput
+    upsert?: UserUpsertWithoutInstancesInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutInstancesInput, UserUpdateWithoutInstancesInput>, UserUncheckedUpdateWithoutInstancesInput>
+  }
+
+  export type InstanceConfigUpdateOneWithoutInstanceNestedInput = {
+    create?: XOR<InstanceConfigCreateWithoutInstanceInput, InstanceConfigUncheckedCreateWithoutInstanceInput>
+    connectOrCreate?: InstanceConfigCreateOrConnectWithoutInstanceInput
+    upsert?: InstanceConfigUpsertWithoutInstanceInput
+    disconnect?: InstanceConfigWhereInput | boolean
+    delete?: InstanceConfigWhereInput | boolean
+    connect?: InstanceConfigWhereUniqueInput
+    update?: XOR<XOR<InstanceConfigUpdateToOneWithWhereWithoutInstanceInput, InstanceConfigUpdateWithoutInstanceInput>, InstanceConfigUncheckedUpdateWithoutInstanceInput>
+  }
+
+  export type InstanceConfigUncheckedUpdateOneWithoutInstanceNestedInput = {
+    create?: XOR<InstanceConfigCreateWithoutInstanceInput, InstanceConfigUncheckedCreateWithoutInstanceInput>
+    connectOrCreate?: InstanceConfigCreateOrConnectWithoutInstanceInput
+    upsert?: InstanceConfigUpsertWithoutInstanceInput
+    disconnect?: InstanceConfigWhereInput | boolean
+    delete?: InstanceConfigWhereInput | boolean
+    connect?: InstanceConfigWhereUniqueInput
+    update?: XOR<XOR<InstanceConfigUpdateToOneWithWhereWithoutInstanceInput, InstanceConfigUpdateWithoutInstanceInput>, InstanceConfigUncheckedUpdateWithoutInstanceInput>
+  }
+
+  export type InstanceCreateNestedOneWithoutConfigInput = {
+    create?: XOR<InstanceCreateWithoutConfigInput, InstanceUncheckedCreateWithoutConfigInput>
+    connectOrCreate?: InstanceCreateOrConnectWithoutConfigInput
+    connect?: InstanceWhereUniqueInput
+  }
+
+  export type NullableIntFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
+  export type InstanceUpdateOneRequiredWithoutConfigNestedInput = {
+    create?: XOR<InstanceCreateWithoutConfigInput, InstanceUncheckedCreateWithoutConfigInput>
+    connectOrCreate?: InstanceCreateOrConnectWithoutConfigInput
+    upsert?: InstanceUpsertWithoutConfigInput
+    connect?: InstanceWhereUniqueInput
+    update?: XOR<XOR<InstanceUpdateToOneWithWhereWithoutConfigInput, InstanceUpdateWithoutConfigInput>, InstanceUncheckedUpdateWithoutConfigInput>
   }
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -6936,6 +10084,33 @@ export namespace Prisma {
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
+  export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
+  }
+
+  export type NestedFloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
   export type SessionCreateWithoutUserInput = {
     id: string
     expiresAt: Date | string
@@ -7006,6 +10181,32 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type InstanceCreateWithoutUserInput = {
+    id?: string
+    name: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    config?: InstanceConfigCreateNestedOneWithoutInstanceInput
+  }
+
+  export type InstanceUncheckedCreateWithoutUserInput = {
+    id?: string
+    name: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    config?: InstanceConfigUncheckedCreateNestedOneWithoutInstanceInput
+  }
+
+  export type InstanceCreateOrConnectWithoutUserInput = {
+    where: InstanceWhereUniqueInput
+    create: XOR<InstanceCreateWithoutUserInput, InstanceUncheckedCreateWithoutUserInput>
+  }
+
+  export type InstanceCreateManyUserInputEnvelope = {
+    data: InstanceCreateManyUserInput | InstanceCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
   export type SessionUpsertWithWhereUniqueWithoutUserInput = {
     where: SessionWhereUniqueInput
     update: XOR<SessionUpdateWithoutUserInput, SessionUncheckedUpdateWithoutUserInput>
@@ -7071,6 +10272,33 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"Account"> | Date | string
   }
 
+  export type InstanceUpsertWithWhereUniqueWithoutUserInput = {
+    where: InstanceWhereUniqueInput
+    update: XOR<InstanceUpdateWithoutUserInput, InstanceUncheckedUpdateWithoutUserInput>
+    create: XOR<InstanceCreateWithoutUserInput, InstanceUncheckedCreateWithoutUserInput>
+  }
+
+  export type InstanceUpdateWithWhereUniqueWithoutUserInput = {
+    where: InstanceWhereUniqueInput
+    data: XOR<InstanceUpdateWithoutUserInput, InstanceUncheckedUpdateWithoutUserInput>
+  }
+
+  export type InstanceUpdateManyWithWhereWithoutUserInput = {
+    where: InstanceScalarWhereInput
+    data: XOR<InstanceUpdateManyMutationInput, InstanceUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type InstanceScalarWhereInput = {
+    AND?: InstanceScalarWhereInput | InstanceScalarWhereInput[]
+    OR?: InstanceScalarWhereInput[]
+    NOT?: InstanceScalarWhereInput | InstanceScalarWhereInput[]
+    id?: StringFilter<"Instance"> | string
+    name?: StringFilter<"Instance"> | string
+    userId?: StringFilter<"Instance"> | string
+    createdAt?: DateTimeFilter<"Instance"> | Date | string
+    updatedAt?: DateTimeFilter<"Instance"> | Date | string
+  }
+
   export type UserCreateWithoutSessionsInput = {
     id: string
     name: string
@@ -7080,6 +10308,7 @@ export namespace Prisma {
     createdAt: Date | string
     updatedAt: Date | string
     accounts?: AccountCreateNestedManyWithoutUserInput
+    instances?: InstanceCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutSessionsInput = {
@@ -7091,6 +10320,7 @@ export namespace Prisma {
     createdAt: Date | string
     updatedAt: Date | string
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
+    instances?: InstanceUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutSessionsInput = {
@@ -7118,6 +10348,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUpdateManyWithoutUserNestedInput
+    instances?: InstanceUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -7129,6 +10360,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
+    instances?: InstanceUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutAccountsInput = {
@@ -7140,6 +10372,7 @@ export namespace Prisma {
     createdAt: Date | string
     updatedAt: Date | string
     sessions?: SessionCreateNestedManyWithoutUserInput
+    instances?: InstanceCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutAccountsInput = {
@@ -7151,6 +10384,7 @@ export namespace Prisma {
     createdAt: Date | string
     updatedAt: Date | string
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    instances?: InstanceUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutAccountsInput = {
@@ -7178,6 +10412,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     sessions?: SessionUpdateManyWithoutUserNestedInput
+    instances?: InstanceUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAccountsInput = {
@@ -7189,6 +10424,199 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    instances?: InstanceUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserCreateWithoutInstancesInput = {
+    id: string
+    name: string
+    email: string
+    emailVerified: boolean
+    image?: string | null
+    createdAt: Date | string
+    updatedAt: Date | string
+    sessions?: SessionCreateNestedManyWithoutUserInput
+    accounts?: AccountCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutInstancesInput = {
+    id: string
+    name: string
+    email: string
+    emailVerified: boolean
+    image?: string | null
+    createdAt: Date | string
+    updatedAt: Date | string
+    sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutInstancesInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutInstancesInput, UserUncheckedCreateWithoutInstancesInput>
+  }
+
+  export type InstanceConfigCreateWithoutInstanceInput = {
+    id?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    port?: number | null
+    openrouterApiKey?: string | null
+    defaultLlmModel?: string | null
+    pineconeApiKey?: string | null
+    pineconeIndexName?: string | null
+    discordBotToken?: string | null
+    discordIncidentChannelId?: string | null
+    githubToken?: string | null
+    githubRepoOwner?: string | null
+    githubRepoName?: string | null
+  }
+
+  export type InstanceConfigUncheckedCreateWithoutInstanceInput = {
+    id?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    port?: number | null
+    openrouterApiKey?: string | null
+    defaultLlmModel?: string | null
+    pineconeApiKey?: string | null
+    pineconeIndexName?: string | null
+    discordBotToken?: string | null
+    discordIncidentChannelId?: string | null
+    githubToken?: string | null
+    githubRepoOwner?: string | null
+    githubRepoName?: string | null
+  }
+
+  export type InstanceConfigCreateOrConnectWithoutInstanceInput = {
+    where: InstanceConfigWhereUniqueInput
+    create: XOR<InstanceConfigCreateWithoutInstanceInput, InstanceConfigUncheckedCreateWithoutInstanceInput>
+  }
+
+  export type UserUpsertWithoutInstancesInput = {
+    update: XOR<UserUpdateWithoutInstancesInput, UserUncheckedUpdateWithoutInstancesInput>
+    create: XOR<UserCreateWithoutInstancesInput, UserUncheckedCreateWithoutInstancesInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutInstancesInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutInstancesInput, UserUncheckedUpdateWithoutInstancesInput>
+  }
+
+  export type UserUpdateWithoutInstancesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    emailVerified?: BoolFieldUpdateOperationsInput | boolean
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    sessions?: SessionUpdateManyWithoutUserNestedInput
+    accounts?: AccountUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutInstancesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    emailVerified?: BoolFieldUpdateOperationsInput | boolean
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type InstanceConfigUpsertWithoutInstanceInput = {
+    update: XOR<InstanceConfigUpdateWithoutInstanceInput, InstanceConfigUncheckedUpdateWithoutInstanceInput>
+    create: XOR<InstanceConfigCreateWithoutInstanceInput, InstanceConfigUncheckedCreateWithoutInstanceInput>
+    where?: InstanceConfigWhereInput
+  }
+
+  export type InstanceConfigUpdateToOneWithWhereWithoutInstanceInput = {
+    where?: InstanceConfigWhereInput
+    data: XOR<InstanceConfigUpdateWithoutInstanceInput, InstanceConfigUncheckedUpdateWithoutInstanceInput>
+  }
+
+  export type InstanceConfigUpdateWithoutInstanceInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    port?: NullableIntFieldUpdateOperationsInput | number | null
+    openrouterApiKey?: NullableStringFieldUpdateOperationsInput | string | null
+    defaultLlmModel?: NullableStringFieldUpdateOperationsInput | string | null
+    pineconeApiKey?: NullableStringFieldUpdateOperationsInput | string | null
+    pineconeIndexName?: NullableStringFieldUpdateOperationsInput | string | null
+    discordBotToken?: NullableStringFieldUpdateOperationsInput | string | null
+    discordIncidentChannelId?: NullableStringFieldUpdateOperationsInput | string | null
+    githubToken?: NullableStringFieldUpdateOperationsInput | string | null
+    githubRepoOwner?: NullableStringFieldUpdateOperationsInput | string | null
+    githubRepoName?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type InstanceConfigUncheckedUpdateWithoutInstanceInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    port?: NullableIntFieldUpdateOperationsInput | number | null
+    openrouterApiKey?: NullableStringFieldUpdateOperationsInput | string | null
+    defaultLlmModel?: NullableStringFieldUpdateOperationsInput | string | null
+    pineconeApiKey?: NullableStringFieldUpdateOperationsInput | string | null
+    pineconeIndexName?: NullableStringFieldUpdateOperationsInput | string | null
+    discordBotToken?: NullableStringFieldUpdateOperationsInput | string | null
+    discordIncidentChannelId?: NullableStringFieldUpdateOperationsInput | string | null
+    githubToken?: NullableStringFieldUpdateOperationsInput | string | null
+    githubRepoOwner?: NullableStringFieldUpdateOperationsInput | string | null
+    githubRepoName?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type InstanceCreateWithoutConfigInput = {
+    id?: string
+    name: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutInstancesInput
+  }
+
+  export type InstanceUncheckedCreateWithoutConfigInput = {
+    id?: string
+    name: string
+    userId: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type InstanceCreateOrConnectWithoutConfigInput = {
+    where: InstanceWhereUniqueInput
+    create: XOR<InstanceCreateWithoutConfigInput, InstanceUncheckedCreateWithoutConfigInput>
+  }
+
+  export type InstanceUpsertWithoutConfigInput = {
+    update: XOR<InstanceUpdateWithoutConfigInput, InstanceUncheckedUpdateWithoutConfigInput>
+    create: XOR<InstanceCreateWithoutConfigInput, InstanceUncheckedCreateWithoutConfigInput>
+    where?: InstanceWhereInput
+  }
+
+  export type InstanceUpdateToOneWithWhereWithoutConfigInput = {
+    where?: InstanceWhereInput
+    data: XOR<InstanceUpdateWithoutConfigInput, InstanceUncheckedUpdateWithoutConfigInput>
+  }
+
+  export type InstanceUpdateWithoutConfigInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutInstancesNestedInput
+  }
+
+  export type InstanceUncheckedUpdateWithoutConfigInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type SessionCreateManyUserInput = {
@@ -7214,6 +10642,13 @@ export namespace Prisma {
     password?: string | null
     createdAt: Date | string
     updatedAt: Date | string
+  }
+
+  export type InstanceCreateManyUserInput = {
+    id?: string
+    name: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type SessionUpdateWithoutUserInput = {
@@ -7287,6 +10722,29 @@ export namespace Prisma {
     refreshTokenExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     scope?: NullableStringFieldUpdateOperationsInput | string | null
     password?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InstanceUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    config?: InstanceConfigUpdateOneWithoutInstanceNestedInput
+  }
+
+  export type InstanceUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    config?: InstanceConfigUncheckedUpdateOneWithoutInstanceNestedInput
+  }
+
+  export type InstanceUncheckedUpdateManyWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }

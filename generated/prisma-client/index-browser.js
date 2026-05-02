@@ -166,6 +166,31 @@ exports.Prisma.VerificationScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.InstanceScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  userId: 'userId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.InstanceConfigScalarFieldEnum = {
+  id: 'id',
+  instanceId: 'instanceId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  port: 'port',
+  openrouterApiKey: 'openrouterApiKey',
+  defaultLlmModel: 'defaultLlmModel',
+  pineconeApiKey: 'pineconeApiKey',
+  pineconeIndexName: 'pineconeIndexName',
+  discordBotToken: 'discordBotToken',
+  discordIncidentChannelId: 'discordIncidentChannelId',
+  githubToken: 'githubToken',
+  githubRepoOwner: 'githubRepoOwner',
+  githubRepoName: 'githubRepoName'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -186,7 +211,9 @@ exports.Prisma.ModelName = {
   User: 'User',
   Session: 'Session',
   Account: 'Account',
-  Verification: 'Verification'
+  Verification: 'Verification',
+  Instance: 'Instance',
+  InstanceConfig: 'InstanceConfig'
 };
 
 /**

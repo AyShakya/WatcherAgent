@@ -1,21 +1,16 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
   output   = "../generated/prisma-client"
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
   // url       = env("DATABASE_URL")
   // directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id            String    @id
+  id            String      @id
   name          String
   email         String
   emailVerified Boolean
@@ -24,6 +19,7 @@ model User {
   updatedAt     DateTime
   sessions      Session[]
   accounts      Account[]
+  instances     Instance[]
 
   @@unique([email])
   @@map("user")
@@ -72,4 +68,49 @@ model Verification {
   updatedAt  DateTime?
 
   @@map("verification")
+}
+
+model Instance {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  config InstanceConfig?
+
+  @@index([userId])
+  @@map("instance")
+}
+
+model InstanceConfig {
+  id         String   @id @default(cuid())
+  instanceId String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  instance Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  // Server
+  port                     Int?    @default(3000)
+
+  // OpenRouter
+  openrouterApiKey         String? @db.Text // encrypted
+  defaultLlmModel          String? @default("google/gemini-flash-1.5")
+
+  // Pinecone
+  pineconeApiKey           String? @db.Text // encrypted
+  pineconeIndexName        String? @default("guardian-knowledge")
+
+  // Discord
+  discordBotToken          String? @db.Text // encrypted
+  discordIncidentChannelId String?
+
+  // GitHub
+  githubToken              String? @db.Text // encrypted
+  githubRepoOwner          String?
+  githubRepoName           String?
+
+  @@map("instance_config")
 }
