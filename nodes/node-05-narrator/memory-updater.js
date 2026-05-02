@@ -23,6 +23,19 @@ export async function updateAgentMemory(incidentData) {
     return { ...incidentData, memory_updated: false };
   }
 
+  if (
+    incidentData.runbooks?.[0]?.source === 'LOCAL_FALLBACK' ||
+    incidentData.runbooks?.[0]?.source === 'CACHED_FALLBACK'
+  ) {
+    console.warn('⚠️ Skipping memory update — resolution came from fallback, not a real fix.');
+    return { ...incidentData, memory_updated: false, skip_reason: 'FALLBACK_SOURCE' };
+  }
+
+  if (!incidentData.pr_url || incidentData.pr_status !== 'CREATED') {
+    console.warn('⚠️ Skipping memory update — no verified PR was created.');
+    return { ...incidentData, memory_updated: false, skip_reason: 'NO_VERIFIED_FIX' };
+  }
+
   const incidentId = incidentData.incident_id || `INC-UNKNOWN-${Date.now()}`;
   const normalizedSignature = normalizeErrorSignature(
     incidentData.raw_error_message || incidentData.reasoning || 'Unknown error'
