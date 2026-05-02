@@ -1,29 +1,25 @@
 {
-  "name": "guardian",
+  "name": "watcher-agent",
   "version": "1.0.0",
-  "description": "AI-Governed Incident Response for Regulated Financial Systems — Airia Hackathon 2026",
+  "description": "Watcher — AI-governed incident response agent (OpenRouter + Discord + GitHub + Pinecone)",
   "private": true,
   "type": "module",
   "engines": {
     "node": ">=20.0.0"
   },
   "workspaces": [
-    "nodes/*",
-    "community/*"
+    "nodes/*"
   ],
   "scripts": {
-    "setup": "node scripts/setup.js",
+    "start": "node server.js",
     "demo": "node scripts/trigger-demo.js",
-    "seed:confluence": "node scripts/seed-confluence.js",
-    "seed:kg": "node scripts/seed-knowledge-graph.js",
-    "test": "node --experimental-vm-modules node_modules/.bin/jest",
-    "test:unit": "jest tests/unit/",
-    "test:integration": "jest tests/integration/",
+    "demo:local": "node scripts/trigger-demo.js --mode=local",
+    "webhook": "node scripts/trigger-webhook.js",
     "postmortem:gen": "node scripts/generate-postmortem.js",
-    "lint": "eslint nodes/ community/ config/ --ext .js"
+    "seed:pinecone": "node scripts/seed-pinecone.js",
+    "lint": "eslint nodes/ --ext .js"
   },
   "dependencies": {
-    "@google-cloud/vertexai": "^1.12.0",
     "@pinecone-database/pinecone": "^7.2.0",
     "axios": "^1.15.2",
     "discord.js": "^14.26.3",
@@ -33,7 +29,6 @@
     "zod": "^3.22.0"
   },
   "devDependencies": {
-    "eslint": "^8.57.0",
-    "jest": "^29.7.0"
+    "eslint": "^8.57.0"
   }
 }
