@@ -11,14 +11,14 @@ import runFixerNode from './nodes/node-04-warroom/index.js';
 import runMemoryNode from './nodes/node-05-narrator/index.js';
 
 // Services
-import { saveIncident, getIncident, removeIncident } from './services/incident-store.js';
+import { saveIncident, getIncident, removeIncident, getAllIncidents } from './services/incident-store.js';
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 /**
  * WEBHOOK RECEIVER
@@ -88,6 +88,33 @@ app.post('/internal/discord-approve', async (req, res) => {
   }
 });
 
+/**
+ * INCIDENTS LIST — consumed by the Watcher UI dashboard
+ */
+app.get('/api/incidents', (req, res) => {
+  res.json(getAllIncidents());
+});
+
+/**
+ * SINGLE INCIDENT
+ */
+app.get('/api/incidents/:id', (req, res) => {
+  const incident = getIncident(req.params.id);
+  if (!incident) return res.status(404).json({ error: 'Not found' });
+  res.json(incident);
+});
+
+/**
+ * DISCORD IGNORE CALLBACK
+ * Triggered when a human clicks "Ignore" on the Discord card.
+ */
+app.post('/internal/discord-ignore', (req, res) => {
+  const { incident_id } = req.body;
+  console.log(`🗑️ Incident ${incident_id} ignored by human. Removing from store.`);
+  removeIncident(incident_id);
+  res.json({ status: 'ignored', incident_id });
+});
+
 app.listen(PORT, () => {
-  console.log(`🚀 Guardian AI SRE running at http://localhost:${PORT}`);
+  console.log(`🚀 Watcher Agent running at http://localhost:${PORT}`);
 });
