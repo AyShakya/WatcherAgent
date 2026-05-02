@@ -72,6 +72,7 @@ export async function updateAgentMemory(incidentData) {
         service: incidentData.service || 'unknown',
         fix_diff: incidentData.ai_fix_suggestion?.diff || null,
         fix_file: incidentData.ai_fix_suggestion?.file_path || null,
+        fix_file_ref: incidentData.ai_fix_suggestion?.file_ref || null,
         fix_reasoning: incidentData.ai_fix_suggestion?.reasoning || '',
         pr_url: incidentData.pr_url || null,
         title: `Fix: ${incidentId}`,
