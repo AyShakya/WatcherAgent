@@ -21,6 +21,15 @@ function getPineconeClient() {
 }
 
 /**
+ * Pinecone metadata values must be string | number | boolean | string[].
+ * This helper converts null/undefined to '' so upsert never fails.
+ */
+function meta(value, fallback = '') {
+  if (value === null || value === undefined) return fallback;
+  return value;
+}
+
+/**
  * Updates Pinecone RAG with the latest successful fix.
  */
 export async function updateAgentMemory(incidentData) {
@@ -51,6 +60,11 @@ export async function updateAgentMemory(incidentData) {
     ? [incidentData.ai_fix_suggestion.reasoning]
     : [];
 
+  const fixDiff    = meta(incidentData.ai_fix_suggestion?.diff);
+  const fixFile    = meta(incidentData.ai_fix_suggestion?.file_path);
+  const fixReason  = meta(incidentData.ai_fix_suggestion?.reasoning);
+  const prUrl      = meta(incidentData.pr_url);
+
   const chunks = [
     {
       id: `${incidentId}::error_signature`,
@@ -58,25 +72,29 @@ export async function updateAgentMemory(incidentData) {
       metadata: {
         chunk_type: 'error_signature',
         incident_id: incidentId,
-        service: incidentData.service || 'unknown',
+        service: meta(incidentData.service, 'unknown'),
         normalized_signature: normalizedSignature,
-        raw_error: incidentData.reasoning || '',
-        priority: incidentData.severity || 'unknown',
+        raw_error: meta(incidentData.reasoning),
+        priority: meta(incidentData.severity, 'unknown'),
         title: `Error: ${normalizedSignature.slice(0, 80)}`,
         steps: JSON.stringify(fixSteps),
-        pr_url: incidentData.pr_url || null,
+        // Store fix details here so RAG recall can surface them directly
+        fix_diff: fixDiff,
+        fix_file: fixFile,
+        fix_reasoning: fixReason,
+        pr_url: prUrl,
         source: 'HISTORICAL_FIX',
         created_at: new Date().toISOString()
       }
     },
     {
       id: `${incidentId}::root_cause`,
-      embedText: `ROOT CAUSE in ${incidentData.service || 'unknown'}: ${incidentData.ai_fix_suggestion?.reasoning || ''}`,
+      embedText: `ROOT CAUSE in ${incidentData.service || 'unknown'}: ${fixReason}`,
       metadata: {
         chunk_type: 'root_cause',
         incident_id: incidentId,
-        service: incidentData.service || 'unknown',
-        root_cause: incidentData.ai_fix_suggestion?.reasoning || '',
+        service: meta(incidentData.service, 'unknown'),
+        root_cause: fixReason,
         title: `Root cause: ${incidentId}`,
         steps: JSON.stringify(fixSteps),
         source: 'HISTORICAL_FIX',
@@ -85,16 +103,15 @@ export async function updateAgentMemory(incidentData) {
     },
     {
       id: `${incidentId}::fix`,
-      embedText: `FIX for ${incidentData.error_type || 'error'} in ${incidentData.service || 'unknown'}: ${incidentData.ai_fix_suggestion?.reasoning || ''}`,
+      embedText: `FIX for ${incidentData.error_type || 'error'} in ${incidentData.service || 'unknown'}: ${fixReason}`,
       metadata: {
         chunk_type: 'fix',
         incident_id: incidentId,
-        service: incidentData.service || 'unknown',
-        fix_diff: incidentData.ai_fix_suggestion?.diff || null,
-        fix_file: incidentData.ai_fix_suggestion?.file_path || null,
-        fix_file_ref: incidentData.ai_fix_suggestion?.file_ref || null,
-        fix_reasoning: incidentData.ai_fix_suggestion?.reasoning || '',
-        pr_url: incidentData.pr_url || null,
+        service: meta(incidentData.service, 'unknown'),
+        fix_diff: fixDiff,
+        fix_file: fixFile,
+        fix_reasoning: fixReason,
+        pr_url: prUrl,
         title: `Fix: ${incidentId}`,
         steps: JSON.stringify(fixSteps),
         source: 'HISTORICAL_FIX',
@@ -103,11 +120,11 @@ export async function updateAgentMemory(incidentData) {
     },
     {
       id: `${incidentId}::symptom`,
-      embedText: `SYMPTOM ${incidentData.service || 'unknown'} ${incidentData.severity || 'unknown'}: ${incidentData.reasoning || ''}`,
+      embedText: `SYMPTOM ${incidentData.service || 'unknown'} ${incidentData.severity || 'unknown'}: ${meta(incidentData.reasoning)}`,
       metadata: {
         chunk_type: 'symptom',
         incident_id: incidentId,
-        service: incidentData.service || 'unknown',
+        service: meta(incidentData.service, 'unknown'),
         title: `Symptom: ${incidentId}`,
         steps: JSON.stringify(fixSteps),
         source: 'HISTORICAL_FIX',

@@ -56,6 +56,31 @@ function validate(schema, data, label) {
   return result.data;
 }
 
+// ── STALE HITL CLEANUP ──────────────────────────────────────────────────────
+// Incidents that never received a Discord approval/ignore are cleaned up after
+// HITL_EXPIRY_MINUTES to prevent the store from growing unbounded.
+const HITL_EXPIRY_MS = parseInt(process.env.HITL_EXPIRY_MINUTES || '90', 10) * 60 * 1000;
+setInterval(async () => {
+  try {
+    const all = await getAllIncidents();
+    const now = Date.now();
+    for (const incident of all) {
+      const status = incident.hitl?.hitl_status;
+      const initiatedAt = incident.hitl?.hitl_initiated_at
+        ? new Date(incident.hitl.hitl_initiated_at).getTime()
+        : new Date(incident.triggered_at || 0).getTime();
+
+      if (status === 'AWAITING_APPROVAL' && now - initiatedAt > HITL_EXPIRY_MS) {
+        console.warn(`⏰ Stale HITL expired: ${incident.incident_id} — removing from store.`);
+        await removeIncident(incident.incident_id);
+      }
+    }
+  } catch (e) {
+    console.error('❌ Stale HITL cleanup error:', e.message);
+  }
+}, 5 * 60 * 1000); // run every 5 minutes
+// ── END STALE HITL CLEANUP ──────────────────────────────────────────────────
+
 /**
  * WEBHOOK RECEIVER
  * Entry point for deployment/error alerts.
@@ -67,6 +92,39 @@ app.post('/webhook', async (req, res) => {
     console.error('❌ Webhook received with empty payload.');
     return res.status(400).json({ error: 'Payload is required' });
   }
+
+  // ── NOISE / FALSE-POSITIVE FILTER ───────────────────────────────────────
+  // Reject alerts whose metrics are far below actionable thresholds so we
+  // don't wake on-call engineers for normal traffic blips.
+  const alert = payload.alert || {};
+  const errorRate  = typeof alert.errorRate  === 'number' ? alert.errorRate  : 1;
+  const latencyMs  = typeof alert.latencyMs  === 'number' ? alert.latencyMs  : 9999;
+  const durationMin = typeof alert.durationMin === 'number' ? alert.durationMin : 99;
+  const NOISE_ERROR_RATE  = parseFloat(process.env.NOISE_ERROR_RATE_THRESHOLD  || '0.02');
+  const NOISE_LATENCY_MS  = parseInt(process.env.NOISE_LATENCY_MS_THRESHOLD    || '200',  10);
+  const NOISE_DURATION_MIN = parseInt(process.env.NOISE_DURATION_MIN_THRESHOLD || '1',    10);
+
+  if (errorRate < NOISE_ERROR_RATE && latencyMs < NOISE_LATENCY_MS && durationMin < NOISE_DURATION_MIN) {
+    console.log(`🔕 Noise filter: alert below actionable thresholds (errorRate=${errorRate}, latencyMs=${latencyMs}, durationMin=${durationMin}). Skipping pipeline.`);
+    return res.status(200).json({ status: 'noise_filtered', reason: 'Metrics below actionable threshold' });
+  }
+  // ── END NOISE FILTER ────────────────────────────────────────────────────
+
+  // ── DUPLICATE INCIDENT GUARD ────────────────────────────────────────────
+  // If an incident with the same ID is already in-flight (AWAITING_APPROVAL),
+  // reject the duplicate to prevent double-processing.
+  if (payload.incident_id) {
+    const existing = await getIncident(payload.incident_id);
+    if (existing) {
+      console.warn(`⚠️  Duplicate incident rejected: ${payload.incident_id} is already in store (status: ${existing.hitl?.hitl_status || 'unknown'}).`);
+      return res.status(409).json({
+        status: 'duplicate',
+        incident_id: payload.incident_id,
+        existing_status: existing.hitl?.hitl_status || 'PENDING',
+      });
+    }
+  }
+  // ── END DUPLICATE GUARD ─────────────────────────────────────────────────
 
   console.log('🛡️ Webhook Received. Initiating Pipeline...');
 

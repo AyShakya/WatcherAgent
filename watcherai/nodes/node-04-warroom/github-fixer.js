@@ -118,13 +118,102 @@ async function getCandidatePaths(keywords, service, defaultBranch) {
 export async function createFixPR(incidentData) {
   if (!process.env.GITHUB_TOKEN || !REPO_OWNER || !REPO_NAME) {
     console.error('❌ GitHub credentials missing. Skipping PR creation.');
-    return { ...incidentData, pr_status: 'SKIPPED_NO_AUTH' };
+    return { ...incidentData, pr_status: 'SKIPPED_NO_AUTH', fix_initiated_at: new Date().toISOString() };
   }
 
   const branchName = `guardian/fix-${incidentData.incident_id.toLowerCase()}`;
   let baseBranch = 'main';
   let currentContent = null;
   let aiFix = { file_path: 'N/A', new_content: '', reasoning: 'AI could not identify a fix.' };
+
+  // ── MEMORY RECALL FAST-PATH ──────────────────────────────────────────────────
+  // If Pinecone returned a HISTORICAL_FIX with a diff from a past resolved
+  // incident, we already know the fix. Skip the expensive LLM audit phases and
+  // apply the recalled patch directly. This is typically 3–5× faster.
+  const historicalFix = incidentData.runbooks?.find(
+    r => r.source === 'HISTORICAL_FIX' && r.fix_diff && r.fix_diff.trim().length > 10
+  );
+  if (historicalFix) {
+    console.log(`🧠 Memory recall hit! Replaying fix from incident ${historicalFix.incident_id} (skipping LLM audit phases)`);
+    aiFix = {
+      file_path: historicalFix.fix_file || null,
+      diff: historicalFix.fix_diff,
+      new_content: null, // diff-only replay; GitHub PR body will show the diff
+      reasoning: `[MEMORY RECALL from ${historicalFix.incident_id}] ${historicalFix.root_cause || historicalFix.steps?.[0] || 'Previously resolved identical error.'}`,
+      confidence: historicalFix.relevance || 0.95,
+      recalled_from: historicalFix.incident_id,
+      recalled_pr: historicalFix.pr_url || null,
+    };
+
+    // If there's no file to commit we still create a PR with the postmortem
+    // so the incident is tracked on GitHub.
+    if (!aiFix.file_path) {
+      console.warn('⚠️ Memory recall: no file_path in historical fix — PR will document the incident only.');
+    }
+
+    // Jump straight to GitHub deployment (skip phases 1–3)
+    try {
+      baseBranch = await getDefaultBranch();
+      const { data: baseRef } = await octokit.rest.git.getRef({ owner: REPO_OWNER, repo: REPO_NAME, ref: `heads/${baseBranch}` });
+      const baseSha = baseRef.object.sha;
+
+      console.log(`🌿 Creating recall branch: ${branchName}`);
+      await octokit.rest.git.createRef({ owner: REPO_OWNER, repo: REPO_NAME, ref: `refs/heads/${branchName}`, sha: baseSha });
+
+      const postmortemBody = `
+# 🧠 Guardian Memory Recall: ${incidentData.incident_id}
+> This fix was resolved automatically via **Pinecone memory recall** — no LLM re-analysis needed.
+
+## Incident
+- **Service:** ${incidentData.service}
+- **Severity:** ${incidentData.severity}
+- **Recalled from:** [${historicalFix.incident_id}](${historicalFix.pr_url || '#'})
+- **Recall confidence:** ${((aiFix.confidence || 0.95) * 100).toFixed(0)}%
+
+## Root cause (from memory)
+${aiFix.reasoning}
+
+## Patch applied (replayed)
+\`\`\`diff
+${(aiFix.diff || 'No diff stored — see referenced PR.').slice(0, 8000)}
+\`\`\`
+
+## Audit trail
+- **Approver:** ${incidentData.hitl?.approver || 'Human-in-the-Loop'}
+- **PR created:** ${new Date().toISOString()}
+- **Resolution method:** MEMORY_RECALL
+      `;
+
+      await octokit.rest.repos.createOrUpdateFileContents({
+        owner: REPO_OWNER, repo: REPO_NAME,
+        path: `incidents/${incidentData.incident_id}/POSTMORTEM.md`,
+        message: `docs: memory-recall postmortem for ${incidentData.incident_id}`,
+        content: Buffer.from(postmortemBody).toString('base64'),
+        branch: branchName,
+      });
+
+      const { data: pr } = await octokit.rest.pulls.create({
+        owner: REPO_OWNER, repo: REPO_NAME,
+        title: `fix(recall): ${incidentData.service} ${incidentData.incident_id} — memory replay`,
+        head: branchName, base: baseBranch, body: postmortemBody,
+      });
+
+      console.log(`🚀 Memory Recall PR Created: ${pr.html_url}`);
+      return {
+        ...incidentData,
+        pr_url: pr.html_url,
+        pr_status: 'CREATED',
+        ai_fix_suggestion: aiFix,
+        resolution_method: 'MEMORY_RECALL',
+        fix_initiated_at: new Date().toISOString(),
+        resolved_at: new Date().toISOString(),
+      };
+    } catch (recallErr) {
+      console.error('❌ Memory recall PR failed, falling through to full LLM pipeline:', recallErr.message);
+      // Fall through to the full pipeline below
+    }
+  }
+  // ── END MEMORY RECALL FAST-PATH ─────────────────────────────────────────────
 
   try {
     // Phase 1: Keyword Extraction
@@ -328,6 +417,8 @@ ${aiFix.diff ? '' : '_Full file replacement — see file changes tab for complet
       pr_status: fixApplied ? 'CREATED' : 'FAILED_NO_CODE',
       ai_fix_suggestion: aiFix,
       original_content: currentContent,
+      resolution_method: 'LLM_GENERATED',
+      fix_initiated_at: new Date().toISOString(),
       resolved_at: new Date().toISOString(),
     };
 
