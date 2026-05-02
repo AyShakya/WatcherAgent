@@ -22,7 +22,7 @@ export default async function Page() {
             <div className="hidden md:flex items-center gap-6">
               <a href="#solutions" className="text-sm font-medium text-[#45464d] hover:text-[#0b1c30] transition-colors">Solutions</a>
               <a href="#documentation" className="text-sm font-medium text-[#45464d] hover:text-[#0b1c30] transition-colors">Documentation</a>
-              <a href="#pricing" className="text-sm font-medium text-[#45464d] hover:text-[#0b1c30] transition-colors">Pricing</a>
+              <Link href="/pricing" className="text-sm font-medium text-[#45464d] hover:text-[#0b1c30] transition-colors">Pricing</Link>
               <a href="#enterprise" className="text-sm font-medium text-[#45464d] hover:text-[#0b1c30] transition-colors">Enterprise</a>
             </div>
           </div>
