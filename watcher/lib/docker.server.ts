@@ -1,7 +1,7 @@
+// watcher/lib/docker.server.ts
+import "server-only";
 import Docker from "dockerode";
 
-export async function getDocker(): Promise<Docker> {
-  return new Docker({
-    socketPath: "/var/run/docker.sock",
-  });
-}
+export const docker = new Docker({
+  socketPath: "/var/run/docker.sock",
+});
