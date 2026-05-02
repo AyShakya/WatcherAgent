@@ -148,7 +148,7 @@ ERROR: ${incidentData.raw_error_message || incidentData.reasoning}`,
 Service: ${incidentData.service}
 Error type: ${incidentData.error_type || 'unknown'}
 Verbatim error: ${incidentData.raw_error_message || incidentData.reasoning}
-Root frame: ${incidentData.root_frame?.file || 'unknown'}:${incidentData.root_frame?.line || 'unknown'}
+Root frame: ${incidentData.root_frame?.file || 'unknown'}:${incidentData.root_frame?.line || 'unknown'} in ${incidentData.root_frame?.function || 'unknown'}
 Severity: ${incidentData.severity}
 
 ## CODE TO AUDIT (with line numbers)
@@ -181,7 +181,19 @@ STEP 4 — VERIFY: List 2 edge cases your fix might introduce.
       responseFormat: 'json_object' 
     });
 
-    currentContent = await getFileContent(aiFix.file_path);
+    const validatedPath = rankedPaths.find((p) => p === aiFix.file_path);
+    if (!validatedPath) {
+      console.error(`❌ AI returned file_path "${aiFix.file_path}" which is not in audited candidate paths.`);
+      return { ...incidentData, pr_status: 'FAILED_INVALID_PATH', ai_fix_suggestion: aiFix };
+    }
+
+    currentContent = await getFileContent(validatedPath);
+    if (!currentContent) {
+      console.error(`❌ File "${validatedPath}" confirmed not found in repository.`);
+      return { ...incidentData, pr_status: 'FAILED_FILE_NOT_FOUND', ai_fix_suggestion: aiFix };
+    }
+
+    aiFix.file_path = validatedPath;
 
     // Phase 4: GitHub Deployment
     console.log(`🌿 Checking repository state for ${REPO_OWNER}/${REPO_NAME}...`);
