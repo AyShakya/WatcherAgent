@@ -1,7 +1,6 @@
 import { Worker } from 'bullmq';
 import dotenv from 'dotenv';
-// Example library import (relative to server/worker/src/):
-// import { runPhase1, runPhase2 } from '../../watcherai/index.js';
+import { processQueueJob } from './processor.js';
 
 dotenv.config();
 
@@ -13,8 +12,9 @@ const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
 const worker = new Worker(
   'incident-queue',
   async (job) => {
-    console.log(`[Worker] Processing job ${job.id} of type ${job.name}`);
-    return { status: 'processed', jobId: job.id };
+    console.log(`[Worker] Received Job ${job.id} (Name: ${job.name})`);
+    const result = await processQueueJob(job.name, job.data);
+    return result;
   },
   {
     connection: {
@@ -25,9 +25,9 @@ const worker = new Worker(
 );
 
 worker.on('completed', (job) => {
-  console.log(`[Worker] Job ${job.id} completed successfully`);
+  console.log(`[Worker] Job ${job.id} (${job.name}) finished successfully`);
 });
 
 worker.on('failed', (job, err) => {
-  console.error(`[Worker] Job ${job?.id} failed:`, err);
+  console.error(`[Worker] Job ${job?.id} (${job?.name}) failed:`, err);
 });
