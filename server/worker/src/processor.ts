@@ -76,8 +76,8 @@ export async function processQueueJob(jobName: string, data: JobData) {
       // Update incident state to AWAITING_APPROVAL
       const updateIncidentSql = `
         UPDATE incidents
-        SET status = $1, triage = $2, runbook = $3, severity = $4, category = $5, error_signature = $6, updated_at = CURRENT_TIMESTAMP
-        WHERE id = $7
+        SET status = $1, triage = $2, runbook = $3, severity = $4, category = $5, error_signature = $6, discord_message_id = $7, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $8
       `;
       await query(updateIncidentSql, [
         'AWAITING_APPROVAL',
@@ -86,6 +86,7 @@ export async function processQueueJob(jobName: string, data: JobData) {
         hitlOutput.severity || 'P3',
         hitlOutput.error_category || 'GENERAL',
         hitlOutput.normalized_error_signature || incident.error_signature,
+        hitlOutput.hitl?.discord_message_id || null,
         incidentId,
       ]);
 

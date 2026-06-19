@@ -14,6 +14,7 @@ export interface Incident {
   root_cause: string | null;
   postmortem: string | null;
   pr_url: string | null;
+  discord_message_id: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -30,15 +31,16 @@ export interface CreateIncidentInput {
   root_cause?: string;
   postmortem?: string;
   pr_url?: string;
+  discord_message_id?: string | null;
 }
 
 export async function createIncident(input: CreateIncidentInput): Promise<Incident> {
   const sql = `
     INSERT INTO incidents (
       project_id, status, severity, category, error_signature, 
-      raw_payload, triage, runbook, root_cause, postmortem, pr_url
+      raw_payload, triage, runbook, root_cause, postmortem, pr_url, discord_message_id
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     RETURNING *
   `;
   const params = [
@@ -53,6 +55,7 @@ export async function createIncident(input: CreateIncidentInput): Promise<Incide
     input.root_cause || null,
     input.postmortem || null,
     input.pr_url || null,
+    input.discord_message_id || null,
   ];
   const result = await query(sql, params);
   return result.rows[0];
@@ -121,6 +124,7 @@ export async function getIncidentWithProject(id: string): Promise<(Incident & { 
     root_cause: row.root_cause,
     postmortem: row.postmortem,
     pr_url: row.pr_url,
+    discord_message_id: row.discord_message_id,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };

@@ -70,10 +70,14 @@ export async function initDb() {
         root_cause TEXT,
         postmortem TEXT,
         pr_url TEXT,
+        discord_message_id VARCHAR(255),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Ensure the discord_message_id column is present if the table was created previously
+    await client.query('ALTER TABLE incidents ADD COLUMN IF NOT EXISTS discord_message_id VARCHAR(255)');
 
     // 5. Create runs table
     await client.query(`

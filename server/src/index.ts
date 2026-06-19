@@ -5,6 +5,7 @@ import { initDb } from './db/index.js';
 import apiRouter from './routes/index.js';
 import { errorHandler } from './middleware/error.js';
 
+
 const app = express();
 const PORT = config.PORT;
 
@@ -28,6 +29,8 @@ try {
 } catch (error) {
   console.error('⚠️ Database initialization failed. Server starting anyway...', error);
 }
+
+
 
 app.listen(PORT, () => {
   console.log(`🚀 Watcher API Server running on port ${PORT}`);

@@ -1,10 +1,19 @@
 import { Worker } from 'bullmq';
 import dotenv from 'dotenv';
 import { processQueueJob } from './processor.js';
+// @ts-ignore
+import { loginBot } from '../../watcherai/nodes/node-03-hitl/discord-bot.js';
 
 dotenv.config();
 
 console.log('🚀 Watcher Queue Worker starting...');
+
+// Initialize Discord bot connection for sending approval cards
+try {
+  await loginBot();
+} catch (error) {
+  console.error('⚠️ Discord bot initialization failed in worker:', error);
+}
 
 const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
 const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
