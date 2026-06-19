@@ -26,7 +26,7 @@ function getPineconeClient() {
 /**
  * Queries Pinecone for relevant runbooks and past fixes.
  */
-export async function searchRunbooks(service, errorReasoning) {
+export async function searchRunbooks(service, errorReasoning, context) {
   const pinecone = getPineconeClient();
 
   if (!pinecone) {
@@ -38,8 +38,10 @@ export async function searchRunbooks(service, errorReasoning) {
 
   try {
     const index = pinecone.index(INDEX_NAME);
+    const namespace = context?.project?.pineconeNamespace;
+    const targetIndex = namespace ? index.namespace(namespace) : index;
 
-    console.log(`🔍 Querying Pinecone RAG for service ${service} using normalized error signature: "${normalizedQuery}"`);
+    console.log(`🔍 Querying Pinecone RAG for service ${service} (Namespace: ${namespace || 'default'}) using normalized error signature: "${normalizedQuery}"`);
 
     const queryEmbedding = await getEmbedding(normalizedQuery, pinecone);
 
@@ -49,7 +51,7 @@ export async function searchRunbooks(service, errorReasoning) {
       ...(service ? { service: { $eq: service } } : {}),
     };
 
-    let queryResponse = await index.query({
+    let queryResponse = await targetIndex.query({
       vector: queryEmbedding,
       topK: 5,
       includeMetadata: true,
@@ -63,7 +65,7 @@ export async function searchRunbooks(service, errorReasoning) {
     //         score cutoff so we don't match completely unrelated incidents.
     if (hits.length === 0 && service) {
       console.log(`🔍 No same-service recall hit — retrying without service filter (threshold ${SCORE_THRESHOLD_FALLBACK})`);
-      const broadResponse = await index.query({
+      const broadResponse = await targetIndex.query({
         vector: queryEmbedding,
         topK: 5,
         includeMetadata: true,

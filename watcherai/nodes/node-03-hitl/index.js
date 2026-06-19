@@ -7,10 +7,10 @@ import { sendApprovalCard } from './discord-bot.js';
  * Initiates the Human-in-the-Loop process via Discord.
  * Structures the Discord result into the { hitl: {...} } shape required by T3Out schema.
  */
-export async function runHITLNode(input) {
+export async function runHITLNode(input, context) {
   console.log(`💬 Sending incident ${input.incident_id} to Discord for approval...`);
 
-  const result = await sendApprovalCard(input);
+  const result = await sendApprovalCard(input, context);
 
   // Pull out hitl-specific fields and nest them under `hitl` to match OutputSchema
   const {
@@ -37,6 +37,6 @@ export async function runHITLNode(input) {
   };
 }
 
-export default async function runNode(input) {
-  return await runHITLNode(input);
+export default async function runNode(input, context) {
+  return await runHITLNode(input, context);
 }

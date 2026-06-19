@@ -8,6 +8,7 @@ import { categoryLabel } from '../shared/categorize.js';
 
 dotenv.config();
 
+// Global fallbacks
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 const REPO_OWNER = process.env.GITHUB_REPO_OWNER;
 const REPO_NAME = process.env.GITHUB_REPO_NAME;
@@ -31,12 +32,16 @@ INVIOLABLE RULES:
 /**
  * Fetches the content of a specific file.
  */
-async function getFileContent(path) {
+async function getFileContent(path, gitContext) {
   if (!path || path === 'N/A') return null;
+  const client = gitContext?.octokit || octokit;
+  const owner = gitContext?.owner || REPO_OWNER;
+  const repo = gitContext?.repo || REPO_NAME;
+
   try {
-    const { data } = await octokit.rest.repos.getContent({
-      owner: REPO_OWNER,
-      repo: REPO_NAME,
+    const { data } = await client.rest.repos.getContent({
+      owner,
+      repo,
       path: path
     });
     return Buffer.from(data.content, 'base64').toString('utf-8');
@@ -47,26 +52,36 @@ async function getFileContent(path) {
 }
 
 /**
- * Gets a comprehensive list of candidate files using search and tree crawl.
+ * Gets the default branch of the repository.
  */
-async function getDefaultBranch() {
-  const { data: repo } = await octokit.rest.repos.get({
-    owner: REPO_OWNER,
-    repo: REPO_NAME,
+async function getDefaultBranch(gitContext) {
+  const client = gitContext?.octokit || octokit;
+  const owner = gitContext?.owner || REPO_OWNER;
+  const repo = gitContext?.repo || REPO_NAME;
+
+  const { data: repoData } = await client.rest.repos.get({
+    owner,
+    repo,
   });
-  return repo.default_branch;
+  return repoData.default_branch;
 }
 
-async function getCandidatePaths(keywords, service, defaultBranch) {
+/**
+ * Gets a comprehensive list of candidate files using search and tree crawl.
+ */
+async function getCandidatePaths(keywords, service, defaultBranch, gitContext) {
   const candidates = new Set();
   const SOURCE_EXTENSIONS = /\.(js|ts|py|go|java|rb|php|cs|cpp|c|rs|kt|swift|yaml|yml|json|env|conf|config|toml|sh|sql)$/i;
+  const client = gitContext?.octokit || octokit;
+  const owner = gitContext?.owner || REPO_OWNER;
+  const repo = gitContext?.repo || REPO_NAME;
 
   // 1. Crawl the full repo tree
   let allSourceFiles = [];
   try {
-    const { data: tree } = await octokit.rest.git.getTree({
-      owner: REPO_OWNER,
-      repo: REPO_NAME,
+    const { data: tree } = await client.rest.git.getTree({
+      owner: owner,
+      repo: repo,
       tree_sha: defaultBranch,
       recursive: true,
     });
@@ -104,8 +119,8 @@ async function getCandidatePaths(keywords, service, defaultBranch) {
 
   // 2. Try GitHub code search (may be rate-limited or slow to index new files)
   try {
-    const q = `${keywords.slice(0, 2).join(' ')} repo:${REPO_OWNER}/${REPO_NAME}`;
-    const { data: results } = await octokit.rest.search.code({ q });
+    const q = `${keywords.slice(0, 2).join(' ')} repo:${owner}/${repo}`;
+    const { data: results } = await client.rest.search.code({ q });
     results.items.forEach(item => candidates.add(item.path));
   } catch (e) {
     console.warn('⚠️ GitHub Search API unavailable — using tree-only discovery.');
@@ -116,12 +131,18 @@ async function getCandidatePaths(keywords, service, defaultBranch) {
   return result;
 }
 
-export async function createFixPR(incidentData) {
-  if (!process.env.GITHUB_TOKEN || !REPO_OWNER || !REPO_NAME) {
+export async function createFixPR(incidentData, context) {
+  const gitToken = context?.project?.githubToken || process.env.GITHUB_TOKEN;
+  const owner = context?.project?.githubOwner || REPO_OWNER;
+  const repo = context?.project?.githubRepo || REPO_NAME;
+
+  if (!gitToken || !owner || !repo) {
     console.error('❌ GitHub credentials missing. Skipping PR creation.');
     return { ...incidentData, pr_status: 'SKIPPED_NO_AUTH', fix_initiated_at: new Date().toISOString() };
   }
 
+  const client = new Octokit({ auth: gitToken });
+  const gitContext = { octokit: client, owner, repo };
   const branchName = `guardian/fix-${incidentData.incident_id.toLowerCase()}`;
   let baseBranch = 'main';
   let currentContent = null;
@@ -132,8 +153,8 @@ export async function createFixPR(incidentData) {
   // previous run that wasn't cleaned up), link to it and skip re-running the
   // pipeline so we don't open 10 identical PRs against the same file.
   try {
-    const { data: existingPRs } = await octokit.rest.pulls.list({
-      owner: REPO_OWNER, repo: REPO_NAME, state: 'open', per_page: 50,
+    const { data: existingPRs } = await client.rest.pulls.list({
+      owner: owner, repo: repo, state: 'open', per_page: 50,
     });
     const duplicate = existingPRs.find(pr => pr.head.ref === branchName);
     if (duplicate) {
@@ -178,12 +199,12 @@ export async function createFixPR(incidentData) {
 
     // Jump straight to GitHub deployment (skip phases 1–3)
     try {
-      baseBranch = await getDefaultBranch();
-      const { data: baseRef } = await octokit.rest.git.getRef({ owner: REPO_OWNER, repo: REPO_NAME, ref: `heads/${baseBranch}` });
+      baseBranch = await getDefaultBranch(gitContext);
+      const { data: baseRef } = await client.rest.git.getRef({ owner: owner, repo: repo, ref: `heads/${baseBranch}` });
       const baseSha = baseRef.object.sha;
 
       console.log(`🌿 Creating recall branch: ${branchName}`);
-      await octokit.rest.git.createRef({ owner: REPO_OWNER, repo: REPO_NAME, ref: `refs/heads/${branchName}`, sha: baseSha });
+      await client.rest.git.createRef({ owner: owner, repo: repo, ref: `refs/heads/${branchName}`, sha: baseSha });
 
       const postmortemBody = `
 # 🧠 Guardian Memory Recall: ${incidentData.incident_id}
@@ -210,16 +231,16 @@ ${(aiFix.diff || 'No diff stored — see referenced PR.').slice(0, 8000)}
 - **Resolution method:** MEMORY_RECALL
       `;
 
-      await octokit.rest.repos.createOrUpdateFileContents({
-        owner: REPO_OWNER, repo: REPO_NAME,
+      await client.rest.repos.createOrUpdateFileContents({
+        owner: owner, repo: repo,
         path: `incidents/${incidentData.incident_id}/POSTMORTEM.md`,
         message: `docs: memory-recall postmortem for ${incidentData.incident_id}`,
         content: Buffer.from(postmortemBody).toString('base64'),
         branch: branchName,
       });
 
-      const { data: pr } = await octokit.rest.pulls.create({
-        owner: REPO_OWNER, repo: REPO_NAME,
+      const { data: pr } = await client.rest.pulls.create({
+        owner: owner, repo: repo,
         title: `fix(recall): ${incidentData.service} ${incidentData.incident_id} — memory replay`,
         head: branchName, base: baseBranch, body: postmortemBody,
       });
@@ -250,6 +271,7 @@ ERROR: ${sanitize(incidentData.raw_error_message || incidentData.reasoning)}`,
       systemPrompt: 'Return ONLY raw JSON in this exact shape: { "keywords": ["term1", "term2", "term3"] }',
       responseFormat: 'json_object',
       maxTokens: 256,
+      openrouterKey: context?.project?.openrouterKey,
     });
     const keywords = Array.isArray(keywordsResult?.keywords)
       ? keywordsResult.keywords.map((k) => String(k).trim()).filter(Boolean).slice(0, 3)
@@ -257,8 +279,8 @@ ERROR: ${sanitize(incidentData.raw_error_message || incidentData.reasoning)}`,
 
     // Phase 2: Path Discovery & LLM Ranking
     console.log('🕵️ Phase 2: Discovering and ranking candidate files...');
-    baseBranch = await getDefaultBranch();
-    const allPaths = await getCandidatePaths(keywords, incidentData.service, baseBranch);
+    baseBranch = await getDefaultBranch(gitContext);
+    const allPaths = await getCandidatePaths(keywords, incidentData.service, baseBranch, gitContext);
     
     const rankingPrompt = `
       You are an expert SRE. Given the incident below, identify which file is the most likely source of the bug.
@@ -277,6 +299,7 @@ ERROR: ${sanitize(incidentData.raw_error_message || incidentData.reasoning)}`,
       systemPrompt: 'Return only a list of file paths, one per line. No numbering, no explanation, no markdown.',
       responseFormat: 'text',
       maxTokens: 512,
+      openrouterKey: context?.project?.openrouterKey,
     });
     // Strip numbering/bullets/backticks and match against known paths
     const rankedPaths = rankedPathsRaw
@@ -303,7 +326,7 @@ ERROR: ${sanitize(incidentData.raw_error_message || incidentData.reasoning)}`,
     // Phase 3: Deep Audit & Fix
     console.log('🕵️ Phase 3: Auditing code and generating fix...');
     const audits = await Promise.all(finalPaths.map(async (path) => {
-      const content = await getFileContent(path);
+      const content = await getFileContent(path, gitContext);
       return `FILE: ${path}\nCONTENT:\n${sanitize(content || 'Empty')}\n---`;
     }));
 
@@ -344,6 +367,7 @@ STEP 4 — VERIFY: List 2 edge cases your fix might introduce.
       systemPrompt: SYSTEM_INSTRUCTIONS,
       responseFormat: 'json_object',
       maxTokens: 4096,
+      openrouterKey: context?.project?.openrouterKey,
     });
 
     const validatedPath = finalPaths.find((p) => p === aiFix.file_path);
@@ -352,7 +376,7 @@ STEP 4 — VERIFY: List 2 edge cases your fix might introduce.
       return { ...incidentData, pr_status: 'FAILED_INVALID_PATH', ai_fix_suggestion: aiFix, fix_initiated_at: new Date().toISOString() };
     }
 
-    currentContent = await getFileContent(validatedPath);
+    currentContent = await getFileContent(validatedPath, gitContext);
     if (!currentContent) {
       console.error(`❌ File "${validatedPath}" confirmed not found in repository.`);
       return { ...incidentData, pr_status: 'FAILED_FILE_NOT_FOUND', ai_fix_suggestion: aiFix };
@@ -361,27 +385,27 @@ STEP 4 — VERIFY: List 2 edge cases your fix might introduce.
     aiFix.file_path = validatedPath;
 
     // Phase 4: GitHub Deployment
-    console.log(`🌿 Checking repository state for ${REPO_OWNER}/${REPO_NAME}...`);
+    console.log(`🌿 Checking repository state for ${owner}/${repo}...`);
     let baseSha;
     try {
-      const { data: baseRef } = await octokit.rest.git.getRef({ owner: REPO_OWNER, repo: REPO_NAME, ref: `heads/${baseBranch}` });
+      const { data: baseRef } = await client.rest.git.getRef({ owner: owner, repo: repo, ref: `heads/${baseBranch}` });
       baseSha = baseRef.object.sha;
     } catch (error) { return { ...incidentData, pr_status: 'FAILED', error: error.message }; }
 
     console.log(`🌿 Creating branch: ${branchName}`);
-    await octokit.rest.git.createRef({ owner: REPO_OWNER, repo: REPO_NAME, ref: `refs/heads/${branchName}`, sha: baseSha });
+    await client.rest.git.createRef({ owner: owner, repo: repo, ref: `refs/heads/${branchName}`, sha: baseSha });
 
     let fixApplied = false;
     if (aiFix.file_path && aiFix.file_path !== 'N/A' && aiFix.new_content) {
       console.log(`🛠️ Applying code fix to ${aiFix.file_path}...`);
       let fileSha;
       try {
-        const { data: fileData } = await octokit.rest.repos.getContent({ owner: REPO_OWNER, repo: REPO_NAME, path: aiFix.file_path, ref: branchName });
+        const { data: fileData } = await client.rest.repos.getContent({ owner: owner, repo: repo, path: aiFix.file_path, ref: branchName });
         fileSha = fileData.sha;
       } catch (e) {}
 
-      await octokit.rest.repos.createOrUpdateFileContents({
-        owner: REPO_OWNER, repo: REPO_NAME, path: aiFix.file_path,
+      await client.rest.repos.createOrUpdateFileContents({
+        owner: owner, repo: repo, path: aiFix.file_path,
         message: `fix: automated fix for ${incidentData.incident_id}`,
         content: Buffer.from(aiFix.new_content).toString('base64'),
         branch: branchName, sha: fileSha
@@ -418,18 +442,18 @@ ${aiFix.diff ? '' : '_Full file replacement — see file changes tab for complet
 - **PR created:** ${new Date().toISOString()}
     `;
 
-    await octokit.rest.repos.createOrUpdateFileContents({
-      owner: REPO_OWNER,
-      repo: REPO_NAME,
+    await client.rest.repos.createOrUpdateFileContents({
+      owner: owner,
+      repo: repo,
       path: `incidents/${incidentData.incident_id}/POSTMORTEM.md`,
       message: `docs: add automated postmortem for ${incidentData.incident_id}`,
       content: Buffer.from(postmortemBody).toString('base64'),
       branch: branchName,
     });
 
-    const { data: pr } = await octokit.rest.pulls.create({
-      owner: REPO_OWNER,
-      repo: REPO_NAME,
+    const { data: pr } = await client.rest.pulls.create({
+      owner: owner,
+      repo: repo,
       title: `fix: Resolved ${incidentData.service} ${incidentData.incident_id}`,
       head: branchName,
       base: baseBranch,

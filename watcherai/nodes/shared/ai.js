@@ -29,15 +29,16 @@ function cleanString(str) {
 /**
  * Common LLM call function via OpenRouter
  */
-export async function callLLM({ prompt, systemPrompt, model = DEFAULT_MODEL, responseFormat = 'json_object', maxTokens = 4096, timeoutMs = parseInt(process.env.LLM_TIMEOUT_MS || '30000', 10) }) {
+export async function callLLM({ prompt, systemPrompt, model = DEFAULT_MODEL, responseFormat = 'json_object', maxTokens = 4096, timeoutMs = parseInt(process.env.LLM_TIMEOUT_MS || '30000', 10), openrouterKey }) {
   if (!model) {
     console.error('❌ DEFAULT_LLM_MODEL is not defined in .env');
     throw new Error('DEFAULT_LLM_MODEL is missing from environment variables');
   }
 
+  const apiKey = openrouterKey || OPENROUTER_API_KEY;
   console.log(`🤖 LLM Call: using model ${model}`);
   
-  if (!OPENROUTER_API_KEY) {
+  if (!apiKey) {
     console.warn('⚠️ OPENROUTER_API_KEY not set. LLM calls will fail.');
     throw new Error('OPENROUTER_API_KEY is missing');
   }
@@ -68,7 +69,7 @@ export async function callLLM({ prompt, systemPrompt, model = DEFAULT_MODEL, res
   try {
     const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', bodyString, {
       headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': 'https://github.com/guardian-agent',
         'X-Title': 'Guardian AI SRE'

@@ -7,10 +7,10 @@ import { updateAgentMemory } from './memory-updater.js';
 /**
  * Finalizes the incident by updating the RAG memory.
  */
-export async function runMemoryNode(input) {
+export async function runMemoryNode(input, context) {
   console.log(`🎓 Finalizing incident ${input.incident_id}. Updating learning loop...`);
   
-  const result = await updateAgentMemory(input);
+  const result = await updateAgentMemory(input, context);
   
   return {
     ...result,
@@ -19,6 +19,6 @@ export async function runMemoryNode(input) {
   };
 }
 
-export default async function runNode(input) {
-  return await runMemoryNode(input);
+export default async function runNode(input, context) {
+  return await runMemoryNode(input, context);
 }

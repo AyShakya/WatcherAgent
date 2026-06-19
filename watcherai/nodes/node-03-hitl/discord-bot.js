@@ -62,8 +62,9 @@ export async function loginBot() {
 /**
  * Sends an incident approval card to Discord.
  */
-export async function sendApprovalCard(incidentData) {
-  if (!DISCORD_TOKEN || !CHANNEL_ID) {
+export async function sendApprovalCard(incidentData, context) {
+  const channelId = context?.project?.discordChannelId || CHANNEL_ID;
+  if (!DISCORD_TOKEN || !channelId) {
     console.warn('⚠️  Discord credentials missing — skipping HITL notification.');
     return { ...incidentData, hitl_status: 'SKIPPED_NO_AUTH' };
   }
@@ -74,7 +75,7 @@ export async function sendApprovalCard(incidentData) {
   }
 
   try {
-    const channel = await client.channels.fetch(CHANNEL_ID);
+    const channel = await client.channels.fetch(channelId);
 
     const severityColor = incidentData.severity === 'P1' ? 0xff0000
       : incidentData.severity === 'P2' ? 0xffa500

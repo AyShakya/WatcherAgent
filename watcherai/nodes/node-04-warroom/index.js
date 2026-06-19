@@ -6,10 +6,10 @@ import { createFixPR } from './github-fixer.js';
 /**
  * Executes the automated fix by creating a GitHub Pull Request.
  */
-export async function runFixerNode(input) {
+export async function runFixerNode(input, context) {
   console.log(`🛠️ Initiating GitHub PR fix for ${input.incident_id}...`);
   
-  const result = await createFixPR(input);
+  const result = await createFixPR(input, context);
   
   return {
     ...result,
@@ -17,6 +17,6 @@ export async function runFixerNode(input) {
   };
 }
 
-export default async function runNode(input) {
-  return await runFixerNode(input);
+export default async function runNode(input, context) {
+  return await runFixerNode(input, context);
 }

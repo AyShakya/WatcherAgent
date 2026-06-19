@@ -33,7 +33,7 @@ function meta(value, fallback = '') {
 /**
  * Updates Pinecone RAG with the latest successful fix.
  */
-export async function updateAgentMemory(incidentData) {
+export async function updateAgentMemory(incidentData, context) {
   if (!PINECONE_API_KEY) {
     console.warn('⚠️ No Pinecone API Key. Memory update skipped.');
     return { ...incidentData, memory_updated: false };
@@ -148,14 +148,17 @@ export async function updateAgentMemory(incidentData) {
       return { ...incidentData, memory_updated: false, skip_reason: 'NO_PINECONE_KEY' };
     }
 
-    console.log(`🧠 Updating Pinecone Memory for ${incidentId} with ${chunks.length} chunks...`);
-
+    const namespace = context?.project?.pineconeNamespace;
     const index = pinecone.index(INDEX_NAME);
+    const targetIndex = namespace ? index.namespace(namespace) : index;
+
+    console.log(`🧠 Updating Pinecone Memory for ${incidentId} (Namespace: ${namespace || 'default'}) with ${chunks.length} chunks...`);
+
     let successCount = 0;
 
     for (const chunk of chunks) {
       const embedding = await getEmbedding(chunk.embedText, pinecone);
-      await index.upsert({
+      await targetIndex.upsert({
         records: [{
           id: chunk.id,
           values: embedding,

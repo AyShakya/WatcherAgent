@@ -6,10 +6,10 @@ import { searchRunbooks } from './pinecone-rag.js';
 /**
  * Fetches relevant runbooks and past fixes using Pinecone RAG.
  */
-export async function fetchRunbook(input) {
+export async function fetchRunbook(input, context) {
   const { service, reasoning } = input;
   
-  const results = await searchRunbooks(service, reasoning);
+  const results = await searchRunbooks(service, reasoning, context);
   
   return {
     ...input,
@@ -27,6 +27,6 @@ export async function fetchRunbook(input) {
   };
 }
 
-export default async function runRunbookNode(input) {
-  return await fetchRunbook(input);
+export default async function runRunbookNode(input, context) {
+  return await fetchRunbook(input, context);
 }

@@ -54,7 +54,7 @@ function normalizeAndValidateTriageResult(aiResult, input) {
   return normalized;
 }
 
-export async function triageIncident(input) {
+export async function triageIncident(input, context) {
   const incident_id = input.incident_id || `INC-${Math.floor(Math.random() * 9000) + 1000}`;
 
   let userInstructions = '';
@@ -76,6 +76,7 @@ ${JSON.stringify(input, null, 2)}
     const aiRawResult = await callLLM({
       prompt: finalPrompt,
       systemPrompt: SYSTEM_INSTRUCTIONS,
+      openrouterKey: context?.project?.openrouterKey,
     });
 
     const aiResult = normalizeAndValidateTriageResult(aiRawResult, input);
@@ -132,6 +133,6 @@ function getFallbackTriage(input, incident_id) {
   };
 }
 
-export default async function runTriageNode(input) {
-  return await triageIncident(input);
+export default async function runTriageNode(input, context) {
+  return await triageIncident(input, context);
 }
