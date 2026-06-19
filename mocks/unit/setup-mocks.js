@@ -304,6 +304,13 @@ global.fetch = async (url, options) => {
     return makeMockResponse({});
   }
 
+  if (urlStr.includes('api.pinecone.io')) {
+    console.log(`[MOCK FETCH PINECONE] Intercepted embedding request to URL: ${urlStr}`);
+    return makeMockResponse({
+      data: [{ values: new Array(1024).fill(0.123) }]
+    });
+  }
+
   return originalFetch(url, options);
 };
 

@@ -38,9 +38,11 @@ export async function updateRun(id: string, fields: Partial<Omit<Run, 'id' | 'in
   const params: any[] = [id];
   let paramIndex = 2;
 
+  const allowedFields = ['status', 'completed_at', 'logs'];
+
   for (const [key, value] of Object.entries(fields)) {
-    if (value !== undefined) {
-      setClauses.push(`${key} = $${paramIndex}`);
+    if (value !== undefined && allowedFields.includes(key)) {
+      setClauses.push(`"${key}" = $${paramIndex}`);
       if (key === 'logs') {
         params.push(value ? JSON.stringify(value) : null);
       } else {

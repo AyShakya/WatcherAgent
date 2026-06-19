@@ -10,16 +10,7 @@ import { categorizeError } from '../shared/categorize.js';
 
 dotenv.config();
 
-const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
 const INDEX_NAME = process.env.PINECONE_INDEX_NAME || 'watcher-knowledge';
-
-// Lazy-init: only create client if key is present to avoid crash on startup
-let pc = null;
-function getPineconeClient() {
-  if (!PINECONE_API_KEY) return null;
-  if (!pc) pc = new Pinecone({ apiKey: PINECONE_API_KEY });
-  return pc;
-}
 
 /**
  * Pinecone metadata values must be string | number | boolean | string[].
@@ -34,7 +25,8 @@ function meta(value, fallback = '') {
  * Updates Pinecone RAG with the latest successful fix.
  */
 export async function updateAgentMemory(incidentData, context) {
-  if (!PINECONE_API_KEY) {
+  const apiKey = context?.project?.pineconeApiKey || process.env.PINECONE_API_KEY;
+  if (!apiKey) {
     console.warn('⚠️ No Pinecone API Key. Memory update skipped.');
     return { ...incidentData, memory_updated: false };
   }
@@ -142,11 +134,7 @@ export async function updateAgentMemory(incidentData, context) {
   ];
 
   try {
-    const pinecone = getPineconeClient();
-    if (!pinecone) {
-      console.warn('⚠️  PINECONE_API_KEY not set — skipping memory update.');
-      return { ...incidentData, memory_updated: false, skip_reason: 'NO_PINECONE_KEY' };
-    }
+    const pinecone = new Pinecone({ apiKey });
 
     const namespace = context?.project?.pineconeNamespace;
     const index = pinecone.index(INDEX_NAME);

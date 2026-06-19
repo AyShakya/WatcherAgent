@@ -12,6 +12,7 @@ export interface Project {
   discord_channel_id: string;
   openrouter_key: string;
   pinecone_namespace: string;
+  pinecone_api_key: string | null;
   active: boolean;
   created_at: Date;
   updated_at: Date;
@@ -28,6 +29,7 @@ export interface CreateProjectInput {
   discord_channel_id: string;
   openrouter_key: string;
   pinecone_namespace: string;
+  pinecone_api_key?: string;
 }
 
 export async function createProject(input: CreateProjectInput): Promise<Project> {
@@ -35,9 +37,10 @@ export async function createProject(input: CreateProjectInput): Promise<Project>
     INSERT INTO projects (
       user_id, name, description, webhook_secret, 
       github_owner, github_repo, github_token, 
-      discord_channel_id, openrouter_key, pinecone_namespace
+      discord_channel_id, openrouter_key, pinecone_namespace,
+      pinecone_api_key
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
     RETURNING *
   `;
   const params = [
@@ -51,6 +54,7 @@ export async function createProject(input: CreateProjectInput): Promise<Project>
     input.discord_channel_id,
     input.openrouter_key,
     input.pinecone_namespace,
+    input.pinecone_api_key || null,
   ];
   const result = await query(sql, params);
   return result.rows[0];
@@ -88,9 +92,14 @@ export async function updateProject(id: string, userId: string, fields: Partial<
   const params: any[] = [id, userId];
   let paramIndex = 3;
 
+  const allowedFields = [
+    'name', 'description', 'webhook_secret', 'github_owner', 'github_repo',
+    'github_token', 'discord_channel_id', 'openrouter_key', 'pinecone_namespace', 'pinecone_api_key', 'active'
+  ];
+
   for (const [key, value] of Object.entries(fields)) {
-    if (value !== undefined) {
-      setClauses.push(`${key} = $${paramIndex}`);
+    if (value !== undefined && allowedFields.includes(key)) {
+      setClauses.push(`"${key}" = $${paramIndex}`);
       params.push(value);
       paramIndex++;
     }

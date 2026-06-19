@@ -14,6 +14,7 @@ export const CreateProjectSchema = z.object({
     discord_channel_id: z.string().min(1, 'Discord channel ID is required'),
     openrouter_key: z.string().min(1, 'OpenRouter key is required'),
     pinecone_namespace: z.string().min(1, 'Pinecone namespace is required'),
+    pinecone_api_key: z.string().optional(),
   }),
 });
 
@@ -27,6 +28,7 @@ export const UpdateProjectSchema = z.object({
     discord_channel_id: z.string().optional(),
     openrouter_key: z.string().optional(),
     pinecone_namespace: z.string().optional(),
+    pinecone_api_key: z.string().optional(),
     active: z.boolean().optional(),
   }),
 });
@@ -47,6 +49,7 @@ export async function create(req: AuthenticatedRequest, res: Response) {
       discord_channel_id,
       openrouter_key,
       pinecone_namespace,
+      pinecone_api_key,
     } = req.body;
 
     // Generate a secure unique webhook secret for alert ingestion
@@ -63,6 +66,7 @@ export async function create(req: AuthenticatedRequest, res: Response) {
       discord_channel_id,
       openrouter_key,
       pinecone_namespace,
+      pinecone_api_key,
     });
 
     return res.status(201).json({

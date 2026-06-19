@@ -85,7 +85,8 @@ export async function getIncidentWithProject(id: string): Promise<(Incident & { 
       p.webhook_secret as p_webhook_secret, p.github_owner as p_github_owner, 
       p.github_repo as p_github_repo, p.github_token as p_github_token, 
       p.discord_channel_id as p_discord_channel_id, p.openrouter_key as p_openrouter_key, 
-      p.pinecone_namespace as p_pinecone_namespace, p.active as p_active
+      p.pinecone_namespace as p_pinecone_namespace, p.pinecone_api_key as p_pinecone_api_key,
+      p.active as p_active
     FROM incidents i
     JOIN projects p ON i.project_id = p.id
     WHERE i.id = $1
@@ -106,6 +107,7 @@ export async function getIncidentWithProject(id: string): Promise<(Incident & { 
     discord_channel_id: row.p_discord_channel_id,
     openrouter_key: row.p_openrouter_key,
     pinecone_namespace: row.p_pinecone_namespace,
+    pinecone_api_key: row.p_pinecone_api_key || null,
     active: row.p_active,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -165,9 +167,14 @@ export async function updateIncident(id: string, fields: Partial<Omit<Incident, 
   const params: any[] = [id];
   let paramIndex = 2;
 
+  const allowedFields = [
+    'status', 'severity', 'category', 'error_signature', 'raw_payload',
+    'triage', 'runbook', 'root_cause', 'postmortem', 'pr_url', 'discord_message_id', 'updated_at'
+  ];
+
   for (const [key, value] of Object.entries(fields)) {
-    if (value !== undefined) {
-      setClauses.push(`${key} = $${paramIndex}`);
+    if (value !== undefined && allowedFields.includes(key)) {
+      setClauses.push(`"${key}" = $${paramIndex}`);
       // JSON types must be stringified
       if (key === 'raw_payload' || key === 'triage' || key === 'runbook') {
         params.push(value ? JSON.stringify(value) : null);

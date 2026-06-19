@@ -13,6 +13,7 @@ export const OutputSchema = z.object({
     'FAILED_INVALID_PATH',
     'FAILED_FILE_NOT_FOUND',
     'SKIPPED_NO_AUTH',
+    'DUPLICATE_SKIPPED',
   ]),
   ai_fix_suggestion: z.object({
     file_path: z.string().nullable().optional(),

@@ -49,6 +49,7 @@ export async function initDb() {
         discord_channel_id VARCHAR(255) NOT NULL,
         openrouter_key VARCHAR(255) NOT NULL,
         pinecone_namespace VARCHAR(255) NOT NULL,
+        pinecone_api_key VARCHAR(255),
         active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -78,6 +79,7 @@ export async function initDb() {
 
     // Ensure the discord_message_id column is present if the table was created previously
     await client.query('ALTER TABLE incidents ADD COLUMN IF NOT EXISTS discord_message_id VARCHAR(255)');
+    await client.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS pinecone_api_key VARCHAR(255)');
 
     // 5. Create runs table
     await client.query(`

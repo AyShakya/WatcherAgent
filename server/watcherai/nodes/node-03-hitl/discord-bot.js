@@ -195,13 +195,17 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     try {
-      await fetch(`${ORCHESTRATOR_URL}/internal/discord-approve`, {
+      await fetch(`${ORCHESTRATOR_URL}/api/v1/callback/approve`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Internal-Token': process.env.INTERNAL_CALLBACK_SECRET || '',
+          'x-callback-secret': process.env.INTERNAL_CALLBACK_SECRET || '',
         },
-        body: JSON.stringify({ incident_id: incidentId, approver: interaction.user.tag }),
+        body: JSON.stringify({
+          incidentId: incidentId,
+          action: 'APPROVE',
+          comment: `Approved by Discord user ${interaction.user.tag}`
+        }),
       });
     } catch (err) {
       console.error('❌ Failed to notify orchestrator:', err.message);
@@ -230,6 +234,24 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     await removeIncident(incidentId);
+
+    try {
+      await fetch(`${ORCHESTRATOR_URL}/api/v1/callback/approve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-callback-secret': process.env.INTERNAL_CALLBACK_SECRET || '',
+        },
+        body: JSON.stringify({
+          incidentId: incidentId,
+          action: 'REJECT',
+          comment: `Rejected by Discord user ${interaction.user.tag}`
+        }),
+      });
+    } catch (err) {
+      console.error('❌ Failed to notify orchestrator on ignore:', err.message);
+    }
+
     console.log(`🗑️ Incident ${incidentId} ignored by ${interaction.user.tag}`);
   }
 });

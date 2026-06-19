@@ -8,29 +8,26 @@ import { normalizeErrorSignature } from '../shared/normalize.js';
 
 dotenv.config();
 
-const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
 const INDEX_NAME = process.env.PINECONE_INDEX_NAME || 'watcher-knowledge';
 // Primary threshold for same-service recall; secondary for cross-service recall.
 // 0.87 was too strict and caused memory recall to never trigger.
 const SCORE_THRESHOLD_STRICT   = parseFloat(process.env.PINECONE_SCORE_THRESHOLD       || '0.78');
 const SCORE_THRESHOLD_FALLBACK = parseFloat(process.env.PINECONE_SCORE_THRESHOLD_BROAD || '0.82');
 
-// Lazy-init: only create client if key is present to avoid crash on startup
-let pc = null;
-function getPineconeClient() {
-  if (!PINECONE_API_KEY) return null;
-  if (!pc) pc = new Pinecone({ apiKey: PINECONE_API_KEY });
-  return pc;
+function getPineconeClient(context) {
+  const apiKey = context?.project?.pineconeApiKey || process.env.PINECONE_API_KEY;
+  if (!apiKey) return null;
+  return new Pinecone({ apiKey });
 }
 
 /**
  * Queries Pinecone for relevant runbooks and past fixes.
  */
 export async function searchRunbooks(service, errorReasoning, context) {
-  const pinecone = getPineconeClient();
+  const pinecone = getPineconeClient(context);
 
   if (!pinecone) {
-    console.warn('⚠️  PINECONE_API_KEY not set — using built-in runbook fallback.');
+    console.warn('⚠️  PINECONE_API_KEY/project key not set — using built-in runbook fallback.');
     return getLocalFallback(service, errorReasoning);
   }
 

@@ -68,6 +68,11 @@ test('runPhase1 should successfully execute Node 1 -> Node 2 -> Node 3', async (
   assert.strictEqual(result.hitl.hitl_status, 'AWAITING_APPROVAL');
   assert.strictEqual(result.hitl.discord_message_id, 'mock-message-id-5555');
   assert.strictEqual(result.hitl.discord_thread_id, 'mock-thread-id-7777');
+
+  // Clear the incident timeout so Node.js process can exit cleanly
+  const { clearIncidentTimeout } = await import('../../server/watcherai/services/incident-store.js');
+  clearIncidentTimeout(result.incident_id);
+
   console.log('--- PHASE 1 TEST PASSED ---\n');
 });
 
