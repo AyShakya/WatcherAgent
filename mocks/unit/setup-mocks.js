@@ -1,10 +1,159 @@
-// tests/setup-mocks.js
-// Monkey-patches module singletons and constructors to run tests in-memory offline.
+// mocks/unit/setup-mocks.js
+// Monkey-patches module stubs and constructors to run tests in-memory offline.
+
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../../server/watcherai/.env') });
+
+// Setup mock environment variables so startups don't error out
+process.env.DEFAULT_LLM_MODEL = 'google/gemini-2.5-pro';
+process.env.OPENROUTER_API_KEY = 'global-mock-or-key';
+process.env.PINECONE_API_KEY = 'global-mock-pinecone-key';
+process.env.PINECONE_INDEX_NAME = 'watcher-knowledge';
+process.env.DISCORD_BOT_TOKEN = 'global-mock-discord-token';
+process.env.DISCORD_INCIDENT_CHANNEL_ID = '1234567890';
+process.env.GITHUB_TOKEN = 'global-mock-github-token';
+process.env.GITHUB_REPO_OWNER = 'global-owner';
+process.env.GITHUB_REPO_NAME = 'global-repo';
 
 import axios from 'axios';
 import { Octokit } from 'octokit';
-import { Pinecone } from '@pinecone-database/pinecone';
 import { Client, ChannelManager } from 'discord.js';
+
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const pineconeModule = require('@pinecone-database/pinecone');
+const OriginalPinecone = pineconeModule.Pinecone;
+
+class MockPinecone extends OriginalPinecone {
+  constructor(opts) {
+    super(opts);
+    console.log('[MOCK PINECONE CONSTRUCTOR] Intercepted new Pinecone()');
+    
+    this.index = function (name) {
+      console.log(`[MOCK PINECONE] Selected Index: "${name}"`);
+      return {
+        namespace: function (ns) {
+          console.log(`[MOCK PINECONE] Switched to Namespace: "${ns}"`);
+          this._ns = ns;
+          return this;
+        },
+        query: async (options) => {
+          console.log(`[MOCK PINECONE] Executing query in namespace: "${options.namespace || 'default'}"`);
+          return {
+            matches: [
+              {
+                score: 0.92,
+                metadata: {
+                  title: 'Database connection pool runbook',
+                  steps: JSON.stringify(['Verify database metrics', 'Increase connection pool limits']),
+                  fix_diff: '@@ -42,1 +42,1 @@\n-  poolSize: 5\n+  poolSize: 20',
+                  fix_file: 'db.js',
+                  root_cause: 'MongoDB Connection pool timeout',
+                  pr_url: 'https://github.com/mock/pr/1',
+                  source: 'HISTORICAL_FIX',
+                  incident_id: 'INC-7890'
+                }
+              }
+            ]
+          };
+        },
+        upsert: async (payload) => {
+          console.log(`[MOCK PINECONE] Upserted vectors into Pinecone:`, JSON.stringify(payload));
+          return { upsertedCount: payload.records.length };
+        }
+      };
+    };
+
+    Object.defineProperty(this, 'inference', {
+      value: {
+        embed: async (options) => {
+          console.log(`[MOCK PINECONE INFERENCE] Generating embedding vector for text: "${options.inputs[0].slice(0, 40)}..."`);
+          return {
+            data: [{ values: new Array(1024).fill(0.123) }]
+          };
+        }
+      },
+      writable: true,
+      configurable: true
+    });
+  }
+}
+
+try {
+  Object.defineProperty(pineconeModule, 'Pinecone', {
+    value: MockPinecone,
+    writable: true,
+    configurable: true,
+    enumerable: true
+  });
+} catch (e) {
+  console.log('[MOCK PINECONE] Export is read-only, applying prototype monkey-patches to OriginalPinecone...');
+  OriginalPinecone.prototype.index = function (name) {
+    console.log(`[MOCK PINECONE] Selected Index: "${name}"`);
+    return {
+      namespace: function (ns) {
+        console.log(`[MOCK PINECONE] Switched to Namespace: "${ns}"`);
+        this._ns = ns;
+        return this;
+      },
+      query: async (options) => {
+        console.log(`[MOCK PINECONE] Executing query in namespace: "${options.namespace || 'default'}"`);
+        return {
+          matches: [
+            {
+              score: 0.92,
+              metadata: {
+                title: 'Database connection pool runbook',
+                steps: JSON.stringify(['Verify database metrics', 'Increase connection pool limits']),
+                fix_diff: '@@ -42,1 +42,1 @@\n-  poolSize: 5\n+  poolSize: 20',
+                fix_file: 'db.js',
+                root_cause: 'MongoDB Connection pool timeout',
+                pr_url: 'https://github.com/mock/pr/1',
+                source: 'HISTORICAL_FIX',
+                incident_id: 'INC-7890'
+              }
+            }
+          ]
+        };
+      },
+      upsert: async (payload) => {
+        console.log(`[MOCK PINECONE] Upserted vectors into Pinecone:`, JSON.stringify(payload));
+        return { upsertedCount: payload.records.length };
+      }
+    };
+  };
+
+  Object.defineProperty(OriginalPinecone.prototype, 'inference', {
+    get() {
+      return {
+        embed: async (options) => {
+          console.log(`[MOCK PINECONE INFERENCE] Generating embedding vector for text: "${options.inputs[0].slice(0, 40)}..."`);
+          return {
+            data: [{ values: new Array(1024).fill(0.123) }]
+          };
+        }
+      };
+    },
+    set(val) {
+      // Prevent constructor from overwriting the getter
+    },
+    configurable: true,
+    enumerable: true
+  });
+}
+const Pinecone = MockPinecone;
+
+// Setup relative path to the incident-store service of the watcherai agent
+import {
+  getIncident,
+  removeIncident,
+  saveIncidentTimeout,
+  clearIncidentTimeout,
+} from '../../server/watcherai/services/incident-store.js';
 
 // 1. Mock Axios POST for LLM (OpenRouter) calls
 axios.post = async (url, data, config) => {
@@ -204,50 +353,7 @@ Octokit.prototype.request = async function(route, options) {
   return { data: {} };
 };
 
-// 3. Mock Pinecone client
-Pinecone.prototype.index = function (name) {
-  console.log(`[MOCK PINECONE] Selected Index: "${name}"`);
-  return {
-    namespace: function (ns) {
-      console.log(`[MOCK PINECONE] Switched to Namespace: "${ns}"`);
-      this._ns = ns;
-      return this;
-    },
-    query: async (options) => {
-      console.log(`[MOCK PINECONE] Executing query in namespace: "${options.namespace || 'default'}"`);
-      return {
-        matches: [
-          {
-            score: 0.92,
-            metadata: {
-              title: 'Database connection pool runbook',
-              steps: JSON.stringify(['Verify database metrics', 'Increase connection pool limits']),
-              fix_diff: '@@ -42,1 +42,1 @@\n-  poolSize: 5\n+  poolSize: 20',
-              fix_file: 'db.js',
-              root_cause: 'MongoDB Connection pool timeout',
-              pr_url: 'https://github.com/mock/pr/1',
-              source: 'HISTORICAL_FIX',
-              incident_id: 'INC-7890'
-            }
-          }
-        ]
-      };
-    },
-    upsert: async (payload) => {
-      console.log(`[MOCK PINECONE] Upserted vectors into Pinecone:`, JSON.stringify(payload));
-      return { upsertedCount: payload.records.length };
-    }
-  };
-};
-
-Pinecone.prototype.inference = {
-  embed: async (options) => {
-    console.log(`[MOCK PINECONE INFERENCE] Generating embedding vector for text: "${options.inputs[0].slice(0, 40)}..."`);
-    return {
-      data: [{ values: new Array(1024).fill(0.123) }]
-    };
-  }
-};
+// Mapped via Pinecone constructor above
 
 // 4. Mock Discord Bot Client
 Client.prototype.login = async function (token) {
@@ -261,7 +367,7 @@ Client.prototype.login = async function (token) {
   return token;
 };
 
-// Intercept at ChannelManager prototype level rather than instance level
+// Intercept at ChannelManager prototype level
 ChannelManager.prototype.fetch = async function(id) {
   console.log(`[MOCK DISCORD CHANNEL MANAGER] Fetched channel ID: ${id}`);
   return {

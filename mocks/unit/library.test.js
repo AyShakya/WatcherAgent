@@ -1,23 +1,14 @@
-// tests/library.test.js
+// mocks/unit/library.test.js
 // Unit tests for runPhase1 and runPhase2 library interfaces.
 
 // 1. Establish the mocks before loading any node libraries
 import './setup-mocks.js';
 
-import { runPhase1, runPhase2 } from '../index.js';
+import { runPhase1, runPhase2 } from '../../server/watcherai/index.js';
 import assert from 'node:assert';
 import test from 'node:test';
 
-// 2. Setup mock environment variables so startups don't error out
-process.env.DEFAULT_LLM_MODEL = 'google/gemini-2.5-pro';
-process.env.OPENROUTER_API_KEY = 'global-mock-or-key';
-process.env.PINECONE_API_KEY = 'global-mock-pinecone-key';
-process.env.PINECONE_INDEX_NAME = 'watcher-knowledge';
-process.env.DISCORD_BOT_TOKEN = 'global-mock-discord-token';
-process.env.DISCORD_INCIDENT_CHANNEL_ID = '1234567890';
-process.env.GITHUB_TOKEN = 'global-mock-github-token';
-process.env.GITHUB_REPO_OWNER = 'global-owner';
-process.env.GITHUB_REPO_NAME = 'global-repo';
+
 
 const mockPayload = {
   incident_id: 'INC-1234',
@@ -55,7 +46,7 @@ const mockContext = {
 
 test('runPhase1 should successfully execute Node 1 -> Node 2 -> Node 3', async (t) => {
   // Ensure the bot is ready before running the node
-  const { loginBot } = await import('../nodes/node-03-hitl/discord-bot.js');
+  const { loginBot } = await import('../../server/watcherai/nodes/node-03-hitl/discord-bot.js');
   await loginBot();
 
   console.log('\n--- STARTING PHASE 1 TEST ---');
@@ -83,7 +74,6 @@ test('runPhase1 should successfully execute Node 1 -> Node 2 -> Node 3', async (
 test('runPhase2 should successfully execute Node 4 -> Node 5', async (t) => {
   console.log('\n--- STARTING PHASE 2 TEST ---');
 
-  // Node 3 Output structure that is passed into Phase 2 (usually retrieved from DB)
   const phase1Output = {
     incident_id: 'INC-1234',
     service: 'checkout-service',
@@ -135,7 +125,6 @@ test('Context Validation failure with malformed context parameters', async (t) =
   console.log('\n--- STARTING CONTEXT VALIDATION FAILURE TEST ---');
   const malformedContext = {
     project: {
-      // githubToken is missing (required by schema)
       githubOwner: 'test-owner',
       githubRepo: 'test-repo',
       discordChannelId: '112233445566',
