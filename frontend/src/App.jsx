@@ -61,6 +61,7 @@ function App() {
   // Selected Incident Detail Modal
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [copiedStates, setCopiedStates] = useState({}); // project.id -> boolean (for webhook secret copy feedback)
+  const [guideOpen, setGuideOpen] = useState(true);
 
   // Auth profile loading
   useEffect(() => {
@@ -543,6 +544,45 @@ function App() {
               </div>
             </header>
 
+            {/* Developer Guidance Banner */}
+            <div className="guide-banner">
+              <div className="guide-header" onClick={() => setGuideOpen(!guideOpen)}>
+                <h3>
+                  <Activity className="w-5 h-5 text-accent animate-pulse" />
+                  <span>Interactive Quick Start & Pipeline Architecture Guide</span>
+                </h3>
+                <span className="guide-toggle-text">
+                  {guideOpen ? 'Collapse [-]' : 'Expand [+]'}
+                </span>
+              </div>
+              
+              {guideOpen && (
+                <div className="guide-content animate-fade">
+                  <p>
+                    Welcome to the **WatcherAgent Console**! This dashboard monitors a multi-project, human-in-the-loop AI Incident Remediation Pipeline backed by BullMQ. Follow this workflow to trigger and test the active agent pipeline:
+                  </p>
+                  <div className="guide-steps-grid">
+                    <div className="guide-step-item">
+                      <h4>1. Copy Webhook URL</h4>
+                      <p>Onboard a project (or use the pre-configured database records) and copy the unique webhook URL. Alerts are routed here.</p>
+                    </div>
+                    <div className="guide-step-item">
+                      <h4>2. Click "Fire Test Alert"</h4>
+                      <p>Triggers a simulated database replica crash webhook alert, queueing an ingestion task on BullMQ.</p>
+                    </div>
+                    <div className="guide-step-item">
+                      <h4>3. Approve in Discord</h4>
+                      <p>The worker logs the incident, runs triage, and posts an interactive approval card to Discord. Click **Accept & Fix** on Discord.</p>
+                    </div>
+                    <div className="guide-step-item">
+                      <h4>4. Automatic Git Auto-Fix</h4>
+                      <p>Once approved, the AI fixer automatically writes code, opens a GitHub PR, indexes learnings into Pinecone, and resolves the issue.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Quick Metrics Grid */}
             <section className="metrics-grid">
               <div className="metric-card">
@@ -583,7 +623,10 @@ function App() {
                 </div>
                 
                 {loadingProjects && projects.length === 0 ? (
-                  <div className="loading-container">Loading configured projects...</div>
+                  <div className="project-list" style={{ padding: '20px' }}>
+                    <div className="skeleton-card" style={{ animationDelay: '0s' }} />
+                    <div className="skeleton-card" style={{ animationDelay: '0.2s' }} />
+                  </div>
                 ) : projects.length === 0 ? (
                   <div className="empty-state">
                     <h3>No configured projects</h3>
@@ -651,7 +694,12 @@ function App() {
                 </div>
 
                 {loadingIncidents && incidents.length === 0 ? (
-                  <div className="loading-container">Loading live logs...</div>
+                  <div className="project-list" style={{ padding: '20px' }}>
+                    <div className="skeleton-row" style={{ animationDelay: '0s' }} />
+                    <div className="skeleton-row" style={{ animationDelay: '0.15s' }} />
+                    <div className="skeleton-row" style={{ animationDelay: '0.3s' }} />
+                    <div className="skeleton-row" style={{ animationDelay: '0.45s' }} />
+                  </div>
                 ) : incidents.length === 0 ? (
                   <div className="empty-state">
                     <h3>No incidents logged yet</h3>
@@ -829,7 +877,7 @@ function App() {
           {selectedIncident && (
             <div className="modal-overlay" onClick={() => setSelectedIncident(null)}>
               <div 
-                className="modal-content incident-drawer animate-fade" 
+                className="modal-content incident-drawer animate-slide-in" 
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="modal-header">
@@ -843,6 +891,70 @@ function App() {
                 </div>
                 
                 <div className="drawer-body">
+                  {/* Pipeline Visual Progress */}
+                  <div className="drawer-section">
+                    <span className="drawer-section-label">Pipeline Visual Progress</span>
+                    <div className="pipeline-timeline-status">
+                      <div className="pipeline-visual-connector"></div>
+                      
+                      <div className={`pipeline-visual-step ${
+                        selectedIncident.status === 'CLOSED_AND_LEARNED' ? 'completed' :
+                        (selectedIncident.status === 'TRIGGERED' || selectedIncident.status === 'QUEUED') ? 'active' : 'completed'
+                      }`}>
+                        <div className="pipeline-visual-dot">1</div>
+                        <div className="pipeline-visual-label">Triage</div>
+                      </div>
+
+                      <div className={`pipeline-visual-step ${
+                        selectedIncident.status === 'CLOSED_AND_LEARNED' ? 'completed' :
+                        (selectedIncident.status === 'TRIGGERED' || selectedIncident.status === 'QUEUED') ? 'inactive' :
+                        selectedIncident.status === 'AWAITING_APPROVAL' ? 'active' : 'completed'
+                      }`}>
+                        <div className="pipeline-visual-dot">2</div>
+                        <div className="pipeline-visual-label">Approval</div>
+                      </div>
+
+                      <div className={`pipeline-visual-step ${
+                        selectedIncident.status === 'CLOSED_AND_LEARNED' ? 'completed' :
+                        (selectedIncident.status === 'TRIGGERED' || selectedIncident.status === 'QUEUED' || selectedIncident.status === 'AWAITING_APPROVAL') ? 'inactive' :
+                        selectedIncident.status === 'FIXING' ? 'active' : 'completed'
+                      }`}>
+                        <div className="pipeline-visual-dot">3</div>
+                        <div className="pipeline-visual-label">Fixer</div>
+                      </div>
+
+                      <div className={`pipeline-visual-step ${
+                        selectedIncident.status === 'CLOSED_AND_LEARNED' ? 'completed' : 'inactive'
+                      }`}>
+                        <div className="pipeline-visual-dot">4</div>
+                        <div className="pipeline-visual-label">Memory</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Incident Metadata Details */}
+                  <div className="drawer-section">
+                    <span className="drawer-section-label">Incident Execution Metadata</span>
+                    <div className="meta-details-box">
+                      <div className="meta-detail-item">
+                        <span className="meta-detail-key">Remediation Status</span>
+                        <span className="meta-detail-val">{selectedIncident.status}</span>
+                      </div>
+                      <div className="meta-detail-item">
+                        <span className="meta-detail-key">LLM Model Target</span>
+                        <span className="meta-detail-val">Gemini 2.5 Flash</span>
+                      </div>
+                      <div className="meta-detail-item">
+                        <span className="meta-detail-key">Error Category</span>
+                        <span className="meta-detail-val">{selectedIncident.category || 'PENDING'}</span>
+                      </div>
+                      <div className="meta-detail-item">
+                        <span className="meta-detail-key">Ingested At</span>
+                        <span className="meta-detail-val">{new Date(selectedIncident.created_at).toLocaleTimeString()}</span>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="drawer-section">
                     <span className="drawer-section-label">Normalized Error Signature</span>
                     <pre className="error-signature-block">

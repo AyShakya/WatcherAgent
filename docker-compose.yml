@@ -60,6 +60,9 @@ services:
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       PINECONE_API_KEY: ${PINECONE_API_KEY:-}
+      DEFAULT_LLM_MODEL: ${DEFAULT_LLM_MODEL:-google/gemini-2.0-flash-001}
+      PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME:-guardian-knowledge}
+      ORCHESTRATOR_URL: http://api:3001
       INTERNAL_CALLBACK_SECRET: ${INTERNAL_CALLBACK_SECRET:-orchestration-callback-key-9999}
     depends_on:
       postgres:
