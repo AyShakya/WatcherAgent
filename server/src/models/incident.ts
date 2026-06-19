@@ -182,7 +182,9 @@ export async function updateIncident(id: string, fields: Partial<Omit<Incident, 
     return getIncidentById(id);
   }
 
-  setClauses.push(`updated_at = CURRENT_TIMESTAMP`);
+  if (!fields.hasOwnProperty('updated_at')) {
+    setClauses.push(`updated_at = CURRENT_TIMESTAMP`);
+  }
 
   const sql = `
     UPDATE incidents
