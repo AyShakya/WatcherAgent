@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import './App.css';
 
-const API_BASE = 'http://localhost:3001/api/v1';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
 
 function App() {
   const [view, setView] = useState('LANDING'); // LANDING, SIGN_IN, SIGN_UP, DASHBOARD
@@ -242,7 +242,7 @@ function App() {
   };
 
   const handleCopyWebhook = (secret, projectId) => {
-    const url = `http://localhost:3001/api/v1/webhook/${secret}`;
+    const url = `${API_BASE}/webhook/${secret}`;
     navigator.clipboard.writeText(url);
     setCopiedStates(prev => ({ ...prev, [projectId]: true }));
     setTimeout(() => {
@@ -251,7 +251,7 @@ function App() {
   };
 
   const handleTriggerTestIncident = async (secret, serviceName) => {
-    const url = `http://localhost:3001/api/v1/webhook/${secret}`;
+    const url = `${API_BASE}/webhook/${secret}`;
     
     // Custom test payload that mirrors Sentry event payload
     const testPayload = {
@@ -619,7 +619,7 @@ function App() {
                           </div>
                           <div className="webhook-url-wrapper">
                             <code className="webhook-url-text">
-                              {`http://localhost:3001/api/v1/webhook/${project.webhook_secret}`}
+                              {`${API_BASE}/webhook/${project.webhook_secret}`}
                             </code>
                             <button 
                               className="btn-copy" 
