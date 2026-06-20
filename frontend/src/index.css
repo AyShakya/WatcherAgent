@@ -1,32 +1,63 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-bg-primary: #030712;
-  --color-bg-secondary: #0b0f19;
-  --color-bg-tertiary: #111827;
-  --color-text-primary: #f3f4f6;
-  --color-text-secondary: #9ca3af;
-  --color-text-muted: #6b7280;
-  --color-accent: #4b41e1;
-  --color-accent-hover: #3b31c1;
-  --color-accent-glow: rgba(75, 65, 225, 0.15);
-  --color-border: #1f2937;
-  --color-border-light: rgba(255, 255, 255, 0.05);
-  --color-success: #10b981;
-  --color-success-glow: rgba(16, 185, 129, 0.1);
-  --color-warning: #f59e0b;
-  --color-warning-glow: rgba(245, 158, 11, 0.1);
-  --color-danger: #ef4444;
-  --color-danger-glow: rgba(239, 68, 68, 0.1);
-  --font-sans: 'Outfit', system-ui, sans-serif;
+  /* Neutral colors */
+  --color-background: #fff8f3;
+  --color-on-background: #1e1b18;
+  --color-surface: #fff8f3;
+  --color-on-surface: #1e1b18;
+  --color-on-surface-variant: #4a454d;
+  --color-paper-bg: #f9f7f2;
+  --color-paper-surface: #f2efe9;
+  
+  /* Container levels */
+  --color-surface-container: #f3ede8;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f9f2ed;
+  --color-surface-container-high: #eee7e2;
+  --color-surface-container-highest: #e8e1dd;
+  
+  /* Brand & Gray colors */
+  --color-ink-black: #242220;
+  --color-warm-gray: #969088;
+  
+  /* Accents */
+  --color-primary: #645377;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #7d6b91;
+  --color-on-primary-container: #fff7ff;
+  
+  --color-secondary: #934930;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #fd9e7e;
+  --color-on-secondary-container: #76331b;
+  
+  --color-tertiary: #62612f;
+  --color-on-tertiary: #ffffff;
+  
+  /* System colors mapped to warm theme */
+  --color-success: #2e7d32;
+  --color-success-container: #e8f5e9;
+  --color-warning: #b78103;
+  --color-warning-container: #fff8e1;
+  --color-danger: #ba1a1a;
+  --color-danger-container: #ffdad6;
+
+  /* Fonts */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Source Serif 4', Georgia, serif;
   --font-mono: 'JetBrains Mono', monospace;
+
+  /* Custom Spacings */
+  --spacing-margin-desktop: 2.5rem;
+  --spacing-margin-mobile: 1.25rem;
 }
 
 :root {
   font-family: var(--font-sans);
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
+  background-color: var(--color-background);
+  color: var(--color-on-background);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -35,6 +66,8 @@ body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  background-color: var(--color-background);
+  color: var(--color-on-background);
 }
 
 #root {
@@ -48,37 +81,32 @@ body {
   box-sizing: border-box;
 }
 
-/* Custom Scrollbar */
+/* Paper Texture Background Utility */
+.paper-texture {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+/* Scrollbar styling matching warm paper theme */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-bg-primary);
+  background: var(--color-surface-container-low);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: var(--color-warm-gray);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
+  background: var(--color-on-surface-variant);
 }
 
-/* Animations */
+/* Keyframe animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes pulseGlow {
-  0% { transform: scale(1); opacity: 0.5; }
-  50% { transform: scale(1.05); opacity: 0.8; }
-  100% { transform: scale(1); opacity: 0.5; }
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 
 @keyframes slideInRight {
@@ -86,30 +114,39 @@ body {
   to { transform: translateX(0); }
 }
 
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 @keyframes loadingGlow {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 
-/* Utility animation classes */
 @utility animate-fade {
   animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @utility animate-slide-in {
-  animation: slideInRight 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@utility animate-slide-in-left {
+  animation: slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @utility animate-spin-slow {
-  animation: spin 1.5s linear infinite;
-}
-
-@utility animate-pulse-glow {
-  animation: pulseGlow 1.5s infinite;
+  animation: spin 2s linear infinite;
 }
 
 @utility animate-skeleton {
-  background: linear-gradient(90deg, var(--color-bg-tertiary) 25%, var(--color-border) 50%, var(--color-bg-tertiary) 75%);
+  background: linear-gradient(90deg, var(--color-surface-container) 25%, var(--color-surface-container-high) 50%, var(--color-surface-container) 75%);
   background-size: 200% 100%;
-  animation: loadingGlow 1.5s infinite;
+  animation: loadingGlow 1.8s infinite;
 }

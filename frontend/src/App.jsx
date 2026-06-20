@@ -21,7 +21,10 @@ import {
   Lock,
   User,
   Mail,
-  Activity
+  Activity,
+  Edit,
+  Menu,
+  X
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
@@ -44,8 +47,12 @@ function App() {
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   
-  // Project Form
+  // Project Form & Observability State
   const [showProjectModal, setShowProjectModal] = useState(false);
+  const [editingProject, setEditingProject] = useState(null); // Project currently being edited
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false); // Mobile sidebar overlay drawer toggle
+  const [landingMenuOpen, setLandingMenuOpen] = useState(false); // Mobile landing topbar toggle
+  
   const [projName, setProjName] = useState('');
   const [projDesc, setProjDesc] = useState('');
   const [projGithubOwner, setProjGithubOwner] = useState('');
@@ -62,6 +69,35 @@ function App() {
   const [copiedStates, setCopiedStates] = useState({}); // project.id -> boolean (for webhook secret copy feedback)
   const [guideOpen, setGuideOpen] = useState(true);
 
+  // Modal Open Handlers
+  const handleOpenCreateModal = () => {
+    setEditingProject(null);
+    setProjName('');
+    setProjDesc('');
+    setProjGithubOwner('');
+    setProjGithubRepo('');
+    setProjGithubToken('');
+    setProjDiscordChannel('');
+    setProjOpenRouterKey('');
+    setProjPineconeNamespace('');
+    setProjFormError('');
+    setShowProjectModal(true);
+  };
+
+  const handleOpenEditModal = (project) => {
+    setEditingProject(project);
+    setProjName(project.name || '');
+    setProjDesc(project.description || '');
+    setProjGithubOwner(project.github_owner || '');
+    setProjGithubRepo(project.github_repo || '');
+    setProjGithubToken(project.github_token || '');
+    setProjDiscordChannel(project.discord_channel_id || '');
+    setProjOpenRouterKey(project.openrouter_key || '');
+    setProjPineconeNamespace(project.pinecone_namespace || '');
+    setProjFormError('');
+    setShowProjectModal(true);
+  };
+
   // Auth profile loading
   useEffect(() => {
     if (token) {
@@ -76,12 +112,12 @@ function App() {
     }
   }, [token]);
 
-  // Poll for incidents updates when logged in
+  // Poll for incidents updates smoothly when logged in
   useEffect(() => {
     let interval;
     if (token && view === 'DASHBOARD') {
       interval = setInterval(() => {
-        fetchIncidents();
+        fetchIncidents(true); // Pass isPoll=true to fetch silently in the background
       }, 5000);
     }
     return () => clearInterval(interval);
@@ -106,7 +142,7 @@ function App() {
 
   const fetchDashboardData = () => {
     fetchProjects();
-    fetchIncidents();
+    fetchIncidents(false);
   };
 
   const fetchProjects = async () => {
@@ -126,20 +162,37 @@ function App() {
     }
   };
 
-  const fetchIncidents = async () => {
-    setLoadingIncidents(true);
+  const fetchIncidents = async (isPoll = false) => {
+    if (!isPoll) setLoadingIncidents(true);
     try {
       const res = await fetch(`${API_BASE}/incidents`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         const data = await res.json();
-        setIncidents(data.incidents || []);
+        const newIncidents = data.incidents || [];
+        
+        // Deep-compare using stringified versions to check for actual differences
+        setIncidents(prev => {
+          if (JSON.stringify(prev) === JSON.stringify(newIncidents)) {
+            return prev; // Prevents re-rendering table rows if data is identical
+          }
+          
+          // Also update selected incident if it's currently open and has new logs/status
+          if (selectedIncident) {
+            const updatedSelected = newIncidents.find(i => i.id === selectedIncident.id);
+            if (updatedSelected && JSON.stringify(updatedSelected) !== JSON.stringify(selectedIncident)) {
+              setSelectedIncident(updatedSelected);
+            }
+          }
+          
+          return newIncidents;
+        });
       }
     } catch (err) {
       console.error('Error loading incidents:', err);
     } finally {
-      setLoadingIncidents(false);
+      if (!isPoll) setLoadingIncidents(false);
     }
   };
 
@@ -193,8 +246,13 @@ function App() {
     };
 
     try {
-      const res = await fetch(`${API_BASE}/projects`, {
-        method: 'POST',
+      const url = editingProject 
+        ? `${API_BASE}/projects/${editingProject.id}` 
+        : `${API_BASE}/projects`;
+      const method = editingProject ? 'PATCH' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -204,8 +262,16 @@ function App() {
 
       const data = await res.json();
       if (res.ok) {
-        setProjects(prev => [data.project, ...prev]);
+        if (editingProject) {
+          // Update existing project in state
+          setProjects(prev => prev.map(p => p.id === editingProject.id ? data.project : p));
+        } else {
+          // Add new project to state
+          setProjects(prev => [data.project, ...prev]);
+        }
+        
         setShowProjectModal(false);
+        setEditingProject(null);
         // Reset form fields
         setProjName('');
         setProjDesc('');
@@ -216,7 +282,7 @@ function App() {
         setProjOpenRouterKey('');
         setProjPineconeNamespace('');
       } else {
-        setProjFormError(data.error || 'Failed to create project.');
+        setProjFormError(data.error || `Failed to ${editingProject ? 'update' : 'create'} project.`);
       }
     } catch (err) {
       setProjFormError('Failed to communicate with the backend.');
@@ -279,7 +345,7 @@ function App() {
       });
       if (res.ok) {
         alert('🚀 Test Alert webhook fired successfully! Ingestion job queued on BullMQ.');
-        fetchIncidents();
+        fetchIncidents(false); // Force load
       } else {
         alert('❌ Failed to trigger test webhook. Ensure backend is running.');
       }
@@ -296,104 +362,193 @@ function App() {
   // Rendering Helper Methods
   const getSeverityBadgeClass = (sev) => {
     switch (sev) {
-      case 'P1': return 'bg-danger-glow text-[#f87171]';
-      case 'P2': return 'bg-warning-glow text-[#fbbf24]';
-      default: return 'bg-success-glow text-[#34d399]';
+      case 'P1': return 'bg-danger/10 text-danger border border-danger/20 font-semibold';
+      case 'P2': return 'bg-warning/10 text-warning border border-warning/20 font-semibold';
+      default: return 'bg-success/10 text-success border border-success/20 font-semibold';
     }
   };
 
   const getStatusBadgeClass = (status) => {
     switch (status) {
-      case 'TRIGGERED': return 'bg-accent/15 text-[#a7a3ff]';
-      case 'AWAITING_APPROVAL': return 'bg-warning-glow text-[#fbbf24]';
-      case 'FIXING': return 'bg-[rgba(167,139,250,0.15)] text-[#c084fc]';
-      case 'CLOSED_AND_LEARNED': return 'bg-success-glow text-[#34d399]';
-      case 'MUTED': return 'bg-[rgba(156,163,175,0.15)] text-text-muted';
-      default: return 'bg-danger-glow text-[#f87171]';
+      case 'TRIGGERED': return 'bg-primary/10 text-primary border border-primary/20 font-semibold';
+      case 'AWAITING_APPROVAL': return 'bg-warning/10 text-warning border border-warning/20 font-semibold';
+      case 'FIXING': return 'bg-secondary/10 text-secondary border border-secondary/20 font-semibold';
+      case 'CLOSED_AND_LEARNED': return 'bg-success/10 text-success border border-success/20 font-semibold';
+      case 'MUTED': return 'bg-warm-gray/10 text-warm-gray border border-warm-gray/20 font-semibold';
+      default: return 'bg-danger/10 text-danger border border-danger/20 font-semibold';
     }
   };
 
-  const getPipelineStepClass = (status, stepStatuses) => {
-    if (stepStatuses === 'completed') return 'completed';
-    if (stepStatuses === 'active') return 'active';
-    return 'inactive';
-  };
-
   return (
-    <div className="flex flex-col min-h-screen w-screen bg-bg-primary text-text-primary">
+    <div className="flex flex-col min-h-screen w-full bg-background text-on-surface font-sans selection:bg-primary/20 relative">
+      <div className="fixed inset-0 paper-texture pointer-events-none z-50"></div>
       
       {/* 1. LANDING PAGE VIEW */}
       {view === 'LANDING' && (
-        <div className="min-h-screen flex flex-col relative overflow-hidden">
-          {/* Glow backgrounds */}
-          <div className="absolute w-[40%] h-[40%] rounded-full pointer-events-none z-0" style={{ top: '5%', left: '5%', background: 'radial-gradient(circle, var(--color-accent-glow) 0%, transparent 70%)', filter: 'blur(80px)' }}></div>
-          <div className="absolute w-[40%] h-[40%] rounded-full pointer-events-none z-0" style={{ bottom: '15%', right: '10%', background: 'radial-gradient(circle, var(--color-accent-glow) 0%, transparent 70%)', filter: 'blur(80px)' }}></div>
+        <div className="min-h-screen flex flex-col relative overflow-hidden animate-fade">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(100,83,119,0.04)_0%,transparent_70%)] pointer-events-none z-0"></div>
           
-          <header className="flex justify-between items-center px-[8%] py-6 border-b border-border z-10 backdrop-blur-[10px] bg-bg-primary/70">
-            <div className="flex items-center gap-2.5">
-              <Eye className="w-7 h-7 text-accent" />
-              <span className="text-[22px] font-bold tracking-tight">WatcherAgent</span>
+          <header className="flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 border-b border-warm-gray/20 sticky top-0 z-40 bg-background/85 backdrop-blur-md">
+            <div className="flex items-center gap-3">
+              <Eye className="w-6 h-6 text-primary" />
+              <span className="font-display text-lg md:text-xl font-bold tracking-tight text-ink-black">Watcher Platform Core</span>
             </div>
-            <div className="flex gap-4">
+            
+            {/* Desktop Navigation Links */}
+            <nav className="hidden md:flex items-center gap-6">
+              <a href="#pipeline" className="text-on-surface-variant font-semibold text-xs uppercase tracking-wider hover:text-primary transition-colors">Pipeline</a>
+              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-on-surface-variant font-semibold text-xs uppercase tracking-wider hover:text-primary transition-colors">GitHub</a>
+            </nav>
+
+            <div className="hidden md:flex items-center gap-4">
               <button 
-                className="bg-transparent text-text-primary border border-border rounded-md px-[18px] py-2 text-sm font-semibold cursor-pointer transition-all duration-200 hover:bg-bg-tertiary hover:border-text-muted"
+                className="text-on-surface-variant font-medium text-sm px-4 py-2 hover:text-primary transition-colors duration-200"
                 onClick={() => setView('SIGN_IN')}
               >
                 Sign In
               </button>
               <button 
-                className="bg-accent text-white border-none rounded-md px-[18px] py-2 text-sm font-semibold cursor-pointer transition-all duration-200 hover:bg-accent-hover hover:shadow-[0_0_15px_var(--color-accent-glow)]"
+                className="bg-primary text-on-primary font-medium text-sm px-5 py-2.5 rounded-lg hover:opacity-90 transition-opacity active:scale-[0.98] duration-150"
                 onClick={() => setView('SIGN_UP')}
               >
                 Get Started
               </button>
             </div>
+
+            {/* Mobile Hamburger Toggle */}
+            <button 
+              className="md:hidden bg-transparent border-none text-ink-black cursor-pointer p-2 rounded-lg hover:bg-paper-surface transition-colors"
+              onClick={() => setLandingMenuOpen(!landingMenuOpen)}
+              title="Toggle Menu"
+            >
+              {landingMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </header>
 
-          <main className="flex-1 flex flex-col items-center justify-center text-center px-[8%] py-[60px] pb-[100px] z-5 animate-fade">
-            <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-3.5 py-1.5 mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent"></span>
-              <span className="text-xs font-bold tracking-wider uppercase text-[#a7a3ff]">AI Incident Response Platform</span>
+          {/* Mobile Overlay Menu */}
+          {landingMenuOpen && (
+            <div className="md:hidden fixed inset-x-0 top-[65px] bg-background/95 backdrop-blur-md border-b border-warm-gray/20 shadow-lg p-6 z-30 flex flex-col gap-4 animate-fade">
+              <a 
+                href="#pipeline" 
+                className="text-on-surface-variant font-semibold text-sm py-2 hover:text-primary transition-colors border-b border-warm-gray/10 text-left"
+                onClick={() => setLandingMenuOpen(false)}
+              >
+                Pipeline
+              </a>
+              <a 
+                href="https://github.com" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-on-surface-variant font-semibold text-sm py-2 hover:text-primary transition-colors border-b border-warm-gray/10 text-left"
+                onClick={() => setLandingMenuOpen(false)}
+              >
+                GitHub
+              </a>
+              <div className="flex flex-col gap-3 mt-2">
+                <button 
+                  className="w-full text-center text-on-surface-variant font-medium text-sm py-3 border border-warm-gray/30 rounded-lg hover:bg-paper-surface transition-colors"
+                  onClick={() => { setLandingMenuOpen(false); setView('SIGN_IN'); }}
+                >
+                  Sign In
+                </button>
+                <button 
+                  className="w-full text-center bg-primary text-on-primary font-medium text-sm py-3 rounded-lg hover:opacity-90 transition-opacity"
+                  onClick={() => { setLandingMenuOpen(false); setView('SIGN_UP'); }}
+                >
+                  Get Started
+                </button>
+              </div>
             </div>
-            <h1 className="text-[54px] font-extrabold leading-[1.15] tracking-[-1.5px] m-0 mb-5">
-              Autonomously Triage, notify & <br />
-              <span className="bg-gradient-to-br from-[#c084fc] to-[#6366f1] bg-clip-text text-transparent">Resolve Production Incidents</span>
+          )}
+
+          <main className="flex-1 flex flex-col items-center justify-center text-center px-margin-mobile md:px-margin-desktop py-20 pb-28 z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-surface-container-low border border-warm-gray/20 rounded-full mb-8">
+              <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+              <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">v2.4 Production-Ready</span>
+            </div>
+            
+            <h1 className="font-display text-4xl md:text-6xl text-ink-black max-w-4xl mx-auto leading-[1.12] mb-6">
+              Autonomously Triage, Notify & <br />
+              <span className="text-primary italic">Resolve Production Incidents</span>
             </h1>
-            <p className="text-lg text-text-secondary max-w-[750px] leading-relaxed mb-10">
-              Transform WatcherAgent from a single-project pipeline into a multi-repository management system. Connect alert systems, request on-call approvals via Discord, deploy automated fixes via GitHub PRs, and retain vector knowledge isolation.
+            
+            <p className="text-base md:text-lg text-on-surface-variant max-w-2xl mx-auto mb-10 leading-relaxed">
+              Connect alert endpoints, request hitl approval via Discord/Slack channels, and deploy tested code changes with GitHub Actions. WatcherAgent acts as the autonomous brain for SRE.
             </p>
-            <div className="flex gap-4 mb-20">
+            
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20 w-full max-w-md mx-auto">
               <button 
-                className="bg-accent text-white border-none rounded-lg px-7 py-3 text-base font-semibold cursor-pointer flex items-center gap-2.5 transition-all duration-200 hover:bg-accent-hover hover:shadow-[0_0_20px_var(--color-accent-glow)]"
+                className="w-full sm:w-auto bg-primary text-on-primary px-8 py-3.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all duration-150"
                 onClick={() => setView('SIGN_UP')}
               >
-                Initialize Account <ArrowRight className="w-[18px] h-[18px]" />
+                Initialize Account <ArrowRight className="w-4 h-4" />
               </button>
               <button 
-                className="bg-bg-tertiary text-text-primary border border-border rounded-lg px-7 py-3 text-base font-semibold cursor-pointer flex items-center gap-2.5 transition-all duration-200 hover:bg-bg-primary hover:border-text-muted"
+                className="w-full sm:w-auto border border-warm-gray/30 text-on-surface px-8 py-3.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-paper-surface/50 active:scale-[0.98] transition-all duration-150"
                 onClick={() => window.open('https://github.com', '_blank')}
               >
-                <GitBranch className="w-[18px] h-[18px]" /> View Repository
+                <GitBranch className="w-4 h-4" /> View Repository
               </button>
             </div>
 
-            {/* Pipeline Step Visualizer */}
-            <div className="w-full max-w-[1100px] mt-5 border-t border-border pt-[50px]">
-              <h3 className="text-xl font-semibold mb-[30px] text-text-secondary">The 5-Node Autonomous Remediation Pipeline</h3>
-              <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-5">
-                {[
-                  { num: '01', title: 'Triage', desc: 'LLM categorizes severity, error footprint and determines root files.' },
-                  { num: '02', title: 'Runbook RAG', desc: 'Matches error signature against Pinecone namespace to reuse past solutions.' },
-                  { num: '03', title: 'HITL Approval', desc: 'Sends interactive cards with approval actions to on-call Discord.' },
-                  { num: '04', title: 'Fixer War-Room', desc: 'Audits code context, resolves imports, and opens a GitHub Pull Request.' },
-                  { num: '05', title: 'Narrator Loop', desc: 'Saves solution reasoning as vector metadata for instant memory recall.' }
-                ].map(step => (
-                  <div key={step.num} className="bg-bg-secondary border border-border rounded-lg px-5 py-6 text-left transition-all duration-300 hover:border-accent/40 hover:-translate-y-1">
-                    <div className="text-sm font-extrabold text-accent mb-3">{step.num}</div>
-                    <h4 className="text-base font-semibold m-0 mb-2.5">{step.title}</h4>
-                    <p className="text-[13px] text-text-secondary leading-normal m-0">{step.desc}</p>
+            {/* Bento-style 5-Node Autonomous Remediation Pipeline */}
+            <div id="pipeline" className="w-full max-w-[1120px] mt-10 border-t border-warm-gray/20 pt-16">
+              <h3 className="font-display text-2xl md:text-3xl text-ink-black mb-12">The 5-Node Autonomous Remediation Pipeline</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-left">
+                {/* Node 1 */}
+                <div className="md:col-span-4 bg-surface-container-low border border-warm-gray/20 rounded-xl p-8 hover:border-primary/40 transition-colors duration-300 group">
+                  <span className="font-mono text-xs text-secondary font-bold uppercase mb-3 block">Node 01</span>
+                  <h4 className="font-display text-lg text-ink-black mb-2">Intelligent Triage</h4>
+                  <p className="text-sm text-on-surface-variant leading-relaxed">
+                    LLM categorizes alerts from Sentry, Datadog or Prometheus. Filters noise and structures raw exception logs.
+                  </p>
+                </div>
+                
+                {/* Node 2 */}
+                <div className="md:col-span-8 bg-paper-surface border border-warm-gray/20 rounded-xl p-8 hover:border-primary/40 transition-colors duration-300 group flex flex-col justify-between">
+                  <div>
+                    <span className="font-mono text-xs text-secondary font-bold uppercase mb-3 block">Node 02</span>
+                    <h4 className="font-display text-lg text-ink-black mb-2">Runbook RAG Recall</h4>
+                    <p className="text-sm text-on-surface-variant leading-relaxed max-w-xl">
+                      Retrieves historical resolution context using Pinecone database vector indexes, matching past solutions to new crash signatures.
+                    </p>
                   </div>
-                ))}
+                  <div className="h-1 bg-warm-gray/10 w-full mt-6 rounded-full overflow-hidden">
+                    <div className="h-full bg-primary w-2/3"></div>
+                  </div>
+                </div>
+                
+                {/* Node 3 */}
+                <div className="md:col-span-6 lg:col-span-5 bg-surface-container-low border border-warm-gray/20 rounded-xl p-8 hover:border-primary/40 transition-colors duration-300 group text-left">
+                  <span className="font-mono text-xs text-secondary font-bold uppercase mb-3 block">Node 03</span>
+                  <h4 className="font-display text-lg text-ink-black mb-2">HITL Discord Cards</h4>
+                  <p className="text-sm text-on-surface-variant leading-relaxed mb-6">
+                    Safety-first Human-in-the-Loop checkpoints. Pings Discord with one-click quick actions to authorize or audit code fix drafts.
+                  </p>
+                  <div className="flex gap-2">
+                    <span className="px-3 py-1 rounded text-xs bg-secondary text-on-secondary font-medium">Approve Fix</span>
+                    <span className="px-3 py-1 rounded text-xs border border-warm-gray/30 text-on-surface-variant font-medium">Edit Context</span>
+                  </div>
+                </div>
+                
+                {/* Node 4 */}
+                <div className="md:col-span-6 lg:col-span-4 bg-surface-container-high border border-warm-gray/20 rounded-xl p-8 hover:border-primary/40 transition-colors duration-300 group">
+                  <span className="font-mono text-xs text-secondary font-bold uppercase mb-3 block">Node 04</span>
+                  <h4 className="font-display text-lg text-ink-black mb-2">Fixer Sandbox</h4>
+                  <p className="text-sm text-on-surface-variant leading-relaxed">
+                    Spawns isolated workspace checkouts, refactors imports, applies patches, validates test suites, and drafts a GitHub Pull Request.
+                  </p>
+                </div>
+                
+                {/* Node 5 */}
+                <div className="md:col-span-12 lg:col-span-3 bg-surface-container-highest border border-warm-gray/20 rounded-xl p-8 hover:border-primary/40 transition-colors duration-300 group">
+                  <span className="font-mono text-xs text-secondary font-bold uppercase mb-3 block">Node 05</span>
+                  <h4 className="font-display text-lg text-ink-black mb-2">Memory Loop</h4>
+                  <p className="text-sm text-on-surface-variant leading-relaxed">
+                    Generates markdown postmortems and writes back solutions into Pinecone vectors, training the agent core.
+                  </p>
+                </div>
               </div>
             </div>
           </main>
@@ -402,25 +557,24 @@ function App() {
 
       {/* 2. SIGN IN VIEW */}
       {view === 'SIGN_IN' && (
-        <div className="min-h-screen flex items-center justify-center relative p-10 animate-fade">
-          <div className="absolute w-[40%] h-[40%] rounded-full pointer-events-none z-0" style={{ background: 'radial-gradient(circle, var(--color-accent-glow) 0%, transparent 70%)', filter: 'blur(80px)' }}></div>
-          <div className="w-full max-w-[440px] bg-bg-secondary border border-border rounded-xl p-10 z-5 shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
+        <div className="min-h-screen flex items-center justify-center p-margin-mobile md:p-12 relative animate-fade">
+          <div className="w-full max-w-[440px] bg-surface-container-lowest border border-warm-gray/20 rounded-xl p-8 md:p-10 z-10 shadow-[0_15px_30px_rgba(36,34,32,0.04)]">
             <div className="text-center mb-8">
-              <Eye className="w-10 h-10 text-accent mb-4" />
-              <h2 className="text-2xl font-bold m-0 mb-2">Welcome Back</h2>
-              <p className="text-sm text-text-secondary m-0">Log in to access your WatcherAgent console.</p>
+              <Eye className="w-10 h-10 text-primary mb-4 mx-auto" />
+              <h2 className="font-display text-2xl md:text-3xl text-ink-black mb-2">Welcome Back</h2>
+              <p className="text-sm text-on-surface-variant">Access your Watcher incident control tower.</p>
             </div>
             
             {authError && (
-              <div className="bg-danger-glow border border-[rgba(239,68,68,0.3)] text-[#f87171] text-[13px] p-3 rounded-md mb-6 text-center font-medium">
+              <div className="bg-danger/10 border border-danger/20 text-danger text-[13px] p-3 rounded-md mb-6 text-center font-medium">
                 {authError}
               </div>
             )}
             
             <form onSubmit={(e) => handleAuthSubmit(e, 'SIGN_IN')} className="flex flex-col gap-5">
               <div className="flex flex-col gap-2 text-left">
-                <label className="text-[13px] font-semibold text-text-secondary flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5" /> Email Address
+                <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-warm-gray" /> Email Address
                 </label>
                 <input 
                   type="email" 
@@ -428,12 +582,12 @@ function App() {
                   onChange={(e) => setAuthEmail(e.target.value)} 
                   placeholder="name@company.com" 
                   required 
-                  className="bg-bg-primary border border-border rounded-md px-3.5 py-3 text-sm text-text-primary outline-none font-sans transition-all duration-200 focus:border-accent focus:shadow-[0_0_0_3px_rgba(75,65,225,0.15)]"
+                  className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
                 />
               </div>
               <div className="flex flex-col gap-2 text-left">
-                <label className="text-[13px] font-semibold text-text-secondary flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5" /> Password
+                <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-warm-gray" /> Password
                 </label>
                 <input 
                   type="password" 
@@ -441,15 +595,19 @@ function App() {
                   onChange={(e) => setAuthPassword(e.target.value)} 
                   placeholder="••••••••" 
                   required 
-                  className="bg-bg-primary border border-border rounded-md px-3.5 py-3 text-sm text-text-primary outline-none font-sans transition-all duration-200 focus:border-accent focus:shadow-[0_0_0_3px_rgba(75,65,225,0.15)]"
+                  className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
                 />
               </div>
-              <button type="submit" className="bg-accent text-white border-none rounded-md py-3 text-[15px] font-semibold cursor-pointer mt-2.5 transition-all duration-200 hover:bg-accent-hover disabled:opacity-60 disabled:cursor-not-allowed" disabled={authLoading}>
+              <button 
+                type="submit" 
+                className="bg-primary text-on-primary border-none rounded-lg py-3.5 text-[14px] font-semibold cursor-pointer mt-2.5 transition-all duration-150 hover:opacity-90 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed w-full" 
+                disabled={authLoading}
+              >
                 {authLoading ? 'Signing In...' : 'Access Dashboard'}
               </button>
             </form>
-            <div className="mt-6 text-center text-[13px] text-text-secondary">
-              Don't have an account? <span className="text-accent font-semibold cursor-pointer hover:underline" onClick={() => { setView('SIGN_UP'); setAuthError(''); }}>Sign Up</span>
+            <div className="mt-6 text-center text-sm text-on-surface-variant">
+              Don't have an account? <span className="text-primary font-semibold cursor-pointer hover:underline" onClick={() => { setView('SIGN_UP'); setAuthError(''); }}>Sign Up</span>
             </div>
           </div>
         </div>
@@ -457,25 +615,24 @@ function App() {
 
       {/* 3. SIGN UP VIEW */}
       {view === 'SIGN_UP' && (
-        <div className="min-h-screen flex items-center justify-center relative p-10 animate-fade">
-          <div className="absolute w-[40%] h-[40%] rounded-full pointer-events-none z-0" style={{ background: 'radial-gradient(circle, var(--color-accent-glow) 0%, transparent 70%)', filter: 'blur(80px)' }}></div>
-          <div className="w-full max-w-[440px] bg-bg-secondary border border-border rounded-xl p-10 z-5 shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
+        <div className="min-h-screen flex items-center justify-center p-margin-mobile md:p-12 relative animate-fade">
+          <div className="w-full max-w-[440px] bg-surface-container-lowest border border-warm-gray/20 rounded-xl p-8 md:p-10 z-10 shadow-[0_15px_30px_rgba(36,34,32,0.04)]">
             <div className="text-center mb-8">
-              <Eye className="w-10 h-10 text-accent mb-4" />
-              <h2 className="text-2xl font-bold m-0 mb-2">Create Platform Account</h2>
-              <p className="text-sm text-text-secondary m-0">No credentials required for initial onboarding.</p>
+              <Eye className="w-10 h-10 text-primary mb-4 mx-auto" />
+              <h2 className="font-display text-2xl md:text-3xl text-ink-black mb-2">Create Account</h2>
+              <p className="text-sm text-on-surface-variant">Configure details to initialize local observability.</p>
             </div>
 
             {authError && (
-              <div className="bg-danger-glow border border-[rgba(239,68,68,0.3)] text-[#f87171] text-[13px] p-3 rounded-md mb-6 text-center font-medium">
+              <div className="bg-danger/10 border border-danger/20 text-danger text-[13px] p-3 rounded-md mb-6 text-center font-medium">
                 {authError}
               </div>
             )}
 
             <form onSubmit={(e) => handleAuthSubmit(e, 'SIGN_UP')} className="flex flex-col gap-5">
               <div className="flex flex-col gap-2 text-left">
-                <label className="text-[13px] font-semibold text-text-secondary flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5" /> Full Name
+                <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-warm-gray" /> Full Name
                 </label>
                 <input 
                   type="text" 
@@ -483,12 +640,12 @@ function App() {
                   onChange={(e) => setAuthName(e.target.value)} 
                   placeholder="Ayush Shakya" 
                   required 
-                  className="bg-bg-primary border border-border rounded-md px-3.5 py-3 text-sm text-text-primary outline-none font-sans transition-all duration-200 focus:border-accent focus:shadow-[0_0_0_3px_rgba(75,65,225,0.15)]"
+                  className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
                 />
               </div>
               <div className="flex flex-col gap-2 text-left">
-                <label className="text-[13px] font-semibold text-text-secondary flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5" /> Email Address
+                <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-warm-gray" /> Email Address
                 </label>
                 <input 
                   type="email" 
@@ -496,12 +653,12 @@ function App() {
                   onChange={(e) => setAuthEmail(e.target.value)} 
                   placeholder="name@company.com" 
                   required 
-                  className="bg-bg-primary border border-border rounded-md px-3.5 py-3 text-sm text-text-primary outline-none font-sans transition-all duration-200 focus:border-accent focus:shadow-[0_0_0_3px_rgba(75,65,225,0.15)]"
+                  className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
                 />
               </div>
               <div className="flex flex-col gap-2 text-left">
-                <label className="text-[13px] font-semibold text-text-secondary flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5" /> Password
+                <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-warm-gray" /> Password
                 </label>
                 <input 
                   type="password" 
@@ -509,15 +666,19 @@ function App() {
                   onChange={(e) => setAuthPassword(e.target.value)} 
                   placeholder="At least 6 characters" 
                   required 
-                  className="bg-bg-primary border border-border rounded-md px-3.5 py-3 text-sm text-text-primary outline-none font-sans transition-all duration-200 focus:border-accent focus:shadow-[0_0_0_3px_rgba(75,65,225,0.15)]"
+                  className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
                 />
               </div>
-              <button type="submit" className="bg-accent text-white border-none rounded-md py-3 text-[15px] font-semibold cursor-pointer mt-2.5 transition-all duration-200 hover:bg-accent-hover disabled:opacity-60 disabled:cursor-not-allowed" disabled={authLoading}>
+              <button 
+                type="submit" 
+                className="bg-primary text-on-primary border-none rounded-lg py-3.5 text-[14px] font-semibold cursor-pointer mt-2.5 transition-all duration-150 hover:opacity-90 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed w-full" 
+                disabled={authLoading}
+              >
                 {authLoading ? 'Creating Account...' : 'Initialize Onboarding'}
               </button>
             </form>
-            <div className="mt-6 text-center text-[13px] text-text-secondary">
-              Already have an account? <span className="text-accent font-semibold cursor-pointer hover:underline" onClick={() => { setView('SIGN_IN'); setAuthError(''); }}>Log In</span>
+            <div className="mt-6 text-center text-sm text-on-surface-variant">
+              Already have an account? <span className="text-primary font-semibold cursor-pointer hover:underline" onClick={() => { setView('SIGN_IN'); setAuthError(''); }}>Log In</span>
             </div>
           </div>
         </div>
@@ -525,37 +686,102 @@ function App() {
 
       {/* 4. DASHBOARD VIEW */}
       {view === 'DASHBOARD' && (
-        <div className="flex h-screen w-screen overflow-hidden animate-fade">
+        <div className="flex h-screen w-full overflow-hidden animate-fade relative z-10">
           
-          {/* Sidebar */}
-          <aside className="w-[250px] shrink-0 bg-bg-secondary border-r border-border flex flex-col justify-between p-6">
+          {/* Mobile Sidebar Overlay Drawer */}
+          {mobileSidebarOpen && (
+            <div className="lg:hidden fixed inset-0 z-50 flex animate-fade">
+              <div 
+                className="fixed inset-0 bg-ink-black/40 backdrop-blur-xs transition-opacity duration-300"
+                onClick={() => setMobileSidebarOpen(false)}
+              ></div>
+              <aside className="relative w-[280px] max-w-[80%] h-full bg-surface-container border-r border-warm-gray/20 flex flex-col justify-between p-6 animate-slide-in-left shadow-2xl">
+                <div>
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-3">
+                      <Eye className="w-6 h-6 text-primary" />
+                      <div>
+                        <span className="font-display text-lg font-bold block text-ink-black leading-tight">Watcher Console</span>
+                        <span className="text-[10px] text-warm-gray font-semibold tracking-wider uppercase block">Incident Management</span>
+                      </div>
+                    </div>
+                    <button 
+                      className="bg-transparent border-none text-warm-gray hover:text-ink-black p-1 rounded-lg transition-colors cursor-pointer"
+                      onClick={() => setMobileSidebarOpen(false)}
+                      title="Close Sidebar"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-surface-container-low border border-warm-gray/20 mb-6">
+                    <div className="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-sm select-none">
+                      {user?.name?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <div className="flex flex-col text-left min-w-0">
+                      <span className="text-[13px] font-semibold text-ink-black whitespace-nowrap overflow-hidden text-ellipsis">{user?.name || 'User Profile'}</span>
+                      <span className="text-[11px] text-on-surface-variant whitespace-nowrap overflow-hidden text-ellipsis">{user?.email}</span>
+                    </div>
+                  </div>
+
+                  <nav className="flex flex-col gap-1.5">
+                    <div className="text-[10px] font-bold tracking-wider text-warm-gray mt-4 mb-2 ml-3 text-left">MANAGEMENT</div>
+                    <div 
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-semibold bg-paper-surface border border-warm-gray/20 text-primary cursor-pointer active:scale-95 duration-150 transition-all text-left"
+                      onClick={() => setMobileSidebarOpen(false)}
+                    >
+                      <Activity className="w-4 h-4 animate-pulse" /> Console Dashboard
+                    </div>
+                    <div 
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-semibold text-on-surface-variant hover:text-on-surface hover:bg-paper-surface/50 cursor-pointer active:scale-95 duration-150 transition-all text-left"
+                      onClick={() => { setMobileSidebarOpen(false); handleOpenCreateModal(); }}
+                    >
+                      <Plus className="w-4 h-4" /> Create Project
+                    </div>
+                  </nav>
+                </div>
+
+                <div className="mt-auto">
+                  <button 
+                    className="w-full flex items-center justify-center gap-2 bg-transparent text-on-surface-variant border border-warm-gray/30 rounded-lg py-3 text-[13px] font-semibold cursor-pointer transition-all duration-150 hover:bg-danger/10 hover:text-danger hover:border-danger/30"
+                    onClick={() => { setMobileSidebarOpen(false); handleLogout(); }}
+                  >
+                    <LogOut className="w-3.5 h-3.5" /> Log Out
+                  </button>
+                </div>
+              </aside>
+            </div>
+          )}
+
+          {/* Desktop Sidebar */}
+          <aside className="hidden lg:flex w-[260px] shrink-0 bg-surface-container border-r border-warm-gray/20 flex-col justify-between p-6">
             <div>
               <div className="flex items-center gap-3 mb-8">
-                <Eye className="w-6 h-6 text-accent" />
+                <Eye className="w-6 h-6 text-primary" />
                 <div>
-                  <span className="text-lg font-bold block">Watcher</span>
-                  <span className="text-[10px] text-accent font-bold tracking-wider uppercase block">Platform Core</span>
+                  <span className="font-display text-lg font-bold block text-ink-black leading-tight">Watcher Console</span>
+                  <span className="text-[10px] text-warm-gray font-semibold tracking-wider uppercase block">Incident Management</span>
                 </div>
               </div>
               
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-bg-tertiary border border-border-light mb-6">
-                <div className="w-9 h-9 rounded-full bg-accent text-white flex items-center justify-center font-bold text-sm">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-surface-container-low border border-warm-gray/20 mb-6">
+                <div className="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-sm select-none">
                   {user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <div className="flex flex-col text-left min-w-0">
-                  <span className="text-[13px] font-semibold text-text-primary whitespace-nowrap overflow-hidden text-ellipsis">{user?.name || 'User Profile'}</span>
-                  <span className="text-[11px] text-text-secondary whitespace-nowrap overflow-hidden text-ellipsis">{user?.email}</span>
+                  <span className="text-[13px] font-semibold text-ink-black whitespace-nowrap overflow-hidden text-ellipsis">{user?.name || 'User Profile'}</span>
+                  <span className="text-[11px] text-on-surface-variant whitespace-nowrap overflow-hidden text-ellipsis">{user?.email}</span>
                 </div>
               </div>
 
-              <nav className="flex flex-col gap-1 flex-1">
-                <div className="text-[10px] font-bold tracking-wider text-text-muted mt-4 mb-2 ml-3 text-left">MANAGEMENT</div>
-                <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-md text-[13px] font-semibold bg-accent/10 text-[#a7a3ff] border-l-2 border-accent cursor-pointer">
-                  <Activity className="w-4 h-4" /> Console Dashboard
+              <nav className="flex flex-col gap-1.5 flex-1">
+                <div className="text-[10px] font-bold tracking-wider text-warm-gray mt-4 mb-2 ml-3 text-left">MANAGEMENT</div>
+                <div className="flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-semibold bg-paper-surface border border-warm-gray/20 text-primary cursor-pointer active:scale-95 duration-150 transition-all">
+                  <Activity className="w-4 h-4 animate-pulse" /> Console Dashboard
                 </div>
                 <div 
-                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-md text-[13px] font-semibold text-text-secondary cursor-pointer transition-all duration-200 hover:bg-bg-tertiary hover:text-text-primary"
-                  onClick={() => setShowProjectModal(true)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-semibold text-on-surface-variant hover:text-on-surface hover:bg-paper-surface/50 cursor-pointer active:scale-95 duration-150 transition-all"
+                  onClick={handleOpenCreateModal}
                 >
                   <Plus className="w-4 h-4" /> Create Project
                 </div>
@@ -564,7 +790,7 @@ function App() {
 
             <div className="mt-auto">
               <button 
-                className="w-full flex items-center justify-center gap-2 bg-transparent text-text-secondary border border-border rounded-md py-2.5 text-[13px] font-semibold cursor-pointer transition-all duration-200 hover:bg-danger-glow hover:text-[#f87171] hover:border-[rgba(239,68,68,0.3)]"
+                className="w-full flex items-center justify-center gap-2 bg-transparent text-on-surface-variant border border-warm-gray/30 rounded-lg py-3 text-[13px] font-semibold cursor-pointer transition-all duration-150 hover:bg-danger/10 hover:text-danger hover:border-danger/30"
                 onClick={handleLogout}
               >
                 <LogOut className="w-3.5 h-3.5" /> Log Out
@@ -573,55 +799,71 @@ function App() {
           </aside>
 
           {/* Main Content Area */}
-          <main className="flex-1 flex flex-col overflow-hidden">
-            <header className="h-20 shrink-0 border-b border-border bg-bg-secondary flex justify-between items-center px-8">
-              <div className="text-left">
-                <h1 className="text-xl font-bold m-0 mb-1 tracking-tight">Platform Console</h1>
-                <p className="text-xs text-text-secondary m-0">Monitor multi-project alerts, manage BullMQ jobs, and watch active resolutions.</p>
-              </div>
-              <div className="flex gap-3">
+          <main className="flex-1 flex flex-col overflow-y-auto lg:overflow-hidden relative">
+            <header className="h-20 shrink-0 border-b border-warm-gray/20 bg-background/80 backdrop-blur-md flex justify-between items-center px-4 md:px-8 sticky top-0 z-30">
+              <div className="flex items-center min-w-0">
                 <button 
-                  className="bg-bg-tertiary border border-border text-text-primary rounded-md px-4 py-2.5 text-[13px] font-semibold cursor-pointer flex items-center gap-2 transition-all duration-200 hover:border-text-muted"
-                  onClick={fetchDashboardData}
+                  className="lg:hidden p-2 text-ink-black bg-transparent border-none cursor-pointer mr-2 rounded-lg hover:bg-paper-surface transition-colors"
+                  onClick={() => setMobileSidebarOpen(true)}
+                  title="Open Sidebar"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" /> Refresh Console
+                  <Menu className="w-5 h-5" />
+                </button>
+                <div className="text-left min-w-0">
+                  <h1 className="font-display text-lg md:text-2xl font-bold m-0 mb-1 tracking-tight text-ink-black truncate">Platform Console</h1>
+                  <p className="text-[11px] md:text-xs text-on-surface-variant m-0 truncate hidden md:block">Monitor multi-project alerts, manage BullMQ queues, and oversee resolutions.</p>
+                </div>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <button 
+                  className="bg-transparent border border-warm-gray/30 text-on-surface rounded-lg p-2.5 md:px-4 md:py-2.5 text-[13px] font-semibold cursor-pointer flex items-center gap-2 transition-all duration-150 hover:bg-paper-surface/50"
+                  onClick={fetchDashboardData}
+                  title="Refresh Console"
+                >
+                  <RefreshCw className="w-4 h-4 text-primary" />
+                  <span className="hidden sm:inline">Refresh Console</span>
                 </button>
                 <button 
-                  className="bg-accent text-white border-none rounded-md px-4 py-2.5 text-[13px] font-semibold cursor-pointer flex items-center gap-2 transition-all duration-200 hover:bg-accent-hover"
-                  onClick={() => setShowProjectModal(true)}
+                  className="bg-primary text-on-primary border-none rounded-lg p-2.5 md:px-4 md:py-2.5 text-[13px] font-semibold cursor-pointer flex items-center gap-2 transition-all duration-150 hover:opacity-90 active:scale-[0.98]"
+                  onClick={handleOpenCreateModal}
+                  title="Add Project"
                 >
-                  <Plus className="w-[18px] h-[18px]" /> Add Project
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden sm:inline">Add Project</span>
                 </button>
               </div>
             </header>
 
             {/* Developer Guidance Banner */}
-            <div className="mx-8 mt-3 mb-6 bg-gradient-to-br from-accent/[0.08] to-[rgba(192,132,252,0.05)] border border-accent/20 rounded-lg px-6 py-4 relative overflow-hidden text-left">
-              <div className="flex justify-between items-center cursor-pointer select-none" onClick={() => setGuideOpen(!guideOpen)}>
-                <h3 className="text-[15px] font-bold m-0 flex items-center gap-2 text-[#a7a3ff]">
-                  <Activity className="w-5 h-5 text-accent animate-pulse" />
-                  <span>Interactive Quick Start & Pipeline Architecture Guide</span>
-                </h3>
-                <span className="text-xs text-text-secondary font-semibold">
-                  {guideOpen ? 'Collapse [-]' : 'Expand [+]'}
-                </span>
+            <div className="mx-4 md:mx-8 mt-6 bg-primary-container border border-primary/20 rounded-xl p-8 text-left text-on-primary-container relative overflow-hidden shadow-sm">
+              <div className="flex justify-between items-center select-none">
+                <div>
+                  <h3 className="font-display text-xl md:text-2xl font-bold text-ink-black mb-1">Watcher Platform Core</h3>
+                  <p className="text-xs text-on-primary-fixed-variant opacity-85 font-semibold">Interactive Quick Start & Pipeline Architecture Guide</p>
+                </div>
+                <button 
+                  onClick={() => setGuideOpen(!guideOpen)}
+                  className="px-4 py-1.5 border border-primary/30 text-ink-black font-semibold text-xs rounded-full hover:bg-white/10 transition-colors"
+                >
+                  {guideOpen ? 'Collapse' : 'Expand'}
+                </button>
               </div>
               
               {guideOpen && (
-                <div className="mt-3.5 text-[13px] leading-relaxed text-text-secondary border-t border-dashed border-white/[0.08] pt-3.5 animate-fade">
-                  <p>
-                    Welcome to the <strong>WatcherAgent Console</strong>! This dashboard monitors a multi-project, human-in-the-loop AI Incident Remediation Pipeline backed by BullMQ. Follow this workflow to trigger and test the active agent pipeline:
+                <div className="mt-6 text-sm leading-relaxed border-t border-dashed border-primary/20 pt-6 animate-fade">
+                  <p className="mb-4 text-on-primary-fixed-variant leading-relaxed">
+                    WatcherAgent monitors a multi-project, Human-in-the-Loop AI Incident Remediation Pipeline backed by BullMQ. Follow this workflow to test the active agent pipeline:
                   </p>
-                  <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4 mt-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {[
-                      { title: '1. Copy Webhook URL', desc: 'Onboard a project (or use the pre-configured database records) and copy the unique webhook URL. Alerts are routed here.' },
-                      { title: '2. Click "Fire Test Alert"', desc: 'Triggers a simulated database replica crash webhook alert, queueing an ingestion task on BullMQ.' },
-                      { title: '3. Approve in Discord', desc: 'The worker logs the incident, runs triage, and posts an interactive approval card to Discord. Click Accept & Fix on Discord.' },
-                      { title: '4. Automatic Git Auto-Fix', desc: 'Once approved, the AI fixer automatically writes code, opens a GitHub PR, indexes learnings into Pinecone, and resolves the issue.' }
+                      { title: '1. Copy Webhook URL', desc: 'Onboard a project and copy the unique webhook URL. Alerts are routed here.' },
+                      { title: '2. Click "Fire Test Alert"', desc: 'Simulates a database crash alert, queueing an ingestion task on BullMQ.' },
+                      { title: '3. Approve on Discord', desc: 'The worker logs the incident and pings Discord. Click "Accept & Fix" on Discord.' },
+                      { title: '4. Automated Fix', desc: 'The agent sandbox writes code, opens a GitHub PR, and updates Pinecone vectors.' }
                     ].map(step => (
-                      <div key={step.title} className="bg-bg-primary/40 border border-border rounded-md px-4 py-3">
-                        <h4 className="m-0 mb-1 text-[13px] font-bold text-text-primary">{step.title}</h4>
-                        <p className="m-0 text-[11px] text-text-secondary">{step.desc}</p>
+                      <div key={step.title} className="bg-white/60 backdrop-blur-sm border border-primary/10 rounded-lg p-4 shadow-sm">
+                        <h4 className="m-0 mb-1 text-[13px] font-bold text-ink-black">{step.title}</h4>
+                        <p className="m-0 text-xs text-on-surface-variant leading-relaxed">{step.desc}</p>
                       </div>
                     ))}
                   </div>
@@ -630,93 +872,113 @@ function App() {
             </div>
 
             {/* Quick Metrics Grid */}
-            <section className="grid grid-cols-3 gap-4 px-8 shrink-0 bg-bg-primary">
-              <div className="bg-bg-secondary border border-border rounded-lg p-5 text-left border-l-[3px] border-l-accent">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-[11px] font-bold uppercase text-text-secondary tracking-wide">Active Projects</span>
-                  <Cpu className="w-4 h-4 text-accent" />
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-4 px-4 md:px-8 mt-6 shrink-0 bg-transparent">
+              <div className="bg-surface-container-low border border-warm-gray/20 rounded-xl p-6 text-left hover:border-primary/30 transition-all duration-200">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-[10px] font-bold uppercase text-on-surface-variant tracking-wider">Active Projects</span>
+                  <span className="p-2 bg-primary/10 rounded-lg text-primary">
+                    <Cpu className="w-4 h-4" />
+                  </span>
                 </div>
-                <div className="text-[28px] font-extrabold leading-none mb-1">{projects.length}</div>
-                <div className="text-[11px] text-text-muted">Configured environments</div>
+                <div className="font-display text-4xl font-semibold text-ink-black mb-1">{projects.length}</div>
+                <div className="text-xs text-warm-gray">Configured environments</div>
               </div>
-              <div className="bg-bg-secondary border border-border rounded-lg p-5 text-left border-l-[3px] border-l-accent">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-[11px] font-bold uppercase text-text-secondary tracking-wide">Total Alert Volume</span>
-                  <Activity className="w-4 h-4 text-warning" />
+              
+              <div className="bg-surface-container-low border border-warm-gray/20 rounded-xl p-6 text-left hover:border-primary/30 transition-all duration-200">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-[10px] font-bold uppercase text-on-surface-variant tracking-wider">Total Alert Volume</span>
+                  <span className="p-2 bg-secondary/10 rounded-lg text-secondary">
+                    <Activity className="w-4 h-4" />
+                  </span>
                 </div>
-                <div className="text-[28px] font-extrabold leading-none mb-1">{incidents.length}</div>
-                <div className="text-[11px] text-text-muted">Remediated via pipeline</div>
+                <div className="font-display text-4xl font-semibold text-ink-black mb-1">{incidents.length}</div>
+                <div className="text-xs text-warm-gray">Remediated via pipeline</div>
               </div>
-              <div className="bg-bg-secondary border border-border rounded-lg p-5 text-left border-l-[3px] border-l-accent">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-[11px] font-bold uppercase text-text-secondary tracking-wide">Awaiting approval</span>
-                  <AlertTriangle className="w-4 h-4 text-danger" />
+
+              <div className="bg-surface-container-low border border-warm-gray/20 rounded-xl p-6 text-left hover:border-primary/30 transition-all duration-200">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-[10px] font-bold uppercase text-on-surface-variant tracking-wider">Awaiting Approval</span>
+                  <span className="p-2 bg-tertiary/10 rounded-lg text-tertiary">
+                    <AlertTriangle className="w-4 h-4" />
+                  </span>
                 </div>
-                <div className="text-[28px] font-extrabold leading-none mb-1">
+                <div className="font-display text-4xl font-semibold text-ink-black mb-1">
                   {incidents.filter(i => i.status === 'AWAITING_APPROVAL').length}
                 </div>
-                <div className="text-[11px] text-text-muted">HITL Slack / Discord cards</div>
+                <div className="text-xs text-warm-gray">HITL Slack / Discord cards</div>
               </div>
             </section>
 
             {/* Content Layout Split */}
-            <div className="flex-1 grid grid-cols-[1.1fr_0.9fr] gap-5 px-8 pb-8 overflow-hidden h-full mt-6">
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 md:px-8 pb-8 mt-6 min-h-0 lg:h-full lg:overflow-hidden">
               
               {/* Left Column: Projects List */}
-              <div className="bg-bg-secondary border border-border rounded-lg flex flex-col overflow-hidden">
-                <div className="px-6 py-[18px] border-b border-border text-left">
-                  <h2 className="text-[15px] font-bold m-0 uppercase tracking-wide text-text-secondary">Configured Webhooks & Repositories</h2>
+              <div className="lg:col-span-7 bg-surface-container-low border border-warm-gray/20 rounded-xl flex flex-col overflow-hidden lg:h-full">
+                <div className="px-6 py-[18px] border-b border-warm-gray/10 text-left bg-surface-container-low flex justify-between items-center">
+                  <h2 className="font-display text-base font-semibold m-0 text-ink-black">Configured Webhooks & Repositories</h2>
                 </div>
                 
                 {loadingProjects && projects.length === 0 ? (
-                  <div className="p-5 flex flex-col gap-3">
-                    <div className="h-[140px] animate-skeleton rounded-md" />
-                    <div className="h-[140px] animate-skeleton rounded-md" style={{ animationDelay: '0.2s' }} />
+                  <div className="p-6 flex flex-col gap-4">
+                    <div className="h-[140px] animate-skeleton rounded-lg" />
+                    <div className="h-[140px] animate-skeleton rounded-lg" style={{ animationDelay: '0.2s' }} />
                   </div>
                 ) : projects.length === 0 ? (
-                  <div className="flex-1 flex flex-col items-center justify-center p-10 text-text-secondary">
-                    <h3 className="text-base font-semibold m-0 mb-2 text-text-primary">No configured projects</h3>
-                    <p className="text-[13px] max-w-[320px] leading-normal text-center mb-5">Onboard your first project to generate a secure webhook integration endpoint.</p>
+                  <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+                    <div className="w-20 h-20 mb-6 rounded-full bg-paper-surface flex items-center justify-center text-warm-gray border border-warm-gray/10">
+                      <Cpu className="w-8 h-8" />
+                    </div>
+                    <h3 className="font-display text-lg text-ink-black mb-2">No configured projects</h3>
+                    <p className="text-xs text-on-surface-variant leading-relaxed max-w-sm mb-6">Connect your GitHub, GitLab, or custom webhook endpoints to start monitoring infrastructure events.</p>
                     <button 
-                      className="bg-accent text-white border-none rounded-md px-[18px] py-2 text-sm font-semibold cursor-pointer transition-all duration-200 hover:bg-accent-hover hover:shadow-[0_0_15px_var(--color-accent-glow)]"
-                      onClick={() => setShowProjectModal(true)}
+                      className="px-6 py-2.5 bg-primary text-on-primary font-semibold text-xs rounded-lg shadow-sm hover:opacity-90 transition-all duration-150 active:scale-95"
+                      onClick={handleOpenCreateModal}
                     >
                       Onboard Project
                     </button>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-4 p-5 overflow-y-auto">
+                  <div className="flex flex-col gap-4 p-6 overflow-y-auto max-h-[50vh] lg:max-h-[calc(100vh-380px)]">
                     {projects.map(project => (
-                      <div key={project.id} className="bg-bg-tertiary border border-border rounded-md p-5 text-left">
+                      <div key={project.id} className="bg-surface-container border border-warm-gray/20 rounded-lg p-5 text-left transition-all duration-200">
                         <div className="flex justify-between items-start mb-4">
                           <div>
-                            <h3 className="text-base font-bold m-0 mb-1.5">{project.name}</h3>
-                            <div className="flex items-center gap-1.5 text-xs text-text-secondary">
-                              <GitBranch className="w-3.5 h-3.5" />
+                            <h3 className="font-display text-base font-semibold m-0 mb-1.5 text-ink-black">{project.name}</h3>
+                            <div className="flex items-center gap-1.5 text-xs text-on-surface-variant font-medium">
+                              <GitBranch className="w-3.5 h-3.5 text-primary" />
                               <span>{project.github_owner}/{project.github_repo}</span>
                             </div>
                           </div>
-                          <button 
-                            className="bg-transparent border-none text-text-muted cursor-pointer p-1 rounded transition-all duration-200 hover:bg-danger-glow hover:text-[#f87171]" 
-                            title="Delete Project" 
-                            onClick={() => handleDeleteProject(project.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex gap-1 shrink-0">
+                            <button 
+                              className="bg-transparent border-none text-warm-gray cursor-pointer p-1 rounded-lg transition-all duration-150 hover:bg-primary/10 hover:text-primary" 
+                              title="Edit Credentials" 
+                              onClick={() => handleOpenEditModal(project)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button 
+                              className="bg-transparent border-none text-warm-gray cursor-pointer p-1 rounded-lg transition-all duration-150 hover:bg-danger/10 hover:text-danger" 
+                              title="Delete Project" 
+                              onClick={() => handleDeleteProject(project.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                         
                         {/* Webhook Configuration panel */}
-                        <div className="bg-bg-primary border border-border rounded-md px-4 py-3.5">
+                        <div className="bg-surface-container-low border border-warm-gray/20 rounded-lg p-4">
                           <div className="flex justify-between items-center mb-2">
-                            <span className="text-[11px] font-bold text-text-secondary">Secure Ingest Webhook</span>
-                            <span className="text-[9px] font-extrabold bg-accent/15 text-[#a7a3ff] rounded px-1.5 py-0.5">One per Project</span>
+                            <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wide">Secure Ingest Webhook</span>
+                            <span className="text-[9px] font-extrabold bg-primary/10 text-primary border border-primary/20 rounded-full px-2 py-0.5">Active</span>
                           </div>
-                          <div className="flex items-center bg-bg-secondary border border-border rounded px-2.5 py-1.5 justify-between gap-2">
-                            <code className="font-mono text-[11px] text-[#a7a3ff] whitespace-nowrap overflow-x-auto text-left">
+                          <div className="flex items-center bg-paper-surface border border-warm-gray/20 rounded-lg px-3 py-2 justify-between gap-3">
+                            <code className="font-mono text-xs text-primary whitespace-nowrap overflow-x-auto text-left scrollbar-none">
                               {`${API_BASE}/webhook/${project.webhook_secret}`}
                             </code>
                             <button 
-                              className="bg-transparent border-none text-text-secondary cursor-pointer p-1 rounded flex items-center justify-center transition-all duration-200 hover:text-text-primary hover:bg-bg-tertiary" 
+                              className="bg-transparent border-none text-on-surface-variant cursor-pointer p-1.5 rounded-lg flex items-center justify-center transition-all duration-150 hover:text-ink-black hover:bg-surface-container" 
                               onClick={() => handleCopyWebhook(project.webhook_secret, project.id)}
                               title="Copy URL"
                             >
@@ -725,10 +987,10 @@ function App() {
                           </div>
                           <div className="mt-3">
                             <button 
-                              className="w-full flex items-center justify-center gap-1.5 bg-success/[0.08] border border-dashed border-success/30 text-[#34d399] rounded px-2 py-2 text-[11px] font-bold cursor-pointer transition-all duration-200 uppercase tracking-wide hover:bg-success-glow hover:border-success"
+                              className="w-full flex items-center justify-center gap-1.5 bg-success/10 border border-success/20 hover:bg-success/20 text-success rounded-lg py-2.5 text-xs font-semibold cursor-pointer transition-all duration-150 active:scale-[0.98]"
                               onClick={() => handleTriggerTestIncident(project.webhook_secret, project.name)}
                             >
-                              <Play className="w-3 h-3" /> Fire Test Alert (Ingestion Queue)
+                              <Play className="w-3.5 h-3.5" /> Fire Test Alert (Ingestion Queue)
                             </button>
                           </div>
                         </div>
@@ -739,33 +1001,38 @@ function App() {
               </div>
 
               {/* Right Column: Live Incident Tracking */}
-              <div className="bg-bg-secondary border border-border rounded-lg flex flex-col overflow-hidden">
-                <div className="px-6 py-[18px] border-b border-border text-left">
-                  <h2 className="text-[15px] font-bold m-0 uppercase tracking-wide text-text-secondary">Active Incident Remediation logs</h2>
+              <div className="lg:col-span-5 bg-surface-container-low border border-warm-gray/20 rounded-xl flex flex-col overflow-hidden lg:h-full">
+                <div className="px-6 py-[18px] border-b border-warm-gray/10 text-left bg-surface-container-low">
+                  <h2 className="font-display text-base font-semibold m-0 text-ink-black">Active Incident Remediation logs</h2>
                 </div>
 
                 {loadingIncidents && incidents.length === 0 ? (
                   <div className="p-5 flex flex-col gap-2">
-                    <div className="h-12 animate-skeleton rounded" />
-                    <div className="h-12 animate-skeleton rounded" style={{ animationDelay: '0.15s' }} />
-                    <div className="h-12 animate-skeleton rounded" style={{ animationDelay: '0.3s' }} />
-                    <div className="h-12 animate-skeleton rounded" style={{ animationDelay: '0.45s' }} />
+                    <div className="h-12 animate-skeleton rounded-lg" />
+                    <div className="h-12 animate-skeleton rounded-lg" style={{ animationDelay: '0.15s' }} />
+                    <div className="h-12 animate-skeleton rounded-lg" style={{ animationDelay: '0.3s' }} />
+                    <div className="h-12 animate-skeleton rounded-lg" style={{ animationDelay: '0.45s' }} />
                   </div>
                 ) : incidents.length === 0 ? (
-                  <div className="flex-1 flex flex-col items-center justify-center p-10 text-text-secondary">
-                    <h3 className="text-base font-semibold m-0 mb-2 text-text-primary">No incidents logged yet</h3>
-                    <p className="text-[13px] max-w-[320px] leading-normal text-center mb-5">Trigger a test alert on your configured project webhook to watch the AI worker run runs.</p>
+                  <div className="flex-1 flex flex-col items-center justify-center p-10 text-center">
+                    <div className="w-16 h-16 mb-4 rounded-full bg-paper-surface flex items-center justify-center text-warm-gray border border-warm-gray/10">
+                      <History className="w-6 h-6" />
+                    </div>
+                    <p className="text-sm font-medium text-on-surface-variant italic">No incidents logged yet</p>
+                    <div className="mt-6 w-full max-w-[160px] h-1 bg-warm-gray/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-primary/20 w-1/3"></div>
+                    </div>
                   </div>
                 ) : (
-                  <div className="flex-1 overflow-y-auto rounded-b-lg">
-                    <table className="w-full border-collapse text-[13px] text-left table-fixed">
+                  <div className="flex-1 overflow-y-auto rounded-b-xl max-h-[50vh] lg:max-h-[calc(100vh-280px)]">
+                    <table className="w-full border-collapse text-xs text-left table-fixed">
                       <thead>
                         <tr>
-                          <th className="bg-bg-secondary px-5 py-3.5 text-[10px] font-bold uppercase text-text-muted border-b border-border sticky top-0 z-[2] w-[15%] text-center">Severity</th>
-                          <th className="bg-bg-secondary px-5 py-3.5 text-[10px] font-bold uppercase text-text-muted border-b border-border sticky top-0 z-[2] w-[25%]">Service</th>
-                          <th className="bg-bg-secondary px-5 py-3.5 text-[10px] font-bold uppercase text-text-muted border-b border-border sticky top-0 z-[2] w-[20%]">Category</th>
-                          <th className="bg-bg-secondary px-5 py-3.5 text-[10px] font-bold uppercase text-text-muted border-b border-border sticky top-0 z-[2] w-[22%]">Status</th>
-                          <th className="bg-bg-secondary px-5 py-3.5 text-[10px] font-bold uppercase text-text-muted border-b border-border sticky top-0 z-[2] w-[18%]">Logged At</th>
+                          <th className="bg-surface-container px-4 py-3 text-[10px] font-bold uppercase text-on-surface-variant border-b border-warm-gray/20 sticky top-0 z-[2] w-[18%] text-center">Severity</th>
+                          <th className="bg-surface-container px-4 py-3 text-[10px] font-bold uppercase text-on-surface-variant border-b border-warm-gray/20 sticky top-0 z-[2] w-[27%]">Service</th>
+                          <th className="bg-surface-container px-4 py-3 text-[10px] font-bold uppercase text-on-surface-variant border-b border-warm-gray/20 sticky top-0 z-[2] w-[20%] hidden md:table-cell">Category</th>
+                          <th className="bg-surface-container px-4 py-3 text-[10px] font-bold uppercase text-on-surface-variant border-b border-warm-gray/20 sticky top-0 z-[2] w-[20%] text-center">Status</th>
+                          <th className="bg-surface-container px-4 py-3 text-[10px] font-bold uppercase text-on-surface-variant border-b border-warm-gray/20 sticky top-0 z-[2] w-[15%] text-right">Logged At</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -773,23 +1040,21 @@ function App() {
                           <tr 
                             key={inc.id} 
                             onClick={() => setSelectedIncident(inc)}
-                            className="cursor-pointer transition-colors duration-200 hover:bg-bg-tertiary"
+                            className="cursor-pointer transition-colors duration-150 hover:bg-surface-container border-b border-warm-gray/10"
                           >
-                            <td className="px-5 py-3.5 border-b border-border text-text-secondary text-center">
-                              <span className={`text-[9px] font-extrabold rounded px-1.5 py-0.5 tracking-wide ${getSeverityBadgeClass(inc.severity)}`}>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`text-[9px] rounded px-1.5 py-0.5 tracking-wide ${getSeverityBadgeClass(inc.severity)}`}>
                                 {inc.severity}
                               </span>
                             </td>
-                            <td className="px-5 py-3.5 border-b border-border font-semibold text-text-primary truncate max-w-[120px]">{inc.raw_payload?.service || 'service'}</td>
-                            <td className="px-5 py-3.5 border-b border-border text-text-secondary">
-                              <span className="font-medium text-text-primary">{inc.category}</span>
-                            </td>
-                            <td className="px-5 py-3.5 border-b border-border text-text-secondary">
-                              <span className={`text-[10px] font-bold rounded-full px-2.5 py-1 inline-flex items-center ${getStatusBadgeClass(inc.status)}`}>
+                            <td className="px-4 py-3 font-semibold text-ink-black truncate">{inc.raw_payload?.service || 'service'}</td>
+                            <td className="px-4 py-3 hidden md:table-cell text-on-surface-variant font-medium">{inc.category}</td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`text-[9px] rounded-full px-2 py-0.5 inline-flex items-center ${getStatusBadgeClass(inc.status)}`}>
                                 {inc.status}
                               </span>
                             </td>
-                            <td className="px-5 py-3.5 border-b border-border text-xs text-text-muted">
+                            <td className="px-4 py-3 text-right text-[11px] text-on-surface-variant font-mono">
                               {new Date(inc.created_at).toLocaleTimeString()}
                             </td>
                           </tr>
@@ -805,118 +1070,121 @@ function App() {
 
           {/* PROJECT CREATION MODAL */}
           {showProjectModal && (
-            <div className="fixed inset-0 bg-bg-primary/80 backdrop-blur-lg flex items-center justify-center z-50">
-              <div className="bg-bg-secondary border border-border rounded-xl w-full max-w-[600px] shadow-[0_25px_50px_rgba(0,0,0,0.5)] overflow-hidden animate-fade">
-                <div className="px-7 py-5 border-b border-border flex justify-between items-center">
-                  <h2 className="text-lg font-bold m-0">Onboard New Project</h2>
-                  <button className="bg-transparent border-none text-text-muted text-2xl cursor-pointer p-1 leading-none hover:text-text-primary" onClick={() => { setShowProjectModal(false); setProjFormError(''); }}>&times;</button>
+            <div className="fixed inset-0 bg-ink-black/20 backdrop-blur-[2px] flex items-center justify-center p-4 z-50 animate-fade">
+              <div className="bg-surface-container-lowest border border-warm-gray/20 rounded-xl w-full max-w-[600px] shadow-[0_20px_40px_rgba(36,34,32,0.08)] overflow-hidden flex flex-col max-h-[90vh]">
+                <div className="px-8 py-6 border-b border-warm-gray/10 flex justify-between items-center bg-surface-container-lowest">
+                  <div>
+                    <h2 className="font-display text-xl font-bold m-0 text-ink-black">{editingProject ? 'Edit Project Credentials' : 'Onboard New Project'}</h2>
+                    <p className="text-xs text-on-surface-variant mt-1">{editingProject ? 'Modify your repository and alert integration parameters.' : 'Configure your repository and alert endpoints to start monitoring.'}</p>
+                  </div>
+                  <button className="bg-transparent border-none text-warm-gray hover:text-ink-black text-2xl cursor-pointer p-1 leading-none transition-colors" onClick={() => { setShowProjectModal(false); setProjFormError(''); }}>&times;</button>
                 </div>
                 {projFormError && (
-                  <div className="bg-danger-glow border-l-[3px] border-l-danger text-[#f87171] text-[13px] px-5 py-3 font-medium text-left">
+                  <div className="bg-danger/10 border-l-[3px] border-l-danger text-danger text-xs px-8 py-3 font-semibold text-left">
                     {projFormError}
                   </div>
                 )}
                 
-                <form onSubmit={handleCreateProject} className="px-7 py-6 max-h-[80vh] overflow-y-auto text-left">
-                  <div className="text-[11px] font-extrabold tracking-wider text-accent uppercase mb-3 pb-1.5 border-b border-dashed border-border">General Info</div>
+                <form onSubmit={handleCreateProject} className="px-8 py-6 overflow-y-auto text-left max-h-[70vh]">
+                  <div className="text-[10px] font-bold tracking-widest text-primary uppercase mb-3 pb-1 border-b border-dashed border-warm-gray/20">General Information</div>
                   <div className="flex flex-col gap-4 mb-4">
                     <div className="flex flex-col gap-2 text-left">
-                      <label className="text-[13px] font-semibold text-text-secondary">Project / Service Name</label>
+                      <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Project / Service Name</label>
                       <input 
                         type="text" 
                         value={projName} 
                         onChange={(e) => setProjName(e.target.value)} 
-                        placeholder="e.g. Payment Gateway Service" 
+                        placeholder="e.g. Production Analytics API" 
                         required 
-                        className="bg-bg-primary border border-border rounded-md px-3 py-2.5 text-[13px] text-text-primary outline-none font-sans transition-all duration-200 w-full focus:border-accent focus:shadow-[0_0_0_3px_rgba(75,65,225,0.15)]"
+                        className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
                       />
                     </div>
                   </div>
 
-                  <div className="text-[11px] font-extrabold tracking-wider text-accent uppercase mt-5 mb-3 pb-1.5 border-b border-dashed border-border">Git & Repo Details</div>
-                  <div className="flex flex-row gap-4 mb-4">
+                  <div className="text-[10px] font-bold tracking-widest text-primary uppercase mt-6 mb-3 pb-1 border-b border-dashed border-warm-gray/20">Git & Repository Details</div>
+                  <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <div className="flex flex-col gap-2 text-left flex-1">
-                      <label className="text-[13px] font-semibold text-text-secondary">GitHub Repository Owner</label>
+                      <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">GitHub Owner</label>
                       <input 
                         type="text" 
                         value={projGithubOwner} 
                         onChange={(e) => setProjGithubOwner(e.target.value)} 
-                        placeholder="e.g. ayush-shakya" 
+                        placeholder="org-or-username" 
                         required 
-                        className="bg-bg-primary border border-border rounded-md px-3 py-2.5 text-[13px] text-text-primary outline-none font-sans transition-all duration-200 w-full focus:border-accent focus:shadow-[0_0_0_3px_rgba(75,65,225,0.15)]"
+                        className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
                       />
                     </div>
                     <div className="flex flex-col gap-2 text-left flex-1">
-                      <label className="text-[13px] font-semibold text-text-secondary">GitHub Repository Name</label>
+                      <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">GitHub Repo Name</label>
                       <input 
                         type="text" 
                         value={projGithubRepo} 
                         onChange={(e) => setProjGithubRepo(e.target.value)} 
-                        placeholder="e.g. core-payments-api" 
+                        placeholder="repo-slug" 
                         required 
-                        className="bg-bg-primary border border-border rounded-md px-3 py-2.5 text-[13px] text-text-primary outline-none font-sans transition-all duration-200 w-full focus:border-accent focus:shadow-[0_0_0_3px_rgba(75,65,225,0.15)]"
+                        className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
                       />
                     </div>
                   </div>
                   <div className="flex flex-col gap-4 mb-4">
                     <div className="flex flex-col gap-2 text-left">
-                      <label className="text-[13px] font-semibold text-text-secondary">GitHub PAT Token (Contents + PR scopes)</label>
+                      <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">GitHub PAT Token</label>
                       <input 
                         type="password" 
                         value={projGithubToken} 
                         onChange={(e) => setProjGithubToken(e.target.value)} 
-                        placeholder="ghp_••••••••••••••••••••" 
+                        placeholder="ghp_xxxxxxxxxxxx (Requires repo scopes)" 
                         required 
-                        className="bg-bg-primary border border-border rounded-md px-3 py-2.5 text-[13px] text-text-primary outline-none font-sans transition-all duration-200 w-full focus:border-accent focus:shadow-[0_0_0_3px_rgba(75,65,225,0.15)]"
+                        className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
                       />
                     </div>
                   </div>
 
-                  <div className="text-[11px] font-extrabold tracking-wider text-accent uppercase mt-5 mb-3 pb-1.5 border-b border-dashed border-border">Integrations & Knowledge Base</div>
-                  <div className="flex flex-row gap-4 mb-4">
+                  <div className="text-[10px] font-bold tracking-widest text-primary uppercase mt-6 mb-3 pb-1 border-b border-dashed border-warm-gray/20">Integrations & Knowledge Isolation</div>
+                  <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <div className="flex flex-col gap-2 text-left flex-1">
-                      <label className="text-[13px] font-semibold text-text-secondary">Discord Alert Channel ID</label>
+                      <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Discord Channel ID</label>
                       <input 
                         type="text" 
                         value={projDiscordChannel} 
                         onChange={(e) => setProjDiscordChannel(e.target.value)} 
-                        placeholder="e.g. 119827364501" 
+                        placeholder="e.g. 1122334455" 
                         required 
-                        className="bg-bg-primary border border-border rounded-md px-3 py-2.5 text-[13px] text-text-primary outline-none font-sans transition-all duration-200 w-full focus:border-accent focus:shadow-[0_0_0_3px_rgba(75,65,225,0.15)]"
+                        className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
                       />
                     </div>
                     <div className="flex flex-col gap-2 text-left flex-1">
-                      <label className="text-[13px] font-semibold text-text-secondary">Pinecone Namespace Segment</label>
+                      <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Pinecone Namespace</label>
                       <input 
                         type="text" 
                         value={projPineconeNamespace} 
                         onChange={(e) => setProjPineconeNamespace(e.target.value)} 
-                        placeholder="e.g. payments-ns" 
+                        placeholder="e.g. prod-cluster-v1" 
                         required 
-                        className="bg-bg-primary border border-border rounded-md px-3 py-2.5 text-[13px] text-text-primary outline-none font-sans transition-all duration-200 w-full focus:border-accent focus:shadow-[0_0_0_3px_rgba(75,65,225,0.15)]"
+                        className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
                       />
                     </div>
                   </div>
-                  <div className="flex flex-row gap-4 mb-4">
+                  <div className="flex flex-col sm:flex-row gap-4 mb-4">
                     <div className="flex flex-col gap-2 text-left flex-1">
-                      <label className="text-[13px] font-semibold text-text-secondary">OpenRouter LLM Key</label>
+                      <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">OpenRouter LLM Key</label>
                       <input 
                         type="password" 
                         value={projOpenRouterKey} 
                         onChange={(e) => setProjOpenRouterKey(e.target.value)} 
-                        placeholder="sk-or-v1-••••••••••••••••" 
+                        placeholder="sk-or-v1-..." 
                         required 
-                        className="bg-bg-primary border border-border rounded-md px-3 py-2.5 text-[13px] text-text-primary outline-none font-sans transition-all duration-200 w-full focus:border-accent focus:shadow-[0_0_0_3px_rgba(75,65,225,0.15)]"
+                        className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
                       />
                     </div>
                     <div className="flex flex-col gap-2 text-left flex-1">
-                      <label className="text-[13px] font-semibold text-text-secondary">Description / Custom Runbook Context (Optional)</label>
+                      <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Custom Runbook preferences (Optional)</label>
                       <input 
                         type="text" 
                         value={projDesc} 
                         onChange={(e) => setProjDesc(e.target.value)} 
-                        placeholder="Remediation preferences..." 
-                        className="bg-bg-primary border border-border rounded-md px-3 py-2.5 text-[13px] text-text-primary outline-none font-sans transition-all duration-200 w-full focus:border-accent focus:shadow-[0_0_0_3px_rgba(75,65,225,0.15)]"
+                        placeholder="e.g. Run setup scripts before testing patches" 
+                        className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
                       />
                     </div>
                   </div>
@@ -924,13 +1192,17 @@ function App() {
                   <div className="flex justify-end gap-3 mt-8">
                     <button 
                       type="button" 
-                      className="bg-transparent text-text-secondary border border-border rounded-md px-5 py-2.5 text-[13px] font-semibold cursor-pointer transition-all duration-200 hover:bg-bg-tertiary" 
+                      className="bg-transparent text-on-surface-variant border border-warm-gray/30 rounded-lg px-5 py-2 text-xs font-semibold cursor-pointer transition-all duration-150 hover:bg-paper-surface hover:text-ink-black" 
                       onClick={() => { setShowProjectModal(false); setProjFormError(''); }}
                     >
                       Cancel
                     </button>
-                    <button type="submit" className="bg-accent text-white border-none rounded-md px-5 py-2.5 text-[13px] font-semibold cursor-pointer transition-all duration-200 hover:bg-accent-hover disabled:opacity-60 disabled:cursor-not-allowed" disabled={projFormLoading}>
-                      {projFormLoading ? 'Configuring Project...' : 'Activate Project Webhook'}
+                    <button 
+                      type="submit" 
+                      className="bg-primary text-on-primary border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer transition-all duration-150 hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed" 
+                      disabled={projFormLoading}
+                    >
+                      {projFormLoading ? (editingProject ? 'Saving Changes...' : 'Configuring Project...') : (editingProject ? 'Save Changes' : 'Activate Project Webhook')}
                     </button>
                   </div>
                 </form>
@@ -940,28 +1212,28 @@ function App() {
 
           {/* INCIDENT DETAILS DRAWER */}
           {selectedIncident && (
-            <div className="fixed inset-0 bg-bg-primary/80 backdrop-blur-lg flex items-center justify-center z-50" onClick={() => setSelectedIncident(null)}>
+            <div className="fixed inset-0 bg-ink-black/20 backdrop-blur-[2px] flex items-center justify-center z-50" onClick={() => setSelectedIncident(null)}>
               <div 
-                className="absolute right-0 top-0 bottom-0 h-full max-w-[520px] w-full bg-bg-secondary border-l border-border shadow-[-10px_0_30px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-slide-in" 
+                className="absolute right-0 top-0 bottom-0 h-full max-w-[520px] w-full bg-surface-container-lowest border-l border-warm-gray/20 shadow-[-10px_0_30px_rgba(36,34,32,0.06)] flex flex-col overflow-hidden animate-slide-in" 
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="px-7 py-5 border-b border-border flex justify-between items-center">
+                <div className="px-8 py-6 border-b border-warm-gray/10 flex justify-between items-center bg-surface-container-lowest">
                   <div className="flex items-center gap-3">
                     <span className={`text-[9px] font-extrabold rounded px-1.5 py-0.5 tracking-wide ${getSeverityBadgeClass(selectedIncident.severity)}`}>
                       {selectedIncident.severity}
                     </span>
-                    <h2 className="text-lg font-bold m-0">Incident: {selectedIncident.id.slice(0, 8)}...</h2>
+                    <h2 className="font-display text-lg font-bold m-0 text-ink-black">Incident: {selectedIncident.id.slice(0, 8)}...</h2>
                   </div>
-                  <button className="bg-transparent border-none text-text-muted text-2xl cursor-pointer p-1 leading-none hover:text-text-primary" onClick={() => setSelectedIncident(null)}>&times;</button>
+                  <button className="bg-transparent border-none text-warm-gray hover:text-ink-black text-2xl cursor-pointer p-1 leading-none transition-colors" onClick={() => setSelectedIncident(null)}>&times;</button>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto px-7 py-6 flex flex-col gap-6 text-left">
+                <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-6 text-left">
                   {/* Pipeline Visual Progress */}
                   <div className="flex flex-col gap-2">
-                    <span className="text-[10px] font-bold uppercase text-text-muted tracking-wide">Pipeline Visual Progress</span>
-                    <div className="flex items-center justify-between mt-2.5 mb-5 bg-bg-primary border border-border px-3 py-4 rounded-lg relative overflow-x-auto">
+                    <span className="text-[10px] font-bold uppercase text-on-surface-variant tracking-wider">Pipeline Visual Progress</span>
+                    <div className="flex items-center justify-between mt-2.5 mb-5 bg-surface-container-low border border-warm-gray/20 px-3 py-4 rounded-lg relative overflow-x-auto">
                       {/* Connector line */}
-                      <div className="absolute top-[26px] left-[10%] right-[10%] h-0.5 bg-border z-[1]"></div>
+                      <div className="absolute top-[26px] left-[10%] right-[10%] h-0.5 bg-warm-gray/20 z-[1]"></div>
                       
                       {[
                         { num: 1, label: 'Triage', getState: () => selectedIncident.status === 'CLOSED_AND_LEARNED' ? 'completed' : (selectedIncident.status === 'TRIGGERED' || selectedIncident.status === 'QUEUED') ? 'active' : 'completed' },
@@ -971,17 +1243,17 @@ function App() {
                       ].map(step => {
                         const state = step.getState();
                         const dotClass = state === 'completed' 
-                          ? 'bg-success-glow border-success text-success shadow-[0_0_10px_rgba(16,185,129,0.3)]' 
+                          ? 'bg-success/10 border-success text-success' 
                           : state === 'active' 
-                          ? 'bg-[rgba(192,132,252,0.15)] border-[#c084fc] text-[#c084fc] shadow-[0_0_10px_rgba(192,132,252,0.3)] animate-pulse-glow' 
-                          : 'bg-bg-tertiary border-border text-text-muted';
-                        const labelClass = state === 'completed' ? 'text-text-primary' : state === 'active' ? 'text-[#c084fc]' : 'text-text-muted';
+                          ? 'bg-primary/10 border-primary text-primary animate-pulse' 
+                          : 'bg-surface-container border-warm-gray/20 text-warm-gray';
+                        const labelClass = state === 'completed' ? 'text-ink-black font-semibold' : state === 'active' ? 'text-primary font-semibold' : 'text-warm-gray';
                         return (
                           <div key={step.num} className="flex flex-col items-center flex-1 relative z-10 min-w-[70px]">
                             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-[10px] font-extrabold transition-all duration-300 ${dotClass}`}>
                               {step.num}
                             </div>
-                            <div className={`text-[10px] font-bold mt-1.5 uppercase tracking-wide text-center ${labelClass}`}>{step.label}</div>
+                            <div className={`text-[10px] mt-1.5 uppercase tracking-wider text-center ${labelClass}`}>{step.label}</div>
                           </div>
                         );
                       })}
@@ -990,85 +1262,85 @@ function App() {
 
                   {/* Incident Metadata Details */}
                   <div className="flex flex-col gap-2">
-                    <span className="text-[10px] font-bold uppercase text-text-muted tracking-wide">Incident Execution Metadata</span>
-                    <div className="bg-bg-primary border border-border px-4 py-3 rounded-md grid grid-cols-2 gap-3 text-xs">
+                    <span className="text-[10px] font-bold uppercase text-on-surface-variant tracking-wider">Incident Execution Metadata</span>
+                    <div className="bg-surface-container-low border border-warm-gray/20 px-4 py-3 rounded-lg grid grid-cols-2 gap-3 text-xs">
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-[9px] font-bold uppercase text-text-muted">Remediation Status</span>
-                        <span className="text-text-primary font-semibold">{selectedIncident.status}</span>
+                        <span className="text-[9px] font-bold uppercase text-warm-gray">Remediation Status</span>
+                        <span className="text-ink-black font-semibold">{selectedIncident.status}</span>
                       </div>
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-[9px] font-bold uppercase text-text-muted">LLM Model Target</span>
-                        <span className="text-text-primary font-semibold">Gemini 2.5 Flash</span>
+                        <span className="text-[9px] font-bold uppercase text-warm-gray">LLM Model Target</span>
+                        <span className="text-ink-black font-semibold">Gemini 2.5 Flash</span>
                       </div>
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-[9px] font-bold uppercase text-text-muted">Error Category</span>
-                        <span className="text-text-primary font-semibold">{selectedIncident.category || 'PENDING'}</span>
+                        <span className="text-[9px] font-bold uppercase text-warm-gray">Error Category</span>
+                        <span className="text-ink-black font-semibold">{selectedIncident.category || 'PENDING'}</span>
                       </div>
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-[9px] font-bold uppercase text-text-muted">Ingested At</span>
-                        <span className="text-text-primary font-semibold">{new Date(selectedIncident.created_at).toLocaleTimeString()}</span>
+                        <span className="text-[9px] font-bold uppercase text-warm-gray">Ingested At</span>
+                        <span className="text-ink-black font-semibold">{new Date(selectedIncident.created_at).toLocaleTimeString()}</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <span className="text-[10px] font-bold uppercase text-text-muted tracking-wide">Normalized Error Signature</span>
-                    <pre className="bg-bg-tertiary border border-border rounded-md p-3 font-mono text-xs text-danger m-0 whitespace-pre-wrap break-all">
+                    <span className="text-[10px] font-bold uppercase text-on-surface-variant tracking-wider">Normalized Error Signature</span>
+                    <pre className="bg-surface-container border border-warm-gray/20 rounded-lg p-4 font-mono text-xs text-danger m-0 whitespace-pre-wrap break-all">
                       {selectedIncident.error_signature}
                     </pre>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <span className="text-[10px] font-bold uppercase text-text-muted tracking-wide">Incident Remediation Timeline</span>
+                    <span className="text-[10px] font-bold uppercase text-on-surface-variant tracking-wider">Incident Remediation Timeline</span>
                     <div className="flex flex-col gap-5 relative pl-5">
                       {/* Timeline line */}
-                      <div className="absolute left-[5px] top-1.5 bottom-1.5 w-0.5 bg-border"></div>
+                      <div className="absolute left-[5px] top-1.5 bottom-1.5 w-0.5 bg-warm-gray/20"></div>
                       
                       <div className="flex gap-4 text-left relative">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-success bg-bg-secondary rounded-full absolute -left-[21px] top-1 z-5" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-success bg-surface-container-lowest rounded-full absolute -left-[21px] top-1 z-5" />
                         <div>
-                          <h5 className="text-[13px] font-semibold m-0 mb-0.5">Alert Ingested</h5>
-                          <p className="text-[11px] text-text-secondary m-0">Received webhook trigger at {new Date(selectedIncident.created_at).toLocaleString()}</p>
+                          <h5 className="text-xs font-semibold m-0 mb-0.5 text-ink-black">Alert Ingested</h5>
+                          <p className="text-[11px] text-on-surface-variant m-0">Received webhook trigger at {new Date(selectedIncident.created_at).toLocaleString()}</p>
                         </div>
                       </div>
 
                       {selectedIncident.triage && (
                         <div className="flex gap-4 text-left relative">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-success bg-bg-secondary rounded-full absolute -left-[21px] top-1 z-5" />
+                          <CheckCircle2 className="w-3.5 h-3.5 text-success bg-surface-container-lowest rounded-full absolute -left-[21px] top-1 z-5" />
                           <div>
-                            <h5 className="text-[13px] font-semibold m-0 mb-0.5">Triage Completed</h5>
-                            <p className="text-[11px] text-text-secondary m-0">LLM classified alert. Error Category: <strong className="text-text-primary">{selectedIncident.category}</strong></p>
+                            <h5 className="text-xs font-semibold m-0 mb-0.5 text-ink-black">Triage Completed</h5>
+                            <p className="text-[11px] text-on-surface-variant m-0">LLM classified alert. Error Category: <strong className="text-ink-black">{selectedIncident.category}</strong></p>
                           </div>
                         </div>
                       )}
 
                       <div className="flex gap-4 text-left relative">
                         {selectedIncident.status !== 'TRIGGERED' 
-                          ? <CheckCircle2 className="w-3.5 h-3.5 text-success bg-bg-secondary rounded-full absolute -left-[21px] top-1 z-5" />
-                          : <Activity className="w-3.5 h-3.5 text-accent bg-bg-secondary rounded-full absolute -left-[21px] top-1 z-5 animate-spin-slow" />
+                          ? <CheckCircle2 className="w-3.5 h-3.5 text-success bg-surface-container-lowest rounded-full absolute -left-[21px] top-1 z-5" />
+                          : <Activity className="w-3.5 h-3.5 text-primary bg-surface-container-lowest rounded-full absolute -left-[21px] top-1 z-5 animate-spin-slow" />
                         }
                         <div>
-                          <h5 className="text-[13px] font-semibold m-0 mb-0.5">Discord approval requested</h5>
-                          <p className="text-[11px] text-text-secondary m-0">Bot card message ID: <span className="font-mono text-xs">{selectedIncident.discord_message_id || 'Awaiting message delivery...'}</span></p>
+                          <h5 className="text-xs font-semibold m-0 mb-0.5 text-ink-black">Discord approval requested</h5>
+                          <p className="text-[11px] text-on-surface-variant m-0">Bot card message ID: <span className="font-mono text-[10px] bg-paper-surface px-1.5 py-0.5 border border-warm-gray/10 rounded">{selectedIncident.discord_message_id || 'Awaiting message delivery...'}</span></p>
                         </div>
                       </div>
 
                       {selectedIncident.status === 'FIXING' && (
                         <div className="flex gap-4 text-left relative">
-                          <Activity className="w-3.5 h-3.5 text-accent bg-bg-secondary rounded-full absolute -left-[21px] top-1 z-5 animate-spin-slow" />
+                          <Activity className="w-3.5 h-3.5 text-primary bg-surface-container-lowest rounded-full absolute -left-[21px] top-1 z-5 animate-spin-slow" />
                           <div>
-                            <h5 className="text-[13px] font-semibold m-0 mb-0.5">Remediation War-Room Active</h5>
-                            <p className="text-[11px] text-text-secondary m-0">Analyzing candidate repositories and writing pull request patch...</p>
+                            <h5 className="text-xs font-semibold m-0 mb-0.5 text-ink-black">Remediation War-Room Active</h5>
+                            <p className="text-[11px] text-on-surface-variant m-0">Analyzing candidate repositories and writing pull request patch...</p>
                           </div>
                         </div>
                       )}
 
                       {selectedIncident.status === 'CLOSED_AND_LEARNED' && (
                         <div className="flex gap-4 text-left relative">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-success bg-bg-secondary rounded-full absolute -left-[21px] top-1 z-5" />
+                          <CheckCircle2 className="w-3.5 h-3.5 text-success bg-surface-container-lowest rounded-full absolute -left-[21px] top-1 z-5" />
                           <div>
-                            <h5 className="text-[13px] font-semibold m-0 mb-0.5">Remediation complete</h5>
-                            <p className="text-[11px] text-text-secondary m-0">GitHub PR created. Stored details into Pinecone namespaces.</p>
+                            <h5 className="text-xs font-semibold m-0 mb-0.5 text-ink-black">Remediation complete</h5>
+                            <p className="text-[11px] text-on-surface-variant m-0">GitHub PR created. Stored details into Pinecone namespaces.</p>
                           </div>
                         </div>
                       )}
@@ -1077,8 +1349,8 @@ function App() {
 
                   {selectedIncident.root_cause && (
                     <div className="flex flex-col gap-2">
-                      <span className="text-[10px] font-bold uppercase text-text-muted tracking-wide">Root Cause Analysis</span>
-                      <p className="text-text-secondary text-sm leading-relaxed bg-bg-secondary p-4 rounded-md border border-border">
+                      <span className="text-[10px] font-bold uppercase text-on-surface-variant tracking-wider">Root Cause Analysis</span>
+                      <p className="text-on-surface-variant text-xs leading-relaxed bg-surface-container p-4 rounded-lg border border-warm-gray/20">
                         {selectedIncident.root_cause}
                       </p>
                     </div>
@@ -1086,23 +1358,23 @@ function App() {
 
                   {selectedIncident.postmortem && (
                     <div className="flex flex-col gap-2">
-                      <span className="text-[10px] font-bold uppercase text-text-muted tracking-wide">Remediation Diffs & Postmortem</span>
-                      <pre className="bg-bg-tertiary border border-border rounded-md p-3.5 font-mono text-[11px] text-[#34d399] m-0 whitespace-pre-wrap break-all overflow-x-auto max-h-[200px]">
+                      <span className="text-[10px] font-bold uppercase text-on-surface-variant tracking-wider">Remediation Diffs & Postmortem</span>
+                      <pre className="bg-surface-container border border-warm-gray/20 rounded-lg p-4 font-mono text-[11px] text-[#2e7d32] m-0 whitespace-pre-wrap break-all overflow-x-auto max-h-[200px]">
                         {selectedIncident.postmortem}
                       </pre>
                     </div>
                   )}
 
                   {selectedIncident.pr_url && (
-                    <div className="flex flex-col gap-2">
-                      <span className="text-[10px] font-bold uppercase text-text-muted tracking-wide">Remediation PR Target</span>
+                    <div className="flex flex-col gap-2 mt-2">
+                      <span className="text-[10px] font-bold uppercase text-on-surface-variant tracking-wider">Remediation PR Target</span>
                       <a 
                         href={selectedIncident.pr_url} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-2 bg-[#24292f] text-white border-none rounded-md p-3 text-[13px] font-semibold no-underline transition-colors duration-200 hover:bg-[#1b1f23]"
+                        className="inline-flex items-center justify-center gap-2 bg-primary text-on-primary border-none rounded-lg p-3 text-xs font-semibold no-underline transition-opacity duration-150 hover:opacity-90 active:scale-[0.98]"
                       >
-                        <GitBranch className="w-[18px] h-[18px]" /> View Opened Pull Request <ExternalLink className="w-3.5 h-3.5" />
+                        <GitBranch className="w-4 h-4" /> View Opened Pull Request <ExternalLink className="w-3 h-3" />
                       </a>
                     </div>
                   )}
