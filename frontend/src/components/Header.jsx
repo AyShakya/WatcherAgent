@@ -4,7 +4,8 @@ export default function Header({
   dashboardTab,
   setMobileSidebarOpen,
   fetchDashboardData,
-  handleOpenCreateModal
+  handleOpenCreateModal,
+  isRefreshing
 }) {
   return (
     <header className="h-20 shrink-0 border-b border-warm-gray/20 bg-background/80 backdrop-blur-md flex justify-between items-center px-4 md:px-8 sticky top-0 z-30">
@@ -36,7 +37,7 @@ export default function Header({
               onClick={fetchDashboardData}
               title="Refresh Console"
             >
-              <RefreshCw className="w-4 h-4 text-primary" />
+              <RefreshCw className={`w-4 h-4 text-primary ${isRefreshing ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Refresh Console</span>
             </button>
             <button 

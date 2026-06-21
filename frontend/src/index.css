@@ -150,3 +150,13 @@ body {
   background-size: 200% 100%;
   animation: loadingGlow 1.8s infinite;
 }
+
+@keyframes loading-slide {
+  0% { left: -40%; width: 30%; }
+  50% { left: 30%; width: 40%; }
+  100% { left: 110%; width: 30%; }
+}
+
+@utility animate-loading-slide {
+  animation: loading-slide 1.5s infinite linear;
+}

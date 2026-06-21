@@ -21,6 +21,15 @@ export default function IncidentsTable({
         <h2 className="font-display text-base font-semibold m-0 text-ink-black">Active Incident Remediation logs</h2>
       </div>
 
+      {/* Background reloading indicator bar */}
+      {loadingIncidents && incidents.length > 0 ? (
+        <div className="h-[2px] w-full bg-primary/10 overflow-hidden relative shrink-0">
+          <div className="h-full bg-primary absolute rounded-full animate-loading-slide"></div>
+        </div>
+      ) : (
+        <div className="h-[2px] w-full bg-transparent shrink-0"></div>
+      )}
+
       {loadingIncidents && incidents.length === 0 ? (
         <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-2 min-h-0">
           <div className="h-12 animate-skeleton rounded-lg shrink-0" />
@@ -50,7 +59,7 @@ export default function IncidentsTable({
                   <th className="bg-surface-container px-4 py-3 text-[10px] font-bold uppercase text-on-surface-variant border-b border-warm-gray/20 sticky top-0 z-[2] w-[20%] text-right">Logged At</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className={`transition-opacity duration-200 ${loadingIncidents ? 'opacity-60 pointer-events-none' : ''}`}>
                 {currentIncidents.map(inc => (
                   <tr 
                     key={inc.id} 

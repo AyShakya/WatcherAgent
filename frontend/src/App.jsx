@@ -532,6 +532,7 @@ function App() {
               setMobileSidebarOpen={setMobileSidebarOpen}
               fetchDashboardData={fetchDashboardData}
               handleOpenCreateModal={handleOpenCreateModal}
+              isRefreshing={loadingProjects || loadingIncidents}
             />
 
             {dashboardTab === 'CONSOLE' ? (
