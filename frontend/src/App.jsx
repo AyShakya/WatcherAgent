@@ -62,7 +62,6 @@ function App() {
   const [projDiscordChannel, setProjDiscordChannel] = useState('');
   const [projDiscordBotToken, setProjDiscordBotToken] = useState('');
   const [projOpenRouterKey, setProjOpenRouterKey] = useState('');
-  const [projPineconeNamespace, setProjPineconeNamespace] = useState('');
   const [projFormError, setProjFormError] = useState('');
   const [projFormLoading, setProjFormLoading] = useState(false);
 
@@ -86,7 +85,6 @@ function App() {
     setProjDiscordChannel('');
     setProjDiscordBotToken('');
     setProjOpenRouterKey('');
-    setProjPineconeNamespace('');
     setProjFormError('');
     setShowProjectModal(true);
   };
@@ -101,7 +99,6 @@ function App() {
     setProjDiscordChannel(project.discord_channel_id || '');
     setProjDiscordBotToken(project.discord_bot_token || '');
     setProjOpenRouterKey(project.openrouter_key || '');
-    setProjPineconeNamespace(project.pinecone_namespace || '');
     setProjFormError('');
     setShowProjectModal(true);
   };
@@ -275,8 +272,7 @@ function App() {
       github_token: projGithubToken,
       discord_channel_id: projDiscordChannel,
       discord_bot_token: projDiscordBotToken,
-      openrouter_key: projOpenRouterKey,
-      pinecone_namespace: projPineconeNamespace
+      openrouter_key: projOpenRouterKey
     };
 
     try {
@@ -315,7 +311,6 @@ function App() {
         setProjDiscordChannel('');
         setProjDiscordBotToken('');
         setProjOpenRouterKey('');
-        setProjPineconeNamespace('');
       } else {
         setProjFormError(data.error || `Failed to ${editingProject ? 'update' : 'create'} project.`);
       }
@@ -1230,19 +1225,8 @@ function App() {
                       />
                     </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                    <div className="flex flex-col gap-2 text-left flex-1">
-                      <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Pinecone Namespace</label>
-                      <input 
-                        type="text" 
-                        value={projPineconeNamespace} 
-                        onChange={(e) => setProjPineconeNamespace(e.target.value)} 
-                        placeholder="e.g. prod-cluster-v1" 
-                        required 
-                        className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-2 text-left flex-1">
+                  <div className="flex flex-col gap-4 mb-4">
+                    <div className="flex flex-col gap-2 text-left">
                       <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">OpenRouter LLM Key</label>
                       <input 
                         type="password" 

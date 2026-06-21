@@ -14,7 +14,7 @@ export const CreateProjectSchema = z.object({
     discord_channel_id: z.string().min(1, 'Discord channel ID is required'),
     discord_bot_token: z.string().optional(),
     openrouter_key: z.string().min(1, 'OpenRouter key is required'),
-    pinecone_namespace: z.string().min(1, 'Pinecone namespace is required'),
+    pinecone_namespace: z.string().optional(),
     pinecone_api_key: z.string().optional(),
   }),
 });
@@ -51,12 +51,16 @@ export async function create(req: AuthenticatedRequest, res: Response) {
       discord_channel_id,
       discord_bot_token,
       openrouter_key,
-      pinecone_namespace,
       pinecone_api_key,
     } = req.body;
 
     // Generate a secure unique webhook secret for alert ingestion
     const webhook_secret = `wh_${crypto.randomBytes(24).toString('hex')}`;
+
+    // Automatically generate a unique, clean pinecone namespace based on project name for isolation
+    const cleanProjectSlug = name.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'default';
+    const generatedNamespace = `watcher-${cleanProjectSlug}-${crypto.randomBytes(4).toString('hex')}`;
+    const pinecone_namespace = req.body.pinecone_namespace || generatedNamespace;
 
     const project = await ProjectModel.createProject({
       user_id: userId,
