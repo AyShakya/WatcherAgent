@@ -104,6 +104,8 @@ ${JSON.stringify(input, null, 2)}
     const aiRawResult = await callLLM({
       prompt: finalPrompt,
       systemPrompt: SYSTEM_INSTRUCTIONS,
+      responseFormat: 'json_object',
+      maxTokens: 1024,
       openrouterKey: context?.project?.openrouterKey,
       llmProvider: context?.project?.llmProvider,
       llmModel: context?.project?.llmModel,

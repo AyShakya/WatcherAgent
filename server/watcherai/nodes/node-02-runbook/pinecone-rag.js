@@ -74,7 +74,8 @@ export async function searchRunbooks(service, errorReasoning, context) {
       }));
     }
 
-    return [];
+    console.log(`ℹ️ No historical fixes found in Pinecone. Falling back to local runbook match.`);
+    return getLocalFallback(service, errorReasoning);
 
   } catch (error) {
     console.error('❌ Pinecone RAG Search Error:', error.message);

@@ -14,6 +14,8 @@ export const OutputSchema = z.object({
     'FAILED_FILE_NOT_FOUND',
     'SKIPPED_NO_AUTH',
     'DUPLICATE_SKIPPED',
+    'SKIPPED_UNCERTAIN',
+    'FAILED_GUARDRAIL',
   ]),
   ai_fix_suggestion: z.object({
     file_path: z.string().nullable().optional(),

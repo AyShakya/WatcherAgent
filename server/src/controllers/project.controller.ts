@@ -39,6 +39,16 @@ export const UpdateProjectSchema = z.object({
   }),
 });
 
+function maskProjectSecrets(project: any) {
+  if (!project) return null;
+  const copy = { ...project };
+  if (copy.github_token) copy.github_token = '••••••••';
+  if (copy.openrouter_key) copy.openrouter_key = '••••••••';
+  if (copy.pinecone_api_key) copy.pinecone_api_key = '••••••••';
+  if (copy.discord_bot_token) copy.discord_bot_token = '••••••••';
+  return copy;
+}
+
 export async function create(req: AuthenticatedRequest, res: Response) {
   try {
     const userId = req.user?.id;
@@ -91,7 +101,7 @@ export async function create(req: AuthenticatedRequest, res: Response) {
 
     return res.status(201).json({
       message: 'Project created successfully',
-      project,
+      project: maskProjectSecrets(project),
     });
   } catch (error: any) {
     console.error('Create project error:', error);
@@ -107,7 +117,7 @@ export async function list(req: AuthenticatedRequest, res: Response) {
     }
 
     const projects = await ProjectModel.listProjects(userId);
-    return res.json({ projects });
+    return res.json({ projects: projects.map(p => maskProjectSecrets(p)) });
   } catch (error: any) {
     console.error('List projects error:', error);
     return res.status(500).json({ error: 'Failed to list projects' });
@@ -128,7 +138,7 @@ export async function get(req: AuthenticatedRequest, res: Response) {
       return res.status(404).json({ error: 'Project not found' });
     }
 
-    return res.json({ project });
+    return res.json({ project: maskProjectSecrets(project) });
   } catch (error: any) {
     console.error('Get project error:', error);
     return res.status(500).json({ error: 'Failed to get project details' });
@@ -145,6 +155,13 @@ export async function update(req: AuthenticatedRequest, res: Response) {
     }
 
     const updateData = { ...req.body };
+    const secretFields = ['github_token', 'discord_bot_token', 'openrouter_key', 'pinecone_api_key'];
+    for (const field of secretFields) {
+      if (updateData[field] === '••••••••') {
+        delete updateData[field];
+      }
+    }
+
     if (updateData.pinecone_namespace) {
       // Suffix custom namespace with project ID to guarantee isolation
       updateData.pinecone_namespace = `${updateData.pinecone_namespace.trim()}-${id}`;
@@ -157,7 +174,7 @@ export async function update(req: AuthenticatedRequest, res: Response) {
 
     return res.json({
       message: 'Project updated successfully',
-      project: updated,
+      project: maskProjectSecrets(updated),
     });
   } catch (error: any) {
     console.error('Update project error:', error);

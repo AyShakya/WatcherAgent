@@ -1,11 +1,51 @@
+import { useState } from 'react';
 import { GitBranch, ExternalLink } from 'lucide-react';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
 
 export default function IncidentDetailsDrawer({
   selectedIncident,
   setSelectedIncident,
-  getSeverityBadgeClass
+  getSeverityBadgeClass,
+  getStatusBadgeClass,
+  token,
+  onActionSuccess
 }) {
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState('');
+
   if (!selectedIncident) return null;
+
+  const handleAction = async (action) => {
+    setActionLoading(true);
+    setActionError('');
+    try {
+      const res = await fetch(`${API_BASE}/callback/approve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          incidentId: selectedIncident.id,
+          action,
+          comment: `Manually ${action.toLowerCase()}d via Web Dashboard.`
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setSelectedIncident(null);
+        if (onActionSuccess) onActionSuccess();
+      } else {
+        setActionError(data.error || `Failed to ${action.toLowerCase()} incident.`);
+      }
+    } catch (err) {
+      setActionError('Network connection failure.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-ink-black/20 backdrop-blur-[2px] flex items-center justify-center z-50 animate-fade" onClick={() => setSelectedIncident(null)}>
@@ -85,6 +125,39 @@ export default function IncidentDetailsDrawer({
             </div>
           </div>
 
+          {/* Manual Gatekeeper Controls */}
+          {['TRIGGERED', 'TRIAGED', 'AWAITING_APPROVAL'].includes(selectedIncident.status) && (
+            <div className="flex flex-col gap-2 bg-primary/5 border border-primary/20 rounded-xl p-4 mt-2">
+              <span className="text-[10px] font-bold uppercase text-primary tracking-wider">Manual Gatekeeper Controls</span>
+              <p className="text-xs text-on-surface-variant m-0 mt-1 leading-relaxed">
+                Take immediate action to approve the patch pipeline or dismiss this incident directly from the web console.
+              </p>
+              {actionError && (
+                <div className="text-xs text-danger font-semibold mt-2">
+                  ❌ {actionError}
+                </div>
+              )}
+              <div className="flex gap-3 mt-3">
+                <button
+                  type="button"
+                  onClick={() => handleAction('APPROVE')}
+                  disabled={actionLoading}
+                  className="flex-1 bg-success hover:bg-success/90 text-on-primary border border-none rounded-lg py-2.5 text-xs font-bold cursor-pointer active:scale-95 duration-150 transition-all disabled:opacity-60"
+                >
+                  {actionLoading ? 'Processing...' : 'Approve & Patch Code'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAction('REJECT')}
+                  disabled={actionLoading}
+                  className="bg-transparent hover:bg-danger/10 text-danger border border-danger/30 rounded-lg px-4 py-2.5 text-xs font-bold cursor-pointer active:scale-95 duration-150 transition-all disabled:opacity-60"
+                >
+                  Dismiss Alert
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col gap-2">
             <span className="text-[10px] font-bold uppercase text-on-surface-variant tracking-wider">Normalized Error Signature</span>
             <pre className="bg-surface-container border border-warm-gray/20 rounded-lg p-4 font-mono text-xs text-danger m-0 whitespace-pre-wrap break-all">
@@ -119,7 +192,7 @@ export default function IncidentDetailsDrawer({
                 href={selectedIncident.pr_url} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 bg-primary text-on-primary border-none rounded-lg p-3 text-xs font-semibold no-underline transition-opacity duration-150 hover:opacity-90 active:scale-[0.98]"
+                className="inline-flex items-center justify-center gap-2 bg-primary text-on-primary border border-none rounded-lg p-3 text-xs font-semibold no-underline transition-opacity duration-150 hover:opacity-90 active:scale-[0.98]"
               >
                 <GitBranch className="w-4 h-4" /> View Opened Pull Request <ExternalLink className="w-3.5 h-3.5" />
               </a>

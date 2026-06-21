@@ -616,6 +616,8 @@ function App() {
             setSelectedIncident={setSelectedIncident}
             getSeverityBadgeClass={getSeverityBadgeClass}
             getStatusBadgeClass={getStatusBadgeClass}
+            token={token}
+            onActionSuccess={fetchDashboardData}
           />
 
         </div>

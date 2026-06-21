@@ -32,7 +32,7 @@ export async function handleWebhook(req: Request, res: Response) {
     let affectedRegions: string[] = [];
 
     // 1. Detect Sentry webhook format
-    if (body.data?.issue || body.event) {
+    if (body.data?.issue || (body.event && typeof body.event === 'object')) {
       const issue = body.data?.issue;
       const event = body.event || body.data?.event;
       
@@ -74,6 +74,13 @@ export async function handleWebhook(req: Request, res: Response) {
     }
     // 4. Detect PagerDuty webhook format
     else if (body.messages && Array.isArray(body.messages) && body.messages[0]?.incident) {
+      const pdEvent = body.messages[0].event;
+      if (pdEvent && pdEvent !== 'incident.triggered' && pdEvent !== 'incident.reopened') {
+        return res.json({
+          status: 'ignored',
+          message: `PagerDuty webhook event ignored: ${pdEvent}`
+        });
+      }
       const pdIncident = body.messages[0].incident;
       service = pdIncident.service?.name || service;
       errorSignature = pdIncident.title || pdIncident.description || errorSignature;

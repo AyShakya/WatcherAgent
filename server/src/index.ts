@@ -11,10 +11,18 @@ const PORT = config.PORT;
 
 const corsOrigin = config.ALLOWED_ORIGINS
   ? config.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim())
-  : '*';
+  : null;
 
 app.use(cors({
-  origin: corsOrigin,
+  origin: (origin, callback) => {
+    if (!corsOrigin) {
+      callback(null, origin || '*');
+    } else if (corsOrigin.includes(origin || '')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json());

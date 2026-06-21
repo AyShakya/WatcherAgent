@@ -142,6 +142,25 @@ function applyPatch(originalContent, diffString) {
   return result;
 }
 
+function getLineDiffPercentage(oldContent, newContent) {
+  if (!oldContent || !newContent) return 0;
+  const oldLines = oldContent.split(/\r?\n/);
+  const newLines = newContent.split(/\r?\n/);
+  if (oldLines.length <= 20) return 0; // Skip size guard for tiny files
+  
+  const newSet = new Set(newLines.map(l => l.trim()));
+  let commonLines = 0;
+  for (const line of oldLines) {
+    if (newSet.has(line.trim())) {
+      commonLines++;
+    }
+  }
+  
+  const changeRatio = (oldLines.length - commonLines) / oldLines.length;
+  return changeRatio;
+}
+
+
 const SYSTEM_INSTRUCTIONS = `
 You are a Senior Software Engineer and SRE performing root cause analysis and fix generation.
 INVIOLABLE RULES:
@@ -481,6 +500,44 @@ STEP 4 — VERIFY: List 2 edge cases your fix might introduce.
       }
 
       if (contentToCommit) {
+        // --- SAFETY GUARDRAILS ---
+        // 1. JSON Syntax Check
+        if (aiFix.file_path.endsWith('.json')) {
+          try {
+            JSON.parse(contentToCommit);
+            console.log(`✅ Syntax check passed: valid JSON content.`);
+          } catch (jsonErr) {
+            console.error(`❌ Syntax check failed: invalid JSON content: ${jsonErr.message}`);
+            try {
+              await client.rest.git.deleteRef({ owner, repo, ref: `heads/${branchName}` });
+            } catch (err) {}
+            return {
+              ...incidentData,
+              pr_status: 'FAILED_NO_CODE',
+              error: `Invalid JSON syntax: ${jsonErr.message}`,
+              ai_fix_suggestion: aiFix,
+              fix_initiated_at: new Date().toISOString()
+            };
+          }
+        }
+
+        // 2. Diff Size Guard
+        const changeRatio = getLineDiffPercentage(currentContent, contentToCommit);
+        if (changeRatio > 0.30) {
+          console.error(`❌ Diff size guard triggered: ${Math.round(changeRatio * 100)}% of the file changed. Limit is 30%.`);
+          try {
+            await client.rest.git.deleteRef({ owner, repo, ref: `heads/${branchName}` });
+          } catch (err) {}
+          return {
+            ...incidentData,
+            pr_status: 'FAILED_GUARDRAIL',
+            error: `Diff size guard triggered: changes exceed 30% of the file (${Math.round(changeRatio * 100)}% modified).`,
+            ai_fix_suggestion: aiFix,
+            fix_initiated_at: new Date().toISOString()
+          };
+        }
+        // -------------------------
+
         await client.rest.repos.createOrUpdateFileContents({
           owner: owner, repo: repo, path: aiFix.file_path,
           message: `fix: automated fix for ${incidentData.incident_id}`,
