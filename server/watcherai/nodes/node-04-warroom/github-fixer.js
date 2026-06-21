@@ -295,163 +295,7 @@ export async function createFixPR(incidentData, context) {
   }
   // ── END EXISTING OPEN PR GUARD ───────────────────────────────────────────────
 
-  // ── MEMORY RECALL FAST-PATH ──────────────────────────────────────────────────
-  // If Pinecone returned a HISTORICAL_FIX with a diff from a past resolved
-  // incident, we already know the fix. Skip the expensive LLM audit phases and
-  // apply the recalled patch directly. This is typically 3–5× faster.
-  const historicalFix = incidentData.runbooks?.find(
-    r => r.source === 'HISTORICAL_FIX' && r.fix_diff && r.fix_diff.trim().length > 10
-  );
-  if (historicalFix) {
-    console.log(`🧠 Memory recall hit! Checking feasibility for incident ${historicalFix.incident_id}...`);
-    
-    let isRecallFeasible = false;
-    let currentContent = null;
-    let appliedContent = null;
-
-    try {
-      const client = new Octokit({ auth: gitToken });
-      const gitContext = { octokit: client, owner, repo };
-
-      // 1. Check if the historical PR was actually merged
-      const prNumberMatch = historicalFix.pr_url?.match(/\/pull\/(\d+)/);
-      const prNumber = prNumberMatch ? parseInt(prNumberMatch[1], 10) : null;
-      let prMerged = true;
-
-      if (prNumber) {
-        const { data: prDetails } = await client.rest.pulls.get({
-          owner,
-          repo,
-          pull_number: prNumber,
-        });
-        prMerged = prDetails.merged === true;
-        if (!prMerged) {
-          console.warn(`⚠️ Memory recall PR #${prNumber} was not merged. Discarding recall.`);
-        }
-      }
-
-      if (prMerged && historicalFix.fix_file) {
-        // 2. Fetch the target file content to verify modification and clean applicability
-        currentContent = await getFileContent(historicalFix.fix_file, gitContext);
-        if (currentContent) {
-          // Check if the change is already present (e.g. if the error recurred even with the fix applied)
-          const addedLines = historicalFix.fix_diff
-            .split('\n')
-            .filter(line => line.startsWith('+') && !line.startsWith('+++'))
-            .map(line => line.slice(1).trim())
-            .filter(line => line.length > 5);
-
-          const alreadyApplied = addedLines.length > 0 && addedLines.every(line => currentContent.includes(line));
-          if (alreadyApplied) {
-            console.warn(`⚠️ Memory recall: The fix from ${historicalFix.incident_id} is already present in the target file, yet the error recurred. Discarding stale recall.`);
-          } else {
-            // 3. Diff applies cleanly - Use applyPatch to verify clean applicability and apply it.
-            try {
-              console.log(`🛠️ Attempting to apply historical diff deterministically: ${historicalFix.fix_file}`);
-              appliedContent = applyPatch(currentContent, historicalFix.fix_diff);
-              isRecallFeasible = true;
-              console.log(`✅ Historical diff applied successfully.`);
-            } catch (patchErr) {
-              console.warn(`⚠️ Historical diff did not apply cleanly: ${patchErr.message}. Discarding recall.`);
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.warn('⚠️ Verification of memory recall failed, falling back to full audit:', err.message);
-    }
-
-    if (isRecallFeasible && appliedContent && historicalFix.fix_file) {
-      aiFix = {
-        file_path: historicalFix.fix_file,
-        diff: historicalFix.fix_diff,
-        new_content: appliedContent,
-        reasoning: `[MEMORY RECALL from ${historicalFix.incident_id}] Applied past resolved diff cleanly.`,
-        confidence: historicalFix.relevance || 0.95,
-        recalled_from: historicalFix.incident_id,
-        recalled_pr: historicalFix.pr_url || null,
-      };
-
-      try {
-        baseBranch = await getDefaultBranch(gitContext);
-        const { data: baseRef } = await client.rest.git.getRef({ owner: owner, repo: repo, ref: `heads/${baseBranch}` });
-        const baseSha = baseRef.object.sha;
-
-        console.log(`🌿 Creating recall branch: ${branchName}`);
-        await client.rest.git.createRef({ owner: owner, repo: repo, ref: `refs/heads/${branchName}`, sha: baseSha });
-
-        // Apply the code fix to the file!
-        console.log(`🛠️ Applying code fix to ${aiFix.file_path}...`);
-        let fileSha;
-        try {
-          const { data: fileData } = await client.rest.repos.getContent({ owner: owner, repo: repo, path: aiFix.file_path, ref: branchName });
-          fileSha = fileData.sha;
-        } catch (e) {}
-
-        await client.rest.repos.createOrUpdateFileContents({
-          owner: owner, repo: repo, path: aiFix.file_path,
-          message: `fix: replayed memory-recall fix for ${incidentData.incident_id}`,
-          content: Buffer.from(aiFix.new_content).toString('base64'),
-          branch: branchName, sha: fileSha
-        });
-
-        const postmortemBody = `
-# 🧠 Guardian Memory Recall: ${incidentData.incident_id}
-> This fix was resolved automatically via **Pinecone memory recall** — no LLM re-analysis needed.
-
-## Incident
-- **Service:** ${incidentData.service}
-- **Severity:** ${incidentData.severity}
-- **Category:** ${categoryLabel(incidentData.error_category || historicalFix.error_category || 'UNKNOWN')}
-- **Status:** RESOLVED
-- **Recalled from:** [${historicalFix.incident_id}](${historicalFix.pr_url || '#'})
-- **Recall confidence:** ${((aiFix.confidence || 0.95) * 100).toFixed(0)}%
-
-## Root cause (from memory)
-${aiFix.reasoning}
-
-## Patch applied (replayed)
-\`\`\`diff
-${(aiFix.diff || 'No diff stored — see referenced PR.').slice(0, 8000)}
-\`\`\`
-
-## Audit trail
-- **Approver:** ${incidentData.hitl?.approver || 'Human-in-the-Loop'}
-- **PR created:** ${new Date().toISOString()}
-- **Resolution method:** MEMORY_RECALL
-        `;
-
-        await client.rest.repos.createOrUpdateFileContents({
-          owner: owner, repo: repo,
-          path: `incidents/${incidentData.incident_id}/POSTMORTEM.md`,
-          message: `docs: memory-recall postmortem for ${incidentData.incident_id}`,
-          content: Buffer.from(postmortemBody).toString('base64'),
-          branch: branchName,
-        });
-
-        const { data: pr } = await client.rest.pulls.create({
-          owner: owner, repo: repo,
-          title: `fix(recall): ${incidentData.service} ${incidentData.incident_id} — memory replay`,
-          head: branchName, base: baseBranch, body: postmortemBody,
-        });
-
-        console.log(`🚀 Memory Recall PR Created: ${pr.html_url}`);
-        return {
-          ...incidentData,
-          pr_url: pr.html_url,
-          pr_status: 'CREATED',
-          ai_fix_suggestion: aiFix,
-          resolution_method: 'MEMORY_RECALL',
-          fix_initiated_at: new Date().toISOString(),
-          resolved_at: new Date().toISOString(),
-        };
-      } catch (recallErr) {
-        console.error('❌ Memory recall branch/PR failed, falling through to full LLM pipeline:', recallErr.message);
-        // Fall through to the full pipeline below
-      }
-    }
-  }
-  // ── END MEMORY RECALL FAST-PATH ─────────────────────────────────────────────
+  // ── MEMORY RECALL FAST-PATH BYPASSED (GUIDES THE LLM AGENT INSTEAD) ──────────
 
   try {
     // Phase 1: Keyword Extraction
@@ -525,6 +369,17 @@ ERROR: ${sanitize(incidentData.raw_error_message || incidentData.reasoning)}`,
       return `FILE: ${path}\nCONTENT:\n${sanitize(content || 'Empty')}\n---`;
     }));
 
+    const runbookContext = (incidentData.runbooks && incidentData.runbooks.length > 0)
+      ? `The following runbooks or historical fixes were recalled from memory for this incident:
+${incidentData.runbooks.map((r, i) => `
+### Runbook #${i + 1}: ${r.title} (Source: ${r.source})
+${r.root_cause ? `* **Historical Root Cause:** ${r.root_cause}` : ''}
+${r.steps && r.steps.length > 0 ? `* **Recommended Steps:**\n${r.steps.map(s => `  - ${s}`).join('\n')}` : ''}
+${r.fix_file ? `* **Target File:** ${r.fix_file}` : ''}
+${r.fix_diff ? `* **Historical Fix Diff:**\n\`\`\`diff\n${r.fix_diff}\n\`\`\`` : ''}
+`).join('\n')}`
+      : 'No matching runbooks found in memory.';
+
     const auditPrompt = `
 ## INCIDENT
 Service: ${sanitize(incidentData.service)}
@@ -533,13 +388,16 @@ Verbatim error: ${sanitize(incidentData.raw_error_message || incidentData.reason
 Root frame: ${sanitize(incidentData.root_frame?.file || 'unknown')}:${incidentData.root_frame?.line || 'unknown'} in ${sanitize(incidentData.root_frame?.function || 'unknown')}
 Severity: ${incidentData.severity}
 
+## MATCHED RUNBOOKS / HISTORICAL CONTEXT
+${runbookContext}
+
 ## CODE TO AUDIT (with line numbers)
 ${audits.join('\n')}
 
 ## TASK — complete in order
 STEP 1 — LOCATE: State the exact file and line number causing the error.
 STEP 2 — EXPLAIN: State precisely why that line causes this specific error.
-STEP 3 — FIX: Produce the minimal change.
+STEP 3 — FIX: Produce the minimal change. You should use the matched runbooks / historical context provided above if they are relevant, adjusting them to fit the current code structure.
 STEP 4 — VERIFY: List 2 edge cases your fix might introduce.
 
 ## OUTPUT — raw JSON only
@@ -688,7 +546,9 @@ ${aiFix.diff ? '' : '_Full file replacement — see file changes tab for complet
       pr_status: fixApplied ? 'CREATED' : 'FAILED_NO_CODE',
       ai_fix_suggestion: aiFix,
       original_content: currentContent,
-      resolution_method: 'LLM_GENERATED',
+      resolution_method: incidentData.runbooks?.some(r => r.source === 'HISTORICAL_FIX')
+        ? 'LLM_GENERATED_WITH_RECALL'
+        : 'LLM_GENERATED',
       fix_initiated_at: new Date().toISOString(),
       resolved_at: new Date().toISOString(),
     };
