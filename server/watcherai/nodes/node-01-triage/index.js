@@ -156,13 +156,15 @@ function getFallbackTriage(input, incident_id) {
   const rawError = input.error || input.message || 'AI Triage unreachable. Check raw logs.';
 
   const isCritical = CRITICAL_SERVICES.includes((input.service || '').toLowerCase());
-  const deterministicSev = getDeterministicSeverity(input, isCritical) || 'P2';
+  const deterministicSev = getDeterministicSeverity(input, isCritical);
+  const finalSeverity = deterministicSev || 'P2';
+  const confidence = deterministicSev ? 95 : 50;
 
   return {
     incident_id,
     service: input.service || 'unknown',
-    severity: deterministicSev,
-    confidence: 50,
+    severity: finalSeverity,
+    confidence,
     reasoning: rawError,
     raw_error_message: rawError,
     normalized_error_signature: rawError,
@@ -171,7 +173,7 @@ function getFallbackTriage(input, incident_id) {
     error_type: 'unknown',
     error_category: categorizeError(rawError, 'unknown'),
     isCriticalService: isCritical,
-    criticalMultiplierApplied: isCritical && deterministicSev === 'P1',
+    criticalMultiplierApplied: isCritical && finalSeverity === 'P1',
     alert_raw: input,
     triggered_at: new Date().toISOString(),
     triage_completed_at: new Date().toISOString(),
