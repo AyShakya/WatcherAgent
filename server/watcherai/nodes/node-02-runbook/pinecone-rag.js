@@ -58,20 +58,6 @@ export async function searchRunbooks(service, errorReasoning, context) {
     let matches = queryResponse?.matches || [];
     let hits = matches.filter(m => (m.score || 0) >= SCORE_THRESHOLD_STRICT);
 
-    // Pass 2: if no same-service hits, broaden to all services with a tighter
-    //         score cutoff so we don't match completely unrelated incidents.
-    if (hits.length === 0 && service) {
-      console.log(`🔍 No same-service recall hit — retrying without service filter (threshold ${SCORE_THRESHOLD_FALLBACK})`);
-      const broadResponse = await targetIndex.query({
-        vector: queryEmbedding,
-        topK: 5,
-        includeMetadata: true,
-        filter: { chunk_type: { $eq: 'error_signature' } },
-      });
-      const broadMatches = broadResponse?.matches || [];
-      hits = broadMatches.filter(m => (m.score || 0) >= SCORE_THRESHOLD_FALLBACK);
-    }
-
     if (hits.length > 0) {
       console.log(`🧠 Memory recall: ${hits.length} historical fix(es) found (top score: ${hits[0].score?.toFixed(3)})`);
       return hits.map(match => ({

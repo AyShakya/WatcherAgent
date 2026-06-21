@@ -142,9 +142,7 @@ export async function updateAgentMemory(incidentData, context) {
 
     console.log(`🧠 Updating Pinecone Memory for ${incidentId} (Namespace: ${namespace || 'default'}) with ${chunks.length} chunks...`);
 
-    let successCount = 0;
-
-    for (const chunk of chunks) {
+    const upsertPromises = chunks.map(async (chunk) => {
       const embedding = await getEmbedding(chunk.embedText, pinecone);
       await targetIndex.upsert({
         records: [{
@@ -153,8 +151,10 @@ export async function updateAgentMemory(incidentData, context) {
           metadata: chunk.metadata
         }]
       });
-      successCount += 1;
-    }
+    });
+
+    await Promise.all(upsertPromises);
+    const successCount = chunks.length;
 
     return {
       ...incidentData,

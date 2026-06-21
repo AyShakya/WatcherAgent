@@ -19,6 +19,129 @@ function sanitize(str) {
   return String(str).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 }
 
+/**
+ * Unified diff parsing and application helper.
+ * Parses diff into hunks and applies them bottom-up.
+ * Uses a sliding tolerance of +/- 10 lines to match contexts.
+ */
+function applyPatch(originalContent, diffString) {
+  const lines = originalContent.split(/\r?\n/);
+  const diffLines = diffString.split(/\r?\n/);
+  
+  const hunks = [];
+  let currentHunk = null;
+  
+  for (const line of diffLines) {
+    if (line.startsWith('diff ') || line.startsWith('index ') || line.startsWith('--- ') || line.startsWith('+++ ')) {
+      if (currentHunk) {
+        hunks.push(currentHunk);
+        currentHunk = null;
+      }
+      continue;
+    }
+    const hunkHeaderMatch = line.match(/^@@\s+-(\d+)(?:,(\d+))?\s+\+(\d+)(?:,(\d+))?\s+@@/);
+    if (hunkHeaderMatch) {
+      if (currentHunk) {
+        hunks.push(currentHunk);
+      }
+      currentHunk = {
+        oldStart: parseInt(hunkHeaderMatch[1], 10),
+        oldLen: hunkHeaderMatch[2] ? parseInt(hunkHeaderMatch[2], 10) : 1,
+        newStart: parseInt(hunkHeaderMatch[3], 10),
+        newLen: hunkHeaderMatch[4] ? parseInt(hunkHeaderMatch[4], 10) : 1,
+        diffLines: []
+      };
+    } else if (currentHunk) {
+      currentHunk.diffLines.push(line);
+    }
+  }
+  if (currentHunk) {
+    hunks.push(currentHunk);
+  }
+  
+  if (hunks.length === 0) {
+    throw new Error('No valid diff hunks found in patch');
+  }
+  
+  // Sort hunks by oldStart in descending order to apply bottom-up
+  hunks.sort((a, b) => b.oldStart - a.oldStart);
+  
+  for (const hunk of hunks) {
+    const expectedOldLines = [];
+    const replacementLines = [];
+    
+    for (const line of hunk.diffLines) {
+      if (line.startsWith('-')) {
+        expectedOldLines.push(line.slice(1));
+      } else if (line.startsWith('+')) {
+        replacementLines.push(line.slice(1));
+      } else {
+        // Context line
+        const contextLine = line.startsWith(' ') ? line.slice(1) : line;
+        expectedOldLines.push(contextLine);
+        replacementLines.push(contextLine);
+      }
+    }
+    
+    const nominalIndex = hunk.oldStart - 1;
+    let matchIndex = -1;
+    
+    if (expectedOldLines.length === 0) {
+      matchIndex = Math.max(0, Math.min(lines.length, nominalIndex));
+    } else {
+      // Find matching window with sliding tolerance of +/- 10 lines
+      for (let offset = 0; offset <= 10; offset++) {
+        // Check +offset
+        const idxPlus = nominalIndex + offset;
+        if (idxPlus >= 0 && idxPlus + expectedOldLines.length <= lines.length) {
+          let match = true;
+          for (let i = 0; i < expectedOldLines.length; i++) {
+            if (lines[idxPlus + i].trim() !== expectedOldLines[i].trim()) {
+              match = false;
+              break;
+            }
+          }
+          if (match) {
+            matchIndex = idxPlus;
+            break;
+          }
+        }
+        // Check -offset
+        if (offset > 0) {
+          const idxMinus = nominalIndex - offset;
+          if (idxMinus >= 0 && idxMinus + expectedOldLines.length <= lines.length) {
+            let match = true;
+            for (let i = 0; i < expectedOldLines.length; i++) {
+              if (lines[idxMinus + i].trim() !== expectedOldLines[i].trim()) {
+                match = false;
+                break;
+              }
+            }
+            if (match) {
+              matchIndex = idxMinus;
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    if (matchIndex === -1) {
+      throw new Error(`Could not find matching context for hunk starting at line ${hunk.oldStart}`);
+    }
+    
+    lines.splice(matchIndex, expectedOldLines.length, ...replacementLines);
+  }
+  
+  const lineEnding = originalContent.includes('\r\n') ? '\r\n' : '\n';
+  const hasTrailingNewline = originalContent.endsWith('\n');
+  let result = lines.join(lineEnding);
+  if (hasTrailingNewline && !result.endsWith('\n')) {
+    result += lineEnding;
+  }
+  return result;
+}
+
 const SYSTEM_INSTRUCTIONS = `
 You are a Senior Software Engineer and SRE performing root cause analysis and fix generation.
 INVIOLABLE RULES:
@@ -222,33 +345,14 @@ export async function createFixPR(incidentData, context) {
           if (alreadyApplied) {
             console.warn(`⚠️ Memory recall: The fix from ${historicalFix.incident_id} is already present in the target file, yet the error recurred. Discarding stale recall.`);
           } else {
-            // 3. Diff applies cleanly - Use LLM to cleanly merge the diff into the current content
-            console.log(`🛠️ Applying historical diff via LLM to current file: ${historicalFix.fix_file}`);
-            const applyPrompt = `
-            Apply the following historical unified diff to the current file content.
-            
-            HISTORICAL DIFF:
-            ${historicalFix.fix_diff}
-            
-            CURRENT FILE CONTENT:
-            ${currentContent}
-            
-            Return the updated file content. Keep all other code, imports, and formatting exactly the same.
-            Return ONLY the raw updated file content. Do not include markdown code block formatting (no backticks).
-            `;
-            const result = await callLLM({
-              prompt: applyPrompt,
-              systemPrompt: "Return ONLY the raw updated file content. No markdown wrappers.",
-              responseFormat: "text",
-              maxTokens: 4096,
-              openrouterKey: context?.project?.openrouterKey,
-              llmProvider: context?.project?.llmProvider,
-              llmModel: context?.project?.llmModel,
-            });
-
-            if (result && result.trim().length > 10) {
-              appliedContent = result;
+            // 3. Diff applies cleanly - Use applyPatch to verify clean applicability and apply it.
+            try {
+              console.log(`🛠️ Attempting to apply historical diff deterministically: ${historicalFix.fix_file}`);
+              appliedContent = applyPatch(currentContent, historicalFix.fix_diff);
               isRecallFeasible = true;
+              console.log(`✅ Historical diff applied successfully.`);
+            } catch (patchErr) {
+              console.warn(`⚠️ Historical diff did not apply cleanly: ${patchErr.message}. Discarding recall.`);
             }
           }
         }
@@ -499,7 +603,7 @@ STEP 4 — VERIFY: List 2 edge cases your fix might introduce.
     await client.rest.git.createRef({ owner: owner, repo: repo, ref: `refs/heads/${branchName}`, sha: baseSha });
 
     let fixApplied = false;
-    if (aiFix.file_path && aiFix.file_path !== 'N/A' && aiFix.new_content) {
+    if (aiFix.file_path && aiFix.file_path !== 'N/A') {
       console.log(`🛠️ Applying code fix to ${aiFix.file_path}...`);
       let fileSha;
       try {
@@ -507,13 +611,26 @@ STEP 4 — VERIFY: List 2 edge cases your fix might introduce.
         fileSha = fileData.sha;
       } catch (e) {}
 
-      await client.rest.repos.createOrUpdateFileContents({
-        owner: owner, repo: repo, path: aiFix.file_path,
-        message: `fix: automated fix for ${incidentData.incident_id}`,
-        content: Buffer.from(aiFix.new_content).toString('base64'),
-        branch: branchName, sha: fileSha
-      });
-      fixApplied = true;
+      let contentToCommit = aiFix.new_content;
+      if (aiFix.diff && currentContent) {
+        try {
+          console.log(`🛠️ Attempting to apply diff minimal patch to ${aiFix.file_path}...`);
+          contentToCommit = applyPatch(currentContent, aiFix.diff);
+          console.log(`✅ Minimal patch applied successfully.`);
+        } catch (patchErr) {
+          console.warn(`⚠️ Failed to apply minimal patch: ${patchErr.message}. Falling back to full file replacement.`);
+        }
+      }
+
+      if (contentToCommit) {
+        await client.rest.repos.createOrUpdateFileContents({
+          owner: owner, repo: repo, path: aiFix.file_path,
+          message: `fix: automated fix for ${incidentData.incident_id}`,
+          content: Buffer.from(contentToCommit).toString('base64'),
+          branch: branchName, sha: fileSha
+        });
+        fixApplied = true;
+      }
     }
 
     const postmortemBody = `
