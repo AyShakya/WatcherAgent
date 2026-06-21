@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+
 export default function ProjectModal({
   showProjectModal,
   setShowProjectModal,
@@ -32,6 +35,8 @@ export default function ProjectModal({
   projLlmVerificationError,
   handleVerifyLlmKey
 }) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   if (!showProjectModal) return null;
 
   return (
@@ -63,7 +68,9 @@ export default function ProjectModal({
         )}
         
         <form onSubmit={handleCreateProject} className="px-8 py-6 overflow-y-auto text-left max-h-[70vh] flex-1">
-          <div className="text-[10px] font-bold tracking-widest text-primary uppercase mb-3 pb-1 border-b border-dashed border-warm-gray/20">General Information</div>
+          {/* Required Configuration */}
+          <div className="text-[10px] font-bold tracking-widest text-primary uppercase mb-3 pb-1 border-b border-dashed border-warm-gray/20">Required Settings</div>
+          
           <div className="flex flex-col gap-4 mb-4">
             <div className="flex flex-col gap-2 text-left">
               <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Project / Service Name</label>
@@ -78,7 +85,6 @@ export default function ProjectModal({
             </div>
           </div>
 
-          <div className="text-[10px] font-bold tracking-widest text-primary uppercase mt-6 mb-3 pb-1 border-b border-dashed border-warm-gray/20">Git & Repository Details</div>
           <div className="flex flex-col sm:flex-row gap-4 mb-4">
             <div className="flex flex-col gap-2 text-left flex-1">
               <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">GitHub Owner</label>
@@ -103,6 +109,7 @@ export default function ProjectModal({
               />
             </div>
           </div>
+
           <div className="flex flex-col gap-4 mb-4">
             <div className="flex flex-col gap-2 text-left">
               <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">GitHub PAT Token</label>
@@ -117,10 +124,9 @@ export default function ProjectModal({
             </div>
           </div>
 
-          <div className="text-[10px] font-bold tracking-widest text-primary uppercase mt-6 mb-3 pb-1 border-b border-dashed border-warm-gray/20">Integrations & Knowledge Isolation</div>
-          <div className="flex flex-col sm:flex-row gap-4 mb-4">
-            <div className="flex flex-col gap-2 text-left flex-1">
-              <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Discord Channel ID</label>
+          <div className="flex flex-col gap-4 mb-4">
+            <div className="flex flex-col gap-2 text-left">
+              <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Discord Incident Channel ID</label>
               <input 
                 type="text" 
                 value={projDiscordChannel} 
@@ -130,125 +136,141 @@ export default function ProjectModal({
                 className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
               />
             </div>
-            <div className="flex flex-col gap-2 text-left flex-1">
-              <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Discord Bot Token (Optional)</label>
-              <input 
-                type="password" 
-                value={projDiscordBotToken} 
-                onChange={(e) => setProjDiscordBotToken(e.target.value)} 
-                placeholder="Falls back to global server bot if empty" 
-                className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
-              />
-            </div>
-          </div>
-          
-          <div className="text-[10px] font-bold tracking-widest text-primary uppercase mt-6 mb-3 pb-1 border-b border-dashed border-warm-gray/20">LLM Configurations</div>
-          
-          <div className="flex flex-col gap-4 mb-4">
-            <div className="flex flex-col gap-2 text-left w-full">
-              <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">LLM Provider</label>
-              <select
-                value={projLlmProvider}
-                onChange={(e) => setProjLlmProvider(e.target.value)}
-                className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
-              >
-                <option value="OPENROUTER">OpenRouter (Unified API Gateway)</option>
-                <option value="OPENAI">OpenAI (Direct API Key)</option>
-                <option value="ANTHROPIC">Anthropic Claude (Direct API Key)</option>
-                <option value="GEMINI">Google Gemini (Direct API Key)</option>
-              </select>
-            </div>
           </div>
 
-          <div className="flex flex-col gap-4 mb-4">
-            <div className="flex flex-col gap-2 text-left">
-              <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">
-                {projLlmProvider === 'OPENROUTER' ? 'OpenRouter API Key (Optional)' :
-                 projLlmProvider === 'OPENAI' ? 'OpenAI Secret Key (Optional)' :
-                 projLlmProvider === 'ANTHROPIC' ? 'Anthropic API Key (Optional)' :
-                 'Google AI Studio API Key (Optional)'}
-              </label>
-              <div className="flex gap-2 w-full">
-                <input 
-                  type="password" 
-                  value={projOpenRouterKey || ''} 
-                  onChange={(e) => setProjOpenRouterKey(e.target.value)} 
-                  placeholder="Falls back to system-wide fallbacks if empty" 
-                  className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary flex-1"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleVerifyLlmKey(projLlmProvider, projOpenRouterKey)}
-                  disabled={projLlmVerifying}
-                  className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 rounded-lg px-4 py-2 text-xs font-semibold shrink-0 cursor-pointer active:scale-95 duration-150 transition-all disabled:opacity-50"
-                >
-                  {projLlmVerifying ? 'Verifying...' : 'Verify & Load Models'}
-                </button>
+          {/* Advanced / Optional Configurations */}
+          <div className="mt-6 border border-warm-gray/15 rounded-xl overflow-hidden bg-paper-surface/5">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="w-full flex items-center justify-between px-5 py-4 bg-paper-surface hover:bg-paper-surface/60 transition-colors text-left border-none outline-none cursor-pointer"
+            >
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs font-bold text-ink-black uppercase tracking-wider">Advanced Configuration</span>
+                <span className="text-[10px] text-on-surface-variant font-medium">Configure custom models, keys, and bot integrations (with fallbacks)</span>
               </div>
-            </div>
-          </div>
-
-          {projLlmVerificationError && (
-            <div className="mb-4 bg-danger/10 border border-danger/20 rounded-lg p-3 text-xs text-danger text-left font-semibold">
-              ❌ {projLlmVerificationError}
-            </div>
-          )}
-
-          {projLlmCredits && (
-            <div className="mb-4 bg-success/10 border border-success/20 rounded-lg p-3 text-xs text-success text-left font-semibold flex flex-col gap-1">
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-success animate-pulse"></span>
-                <span>Key Verified Successfully: <strong>{projLlmCredits.label || 'Active'}</strong></span>
+              <div className="text-warm-gray">
+                {showAdvanced ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
               </div>
-              {projLlmCredits.usage !== undefined && (
-                <span className="text-[10px] text-on-surface-variant font-medium ml-3">
-                  Usage: ${Number(projLlmCredits.usage).toFixed(4)} {projLlmCredits.limit_remaining !== null ? `| Credits Remaining: $${Number(projLlmCredits.limit_remaining).toFixed(4)}` : ''}
-                </span>
-              )}
-            </div>
-          )}
+            </button>
 
-          <div className="flex flex-col gap-4 mb-4">
-            <div className="flex flex-col gap-2 text-left w-full">
-              <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Target Model</label>
-              {projLlmModelsList && projLlmModelsList.length > 0 ? (
-                <select
-                  value={projLlmModel}
-                  onChange={(e) => setProjLlmModel(e.target.value)}
-                  className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
-                >
-                  {projLlmModelsList.map((m) => (
-                    <option key={m.id} value={m.id}>{m.name || m.id}</option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  value={projLlmModel}
-                  onChange={(e) => setProjLlmModel(e.target.value)}
-                  placeholder="Enter model slug (e.g. google/gemini-2.5-flash)"
-                  className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
-                />
-              )}
-              <span className="text-[10px] text-warm-gray">
-                {projLlmModelsList && projLlmModelsList.length > 0
-                  ? 'Successfully loaded models from API.'
-                  : 'Enter a custom model identifier or verify your API key above to load provider directory.'}
-              </span>
-            </div>
-          </div>
+            {showAdvanced && (
+              <div className="px-5 py-5 border-t border-warm-gray/10 bg-surface-container-lowest/40 flex flex-col gap-4">
+                <div className="flex flex-col gap-2 text-left">
+                  <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Discord Bot Token (Optional)</label>
+                  <input 
+                    type="password" 
+                    value={projDiscordBotToken || ''} 
+                    onChange={(e) => setProjDiscordBotToken(e.target.value)} 
+                    placeholder="Falls back to global server bot if empty" 
+                    className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
+                  />
+                </div>
 
-          <div className="flex flex-col gap-4 mb-4">
-            <div className="flex flex-col gap-2 text-left">
-              <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Custom Runbook preferences (Optional)</label>
-              <input 
-                type="text" 
-                value={projDesc} 
-                onChange={(e) => setProjDesc(e.target.value)} 
-                placeholder="e.g. Run setup scripts before testing patches" 
-                className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
-              />
-            </div>
+                <div className="border-t border-warm-gray/10 my-2"></div>
+
+                <div className="flex flex-col gap-2 text-left w-full">
+                  <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">LLM Provider</label>
+                  <select
+                    value={projLlmProvider}
+                    onChange={(e) => setProjLlmProvider(e.target.value)}
+                    className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
+                  >
+                    <option value="OPENROUTER">OpenRouter (Unified API Gateway)</option>
+                    <option value="OPENAI">OpenAI (Direct API Key)</option>
+                    <option value="ANTHROPIC">Anthropic Claude (Direct API Key)</option>
+                    <option value="GEMINI">Google Gemini (Direct API Key)</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-2 text-left">
+                  <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">
+                    {projLlmProvider === 'OPENROUTER' ? 'OpenRouter API Key (Optional)' :
+                     projLlmProvider === 'OPENAI' ? 'OpenAI Secret Key (Optional)' :
+                     projLlmProvider === 'ANTHROPIC' ? 'Anthropic API Key (Optional)' :
+                     'Google AI Studio API Key (Optional)'}
+                  </label>
+                  <div className="flex gap-2 w-full">
+                    <input 
+                      type="password" 
+                      value={projOpenRouterKey || ''} 
+                      onChange={(e) => setProjOpenRouterKey(e.target.value)} 
+                      placeholder="Falls back to system-wide fallbacks if empty" 
+                      className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary flex-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleVerifyLlmKey(projLlmProvider, projOpenRouterKey)}
+                      disabled={projLlmVerifying}
+                      className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 rounded-lg px-4 py-2 text-xs font-semibold shrink-0 cursor-pointer active:scale-95 duration-150 transition-all disabled:opacity-50"
+                    >
+                      {projLlmVerifying ? 'Verifying...' : 'Verify & Load Models'}
+                    </button>
+                  </div>
+                </div>
+
+                {projLlmVerificationError && (
+                  <div className="bg-danger/10 border border-danger/20 rounded-lg p-3 text-xs text-danger text-left font-semibold">
+                    ❌ {projLlmVerificationError}
+                  </div>
+                )}
+
+                {projLlmCredits && (
+                  <div className="bg-success/10 border border-success/20 rounded-lg p-3 text-xs text-success text-left font-semibold flex flex-col gap-1">
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-success animate-pulse"></span>
+                      <span>Key Verified Successfully: <strong>{projLlmCredits.label || 'Active'}</strong></span>
+                    </div>
+                    {projLlmCredits.usage !== undefined && (
+                      <span className="text-[10px] text-on-surface-variant font-medium ml-3">
+                        Usage: ${Number(projLlmCredits.usage).toFixed(4)} {projLlmCredits.limit_remaining !== null ? `| Credits Remaining: $${Number(projLlmCredits.limit_remaining).toFixed(4)}` : ''}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-2 text-left w-full">
+                  <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Target Model</label>
+                  {projLlmModelsList && projLlmModelsList.length > 0 ? (
+                    <select
+                      value={projLlmModel}
+                      onChange={(e) => setProjLlmModel(e.target.value)}
+                      className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
+                    >
+                      {projLlmModelsList.map((m) => (
+                        <option key={m.id} value={m.id}>{m.name || m.id}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={projLlmModel}
+                      onChange={(e) => setProjLlmModel(e.target.value)}
+                      placeholder="Enter model slug (e.g. google/gemini-2.5-flash)"
+                      className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
+                    />
+                  )}
+                  <span className="text-[10px] text-warm-gray">
+                    {projLlmModelsList && projLlmModelsList.length > 0
+                      ? 'Successfully loaded models from API.'
+                      : 'Enter a custom model identifier or verify your API key above to load provider directory.'}
+                  </span>
+                </div>
+
+                <div className="border-t border-warm-gray/10 my-2"></div>
+
+                <div className="flex flex-col gap-2 text-left">
+                  <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Custom Runbook preferences (Optional)</label>
+                  <input 
+                    type="text" 
+                    value={projDesc} 
+                    onChange={(e) => setProjDesc(e.target.value)} 
+                    placeholder="e.g. Run setup scripts before testing patches" 
+                    className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-3 mt-8 shrink-0">
