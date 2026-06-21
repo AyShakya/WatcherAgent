@@ -21,7 +21,16 @@ export default function ProjectModal({
   projFormError,
   setProjFormError,
   projFormLoading,
-  handleCreateProject
+  handleCreateProject,
+  projLlmProvider,
+  setProjLlmProvider,
+  projLlmModel,
+  setProjLlmModel,
+  projLlmModelsList,
+  projLlmCredits,
+  projLlmVerifying,
+  projLlmVerificationError,
+  handleVerifyLlmKey
 }) {
   if (!showProjectModal) return null;
 
@@ -132,19 +141,103 @@ export default function ProjectModal({
               />
             </div>
           </div>
+          
+          <div className="text-[10px] font-bold tracking-widest text-primary uppercase mt-6 mb-3 pb-1 border-b border-dashed border-warm-gray/20">LLM Configurations</div>
+          
           <div className="flex flex-col gap-4 mb-4">
-            <div className="flex flex-col gap-2 text-left">
-              <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">OpenRouter LLM Key</label>
-              <input 
-                type="password" 
-                value={projOpenRouterKey} 
-                onChange={(e) => setProjOpenRouterKey(e.target.value)} 
-                placeholder="sk-or-v1-..." 
-                required 
+            <div className="flex flex-col gap-2 text-left w-full">
+              <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">LLM Provider</label>
+              <select
+                value={projLlmProvider}
+                onChange={(e) => setProjLlmProvider(e.target.value)}
                 className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
-              />
+              >
+                <option value="OPENROUTER">OpenRouter (Unified API Gateway)</option>
+                <option value="OPENAI">OpenAI (Direct API Key)</option>
+                <option value="ANTHROPIC">Anthropic Claude (Direct API Key)</option>
+                <option value="GEMINI">Google Gemini (Direct API Key)</option>
+              </select>
             </div>
           </div>
+
+          <div className="flex flex-col gap-4 mb-4">
+            <div className="flex flex-col gap-2 text-left">
+              <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">
+                {projLlmProvider === 'OPENROUTER' ? 'OpenRouter API Key (Optional)' :
+                 projLlmProvider === 'OPENAI' ? 'OpenAI Secret Key (Optional)' :
+                 projLlmProvider === 'ANTHROPIC' ? 'Anthropic API Key (Optional)' :
+                 'Google AI Studio API Key (Optional)'}
+              </label>
+              <div className="flex gap-2 w-full">
+                <input 
+                  type="password" 
+                  value={projOpenRouterKey || ''} 
+                  onChange={(e) => setProjOpenRouterKey(e.target.value)} 
+                  placeholder="Falls back to system-wide fallbacks if empty" 
+                  className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary flex-1"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleVerifyLlmKey(projLlmProvider, projOpenRouterKey)}
+                  disabled={projLlmVerifying}
+                  className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 rounded-lg px-4 py-2 text-xs font-semibold shrink-0 cursor-pointer active:scale-95 duration-150 transition-all disabled:opacity-50"
+                >
+                  {projLlmVerifying ? 'Verifying...' : 'Verify & Load Models'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {projLlmVerificationError && (
+            <div className="mb-4 bg-danger/10 border border-danger/20 rounded-lg p-3 text-xs text-danger text-left font-semibold">
+              ❌ {projLlmVerificationError}
+            </div>
+          )}
+
+          {projLlmCredits && (
+            <div className="mb-4 bg-success/10 border border-success/20 rounded-lg p-3 text-xs text-success text-left font-semibold flex flex-col gap-1">
+              <div className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-success animate-pulse"></span>
+                <span>Key Verified Successfully: <strong>{projLlmCredits.label || 'Active'}</strong></span>
+              </div>
+              {projLlmCredits.usage !== undefined && (
+                <span className="text-[10px] text-on-surface-variant font-medium ml-3">
+                  Usage: ${Number(projLlmCredits.usage).toFixed(4)} {projLlmCredits.limit_remaining !== null ? `| Credits Remaining: $${Number(projLlmCredits.limit_remaining).toFixed(4)}` : ''}
+                </span>
+              )}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-4 mb-4">
+            <div className="flex flex-col gap-2 text-left w-full">
+              <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Target Model</label>
+              {projLlmModelsList && projLlmModelsList.length > 0 ? (
+                <select
+                  value={projLlmModel}
+                  onChange={(e) => setProjLlmModel(e.target.value)}
+                  className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
+                >
+                  {projLlmModelsList.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name || m.id}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={projLlmModel}
+                  onChange={(e) => setProjLlmModel(e.target.value)}
+                  placeholder="Enter model slug (e.g. google/gemini-2.5-flash)"
+                  className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
+                />
+              )}
+              <span className="text-[10px] text-warm-gray">
+                {projLlmModelsList && projLlmModelsList.length > 0
+                  ? 'Successfully loaded models from API.'
+                  : 'Enter a custom model identifier or verify your API key above to load provider directory.'}
+              </span>
+            </div>
+          </div>
+
           <div className="flex flex-col gap-4 mb-4">
             <div className="flex flex-col gap-2 text-left">
               <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Custom Runbook preferences (Optional)</label>

@@ -43,6 +43,10 @@ services:
       PORT: 3001
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
       INTERNAL_CALLBACK_SECRET: ${INTERNAL_CALLBACK_SECRET:-orchestration-callback-key-9999}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,6 +64,9 @@ services:
       REDIS_PORT: 6379
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       PINECONE_API_KEY: ${PINECONE_API_KEY:-}
       DEFAULT_LLM_MODEL: ${DEFAULT_LLM_MODEL:-google/gemini-2.0-flash-001}
       PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME:-guardian-knowledge}

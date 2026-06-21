@@ -77,6 +77,8 @@ ${JSON.stringify(input, null, 2)}
       prompt: finalPrompt,
       systemPrompt: SYSTEM_INSTRUCTIONS,
       openrouterKey: context?.project?.openrouterKey,
+      llmProvider: context?.project?.llmProvider,
+      llmModel: context?.project?.llmModel,
     });
 
     const aiResult = normalizeAndValidateTriageResult(aiRawResult, input);

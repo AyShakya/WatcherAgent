@@ -87,7 +87,7 @@ export async function getIncidentWithProject(id: string): Promise<(Incident & { 
       p.discord_channel_id as p_discord_channel_id, p.discord_bot_token as p_discord_bot_token,
       p.openrouter_key as p_openrouter_key, 
       p.pinecone_namespace as p_pinecone_namespace, p.pinecone_api_key as p_pinecone_api_key,
-      p.active as p_active
+      p.active as p_active, p.llm_provider as p_llm_provider, p.llm_model as p_llm_model
     FROM incidents i
     JOIN projects p ON i.project_id = p.id
     WHERE i.id = $1
@@ -110,6 +110,8 @@ export async function getIncidentWithProject(id: string): Promise<(Incident & { 
     openrouter_key: row.p_openrouter_key,
     pinecone_namespace: row.p_pinecone_namespace,
     pinecone_api_key: row.p_pinecone_api_key || null,
+    llm_provider: row.p_llm_provider,
+    llm_model: row.p_llm_model,
     active: row.p_active,
     created_at: row.created_at,
     updated_at: row.updated_at,

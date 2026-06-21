@@ -82,6 +82,9 @@ export async function initDb() {
     await client.query('ALTER TABLE incidents ADD COLUMN IF NOT EXISTS discord_message_id VARCHAR(255)');
     await client.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS pinecone_api_key VARCHAR(255)');
     await client.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS discord_bot_token VARCHAR(255)');
+    await client.query('ALTER TABLE projects ALTER COLUMN openrouter_key DROP NOT NULL');
+    await client.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS llm_provider VARCHAR(50) DEFAULT \'OPENROUTER\'');
+    await client.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS llm_model VARCHAR(255)');
 
     // 5. Create runs table
     await client.query(`

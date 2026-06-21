@@ -24,10 +24,13 @@ export const ProjectContextSchema = z.object({
   pineconeScoreThreshold: z.number().min(0).max(1).optional(), // Fallback to process.env.PINECONE_SCORE_THRESHOLD || 0.78
   pineconeScoreThresholdBroad: z.number().min(0).max(1).optional(), // Fallback to process.env.PINECONE_SCORE_THRESHOLD_BROAD || 0.82
   
-  // LLM Configurations (OpenRouter)
-  openrouterKey: z.string().min(1, "OpenRouter API Key is required"),
+  // LLM Configurations
+  openrouterKey: z.string().optional().nullable(),
+  llmProvider: z.string().optional(),
+  llmModel: z.string().optional().nullable(),
   defaultLlmModel: z.string().optional(), // Fallback to process.env.DEFAULT_LLM_MODEL
   llmTimeoutMs: z.number().positive().optional(), // Fallback to process.env.LLM_TIMEOUT_MS || 30000
+
   
   // Custom Project Ingestion Noise Thresholds (overriding defaults if specified)
   noiseErrorRateThreshold: z.number().min(0).max(1).optional(), // Fallback to 0.02

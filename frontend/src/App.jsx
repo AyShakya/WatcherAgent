@@ -46,6 +46,12 @@ function App() {
   const [projOpenRouterKey, setProjOpenRouterKey] = useState('');
   const [projFormError, setProjFormError] = useState('');
   const [projFormLoading, setProjFormLoading] = useState(false);
+  const [projLlmProvider, setProjLlmProvider] = useState('OPENROUTER');
+  const [projLlmModel, setProjLlmModel] = useState('');
+  const [projLlmModelsList, setProjLlmModelsList] = useState([]);
+  const [projLlmCredits, setProjLlmCredits] = useState(null);
+  const [projLlmVerifying, setProjLlmVerifying] = useState(false);
+  const [projLlmVerificationError, setProjLlmVerificationError] = useState('');
 
   // Selected Incident Detail Modal
   const [selectedIncident, setSelectedIncident] = useState(null);
@@ -73,9 +79,60 @@ function App() {
     setProjDiscordChannel('');
     setProjDiscordBotToken('');
     setProjOpenRouterKey('');
+    setProjLlmProvider('OPENROUTER');
+    setProjLlmModel('');
+    setProjLlmModelsList([]);
+    setProjLlmCredits(null);
+    setProjLlmVerificationError('');
     setProjFormError('');
     setShowProjectModal(true);
   };
+
+  async function handleVerifyLlmKey(provider, apiKey) {
+    setProjLlmVerifying(true);
+    setProjLlmVerificationError('');
+    setProjLlmCredits(null);
+    try {
+      const res = await fetch(`${API_BASE}/projects/validate-llm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          llm_provider: provider,
+          llm_api_key: apiKey
+        })
+      });
+
+      let data;
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        const textSnippet = text.length > 100 ? text.substring(0, 100) + '...' : text;
+        throw new Error(textSnippet || `HTTP error! Status: ${res.status}`);
+      }
+
+      if (res.ok) {
+        setProjLlmModelsList(data.models || []);
+        setProjLlmCredits(data.credits || null);
+        if (data.models && data.models.length > 0) {
+          const currentExists = data.models.some(m => m.id === projLlmModel);
+          if (!currentExists) {
+            setProjLlmModel(data.models[0].id);
+          }
+        }
+      } else {
+        setProjLlmVerificationError(data.error || 'Failed to validate API Key.');
+      }
+    } catch (err) {
+      setProjLlmVerificationError(err.message || 'Fetch connection error during LLM validation.');
+    } finally {
+      setProjLlmVerifying(false);
+    }
+  }
 
   const handleOpenEditModal = (project) => {
     setEditingProject(project);
@@ -87,8 +144,17 @@ function App() {
     setProjDiscordChannel(project.discord_channel_id || '');
     setProjDiscordBotToken(project.discord_bot_token || '');
     setProjOpenRouterKey(project.openrouter_key || '');
+    setProjLlmProvider(project.llm_provider || 'OPENROUTER');
+    setProjLlmModel(project.llm_model || '');
+    setProjLlmModelsList([]);
+    setProjLlmCredits(null);
+    setProjLlmVerificationError('');
     setProjFormError('');
     setShowProjectModal(true);
+
+    if (project.openrouter_key || project.llm_provider) {
+      handleVerifyLlmKey(project.llm_provider || 'OPENROUTER', project.openrouter_key || '');
+    }
   };
 
   // Auth profile loading
@@ -260,7 +326,9 @@ function App() {
       github_token: projGithubToken,
       discord_channel_id: projDiscordChannel,
       discord_bot_token: projDiscordBotToken,
-      openrouter_key: projOpenRouterKey
+      openrouter_key: projOpenRouterKey,
+      llm_provider: projLlmProvider,
+      llm_model: projLlmModel
     };
 
     try {
@@ -299,6 +367,11 @@ function App() {
         setProjDiscordChannel('');
         setProjDiscordBotToken('');
         setProjOpenRouterKey('');
+        setProjLlmProvider('OPENROUTER');
+        setProjLlmModel('');
+        setProjLlmModelsList([]);
+        setProjLlmCredits(null);
+        setProjLlmVerificationError('');
       } else {
         setProjFormError(data.error || `Failed to ${editingProject ? 'update' : 'create'} project.`);
       }
@@ -519,6 +592,15 @@ function App() {
             setProjFormError={setProjFormError}
             projFormLoading={projFormLoading}
             handleCreateProject={handleCreateProject}
+            projLlmProvider={projLlmProvider}
+            setProjLlmProvider={setProjLlmProvider}
+            projLlmModel={projLlmModel}
+            setProjLlmModel={setProjLlmModel}
+            projLlmModelsList={projLlmModelsList}
+            projLlmCredits={projLlmCredits}
+            projLlmVerifying={projLlmVerifying}
+            projLlmVerificationError={projLlmVerificationError}
+            handleVerifyLlmKey={handleVerifyLlmKey}
           />
 
           {/* INCIDENT DETAILS DRAWER */}

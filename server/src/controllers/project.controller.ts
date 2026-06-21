@@ -13,9 +13,11 @@ export const CreateProjectSchema = z.object({
     github_token: z.string().min(1, 'GitHub token is required'),
     discord_channel_id: z.string().min(1, 'Discord channel ID is required'),
     discord_bot_token: z.string().optional(),
-    openrouter_key: z.string().min(1, 'OpenRouter key is required'),
+    openrouter_key: z.string().optional().nullable(),
     pinecone_namespace: z.string().optional(),
     pinecone_api_key: z.string().optional(),
+    llm_provider: z.string().optional(),
+    llm_model: z.string().optional(),
   }),
 });
 
@@ -28,10 +30,12 @@ export const UpdateProjectSchema = z.object({
     github_token: z.string().optional(),
     discord_channel_id: z.string().optional(),
     discord_bot_token: z.string().optional(),
-    openrouter_key: z.string().optional(),
+    openrouter_key: z.string().optional().nullable(),
     pinecone_namespace: z.string().optional(),
     pinecone_api_key: z.string().optional(),
     active: z.boolean().optional(),
+    llm_provider: z.string().optional(),
+    llm_model: z.string().optional(),
   }),
 });
 
@@ -52,6 +56,8 @@ export async function create(req: AuthenticatedRequest, res: Response) {
       discord_bot_token,
       openrouter_key,
       pinecone_api_key,
+      llm_provider,
+      llm_model,
     } = req.body;
 
     // Generate a secure unique webhook secret for alert ingestion
@@ -75,6 +81,8 @@ export async function create(req: AuthenticatedRequest, res: Response) {
       openrouter_key,
       pinecone_namespace,
       pinecone_api_key,
+      llm_provider,
+      llm_model,
     });
 
     return res.status(201).json({
@@ -167,3 +175,111 @@ export async function remove(req: AuthenticatedRequest, res: Response) {
     return res.status(500).json({ error: 'Failed to delete project' });
   }
 }
+
+export async function validateLLM(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { llm_provider, llm_api_key } = req.body;
+    
+    let apiKey = llm_api_key;
+    if (!apiKey) {
+      if (llm_provider === 'OPENROUTER') {
+        apiKey = process.env.OPENROUTER_API_KEY;
+      } else if (llm_provider === 'OPENAI') {
+        apiKey = process.env.OPENAI_API_KEY;
+      } else if (llm_provider === 'ANTHROPIC') {
+        apiKey = process.env.ANTHROPIC_API_KEY;
+      } else if (llm_provider === 'GEMINI') {
+        apiKey = process.env.GEMINI_API_KEY;
+      }
+    }
+
+    if (!apiKey) {
+      return res.status(400).json({ error: `API Key is missing for provider ${llm_provider} (no global fallback configured).` });
+    }
+
+    if (llm_provider === 'OPENROUTER') {
+      const keyRes = await fetch('https://openrouter.ai/api/v1/auth/key', {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`
+        }
+      });
+
+      if (!keyRes.ok) {
+        const errorText = await keyRes.text();
+        return res.status(keyRes.status).json({ error: `OpenRouter Key Validation Failed: ${errorText}` });
+      }
+
+      const keyData = (await keyRes.json()) as any;
+
+      const modelsRes = await fetch('https://openrouter.ai/api/v1/models');
+      if (!modelsRes.ok) {
+        return res.status(modelsRes.status).json({ error: 'Failed to fetch OpenRouter models directory' });
+      }
+      const modelsData = (await modelsRes.json()) as any;
+
+      return res.json({
+        success: true,
+        credits: {
+          label: keyData.data?.label || 'OpenRouter Key',
+          limit_remaining: keyData.data?.limit_remaining !== undefined ? keyData.data.limit_remaining : null,
+          usage: keyData.data?.usage !== undefined ? keyData.data.usage : 0,
+          is_active: keyData.data?.is_active ?? true
+        },
+        models: modelsData.data?.map((m: any) => ({ id: m.id, name: m.name })) || []
+      });
+    }
+
+    if (llm_provider === 'OPENAI') {
+      const modelsRes = await fetch('https://api.openai.com/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      if (!modelsRes.ok) {
+        const errorText = await modelsRes.text();
+        return res.status(modelsRes.status).json({ error: `OpenAI Validation Failed: ${errorText}` });
+      }
+      const modelsData = (await modelsRes.json()) as any;
+      const models = modelsData.data
+        ?.filter((m: any) => m.id.startsWith('gpt-') || m.id.startsWith('o1-') || m.id.startsWith('o3-'))
+        .map((m: any) => ({ id: m.id, name: m.id })) || [];
+      return res.json({ success: true, credits: { label: 'OpenAI Direct Key', is_active: true }, models });
+    }
+
+    if (llm_provider === 'ANTHROPIC') {
+      const modelsRes = await fetch('https://api.anthropic.com/v1/models', {
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01'
+        }
+      });
+      if (!modelsRes.ok) {
+        const errorText = await modelsRes.text();
+        return res.status(modelsRes.status).json({ error: `Anthropic Validation Failed: ${errorText}` });
+      }
+      const modelsData = (await modelsRes.json()) as any;
+      const models = modelsData.data?.map((m: any) => ({ id: m.id, name: m.display_name || m.id })) || [];
+      return res.json({ success: true, credits: { label: 'Anthropic Direct Key', is_active: true }, models });
+    }
+
+    if (llm_provider === 'GEMINI') {
+      const modelsRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+      if (!modelsRes.ok) {
+        const errorText = await modelsRes.text();
+        return res.status(modelsRes.status).json({ error: `Gemini Validation Failed: ${errorText}` });
+      }
+      const modelsData = (await modelsRes.json()) as any;
+      const models = modelsData.models
+        ?.filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
+        .map((m: any) => {
+          const shortId = m.name?.replace('models/', '') || m.name;
+          return { id: shortId, name: m.displayName || shortId };
+        }) || [];
+      return res.json({ success: true, credits: { label: 'Gemini Direct Key', is_active: true }, models });
+    }
+
+    return res.status(400).json({ error: 'Unsupported LLM provider' });
+  } catch (err: any) {
+    console.error('Validate LLM error:', err);
+    return res.status(500).json({ error: `System error during LLM validation: ${err.message}` });
+  }
+}
+

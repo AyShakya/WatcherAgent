@@ -272,6 +272,8 @@ ERROR: ${sanitize(incidentData.raw_error_message || incidentData.reasoning)}`,
       responseFormat: 'json_object',
       maxTokens: 256,
       openrouterKey: context?.project?.openrouterKey,
+      llmProvider: context?.project?.llmProvider,
+      llmModel: context?.project?.llmModel,
     });
     const keywords = Array.isArray(keywordsResult?.keywords)
       ? keywordsResult.keywords.map((k) => String(k).trim()).filter(Boolean).slice(0, 3)
@@ -300,6 +302,8 @@ ERROR: ${sanitize(incidentData.raw_error_message || incidentData.reasoning)}`,
       responseFormat: 'text',
       maxTokens: 512,
       openrouterKey: context?.project?.openrouterKey,
+      llmProvider: context?.project?.llmProvider,
+      llmModel: context?.project?.llmModel,
     });
     // Strip numbering/bullets/backticks and match against known paths
     const rankedPaths = rankedPathsRaw
@@ -368,6 +372,8 @@ STEP 4 — VERIFY: List 2 edge cases your fix might introduce.
       responseFormat: 'json_object',
       maxTokens: 4096,
       openrouterKey: context?.project?.openrouterKey,
+      llmProvider: context?.project?.llmProvider,
+      llmModel: context?.project?.llmModel,
     });
 
     const validatedPath = finalPaths.find((p) => p === aiFix.file_path);
