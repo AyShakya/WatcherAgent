@@ -84,7 +84,8 @@ export async function getIncidentWithProject(id: string): Promise<(Incident & { 
       p.user_id as p_user_id, p.name as p_name, p.description as p_description, 
       p.webhook_secret as p_webhook_secret, p.github_owner as p_github_owner, 
       p.github_repo as p_github_repo, p.github_token as p_github_token, 
-      p.discord_channel_id as p_discord_channel_id, p.openrouter_key as p_openrouter_key, 
+      p.discord_channel_id as p_discord_channel_id, p.discord_bot_token as p_discord_bot_token,
+      p.openrouter_key as p_openrouter_key, 
       p.pinecone_namespace as p_pinecone_namespace, p.pinecone_api_key as p_pinecone_api_key,
       p.active as p_active
     FROM incidents i
@@ -105,6 +106,7 @@ export async function getIncidentWithProject(id: string): Promise<(Incident & { 
     github_repo: row.p_github_repo,
     github_token: row.p_github_token,
     discord_channel_id: row.p_discord_channel_id,
+    discord_bot_token: row.p_discord_bot_token || null,
     openrouter_key: row.p_openrouter_key,
     pinecone_namespace: row.p_pinecone_namespace,
     pinecone_api_key: row.p_pinecone_api_key || null,

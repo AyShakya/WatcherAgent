@@ -41,6 +41,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       PORT: 3001
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
       INTERNAL_CALLBACK_SECRET: ${INTERNAL_CALLBACK_SECRET:-orchestration-callback-key-9999}
     depends_on:
       postgres:

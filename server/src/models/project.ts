@@ -10,6 +10,7 @@ export interface Project {
   github_repo: string;
   github_token: string;
   discord_channel_id: string;
+  discord_bot_token: string | null;
   openrouter_key: string;
   pinecone_namespace: string;
   pinecone_api_key: string | null;
@@ -27,6 +28,7 @@ export interface CreateProjectInput {
   github_repo: string;
   github_token: string;
   discord_channel_id: string;
+  discord_bot_token?: string;
   openrouter_key: string;
   pinecone_namespace: string;
   pinecone_api_key?: string;
@@ -38,9 +40,9 @@ export async function createProject(input: CreateProjectInput): Promise<Project>
       user_id, name, description, webhook_secret, 
       github_owner, github_repo, github_token, 
       discord_channel_id, openrouter_key, pinecone_namespace,
-      pinecone_api_key
+      pinecone_api_key, discord_bot_token
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     RETURNING *
   `;
   const params = [
@@ -55,6 +57,7 @@ export async function createProject(input: CreateProjectInput): Promise<Project>
     input.openrouter_key,
     input.pinecone_namespace,
     input.pinecone_api_key || null,
+    input.discord_bot_token || null,
   ];
   const result = await query(sql, params);
   return result.rows[0];
@@ -94,7 +97,7 @@ export async function updateProject(id: string, userId: string, fields: Partial<
 
   const allowedFields = [
     'name', 'description', 'webhook_secret', 'github_owner', 'github_repo',
-    'github_token', 'discord_channel_id', 'openrouter_key', 'pinecone_namespace', 'pinecone_api_key', 'active'
+    'github_token', 'discord_channel_id', 'discord_bot_token', 'openrouter_key', 'pinecone_namespace', 'pinecone_api_key', 'active'
   ];
 
   for (const [key, value] of Object.entries(fields)) {

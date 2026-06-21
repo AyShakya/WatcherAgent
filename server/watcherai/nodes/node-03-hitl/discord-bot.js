@@ -1,6 +1,6 @@
 // nodes/node-03-hitl/discord-bot.js
 // Guardian Node 03 — Discord HITL (Human-in-the-Loop)
-// Uses explicit loginBot() at startup. Falls back gracefully when credentials are absent.
+// Uses dynamic login for global and project-scoped Discord Bots.
 
 import {
   Client,
@@ -27,19 +27,142 @@ const HITL_TIMEOUT_MS = parseInt(process.env.HITL_TIMEOUT_MS || '900000', 10);
 const ORCHESTRATOR_URL =
   process.env.ORCHESTRATOR_URL || `http://localhost:${process.env.PORT || 3000}`;
 
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
-});
-
-let botReady = false;
-
-client.once('ready', () => {
-  console.log(`🤖 Discord bot logged in as ${client.user.tag}`);
-  botReady = true;
-});
+// Map to cache logged-in client instances: token -> Client
+const clients = new Map();
 
 /**
- * Call once at server startup. Resolves when the bot is ready.
+ * Creates and registers event listeners for a new Discord Client
+ */
+function createClientForToken(token) {
+  const newClient = new Client({
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+  });
+
+  newClient.once('ready', () => {
+    console.log(`🤖 Discord bot logged in as ${newClient.user.tag}`);
+  });
+
+  newClient.on('interactionCreate', async (interaction) => {
+    if (!interaction.isButton()) return;
+
+    const parts = interaction.customId.split('_');
+    const action = parts[0];
+    const incidentId = parts.slice(1).join('_');
+
+    clearIncidentTimeout(incidentId);
+
+    if (action === 'approve') {
+      const acceptedEmbed = new EmbedBuilder()
+        .setColor(0x00c853)
+        .setTitle(`✅ Fix Approved: ${incidentId}`)
+        .setDescription(`Approved by **${interaction.user.tag}**. Deploying automated PR…`)
+        .setTimestamp();
+
+      await interaction.update({ embeds: [acceptedEmbed], components: [], content: '' });
+
+      // Notify thread so there is an audit trail.
+      const approveThread = interaction.message.thread;
+      if (approveThread) {
+        try {
+          await approveThread.send(`✅ Fix approved by **${interaction.user.tag}**. PR pipeline running…`);
+        } catch (_) {}
+      }
+
+      try {
+        await fetch(`${ORCHESTRATOR_URL}/api/v1/callback/approve`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-callback-secret': process.env.INTERNAL_CALLBACK_SECRET || '',
+          },
+          body: JSON.stringify({
+            incidentId: incidentId,
+            action: 'APPROVE',
+            comment: `Approved by Discord user ${interaction.user.tag}`
+          }),
+        });
+      } catch (err) {
+        console.error('❌ Failed to notify orchestrator:', err.message);
+      }
+    } else if (action === 'ignore') {
+      // Update the original card in-place with a clear IGNORED state.
+      const ignoredEmbed = new EmbedBuilder()
+        .setColor(0x5c5c5c)
+        .setTitle(`🗑️ Incident Ignored: ${incidentId}`)
+        .setDescription(`Dismissed by **${interaction.user.tag}**. No action will be taken.`)
+        .setTimestamp();
+
+      await interaction.update({ embeds: [ignoredEmbed], components: [], content: '' });
+
+      // Send a thread message so there is an audit trail inside the thread.
+      const thread = interaction.message.thread;
+      if (thread) {
+        try {
+          await thread.send(`🗑️ Incident dismissed by **${interaction.user.tag}**. Archived with no action.`);
+          await thread.setArchived(true).catch(() => {});
+        } catch (err) {
+          console.warn(`⚠️ Could not update thread on ignore: ${err.message}`);
+        }
+      }
+
+      await removeIncident(incidentId);
+
+      try {
+        await fetch(`${ORCHESTRATOR_URL}/api/v1/callback/approve`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-callback-secret': process.env.INTERNAL_CALLBACK_SECRET || '',
+          },
+          body: JSON.stringify({
+            incidentId: incidentId,
+            action: 'REJECT',
+            comment: `Rejected by Discord user ${interaction.user.tag}`
+          }),
+        });
+      } catch (err) {
+        console.error('❌ Failed to notify orchestrator on ignore:', err.message);
+      }
+
+      console.log(`🗑️ Incident ${incidentId} ignored by ${interaction.user.tag}`);
+    }
+  });
+
+  return newClient;
+}
+
+/**
+ * Retrieves or registers a Discord client for the specified token
+ */
+export async function getClient(token) {
+  const activeToken = token || DISCORD_TOKEN;
+  if (!activeToken) {
+    throw new Error('No Discord bot token configured');
+  }
+
+  if (clients.has(activeToken)) {
+    return clients.get(activeToken);
+  }
+
+  const newClient = createClientForToken(activeToken);
+  clients.set(activeToken, newClient);
+
+  await newClient.login(activeToken);
+
+  await new Promise((resolve, reject) => {
+    if (newClient.readyAt) {
+      resolve();
+      return;
+    }
+    newClient.once('ready', resolve);
+    setTimeout(() => reject(new Error('Discord bot login timeout')), 15000);
+  });
+
+  return newClient;
+}
+
+/**
+ * Call once at server startup. Resolves when the default global bot is ready.
  * Safe to call when DISCORD_BOT_TOKEN is absent — just warns and returns.
  */
 export async function loginBot() {
@@ -47,16 +170,11 @@ export async function loginBot() {
     console.warn('⚠️  DISCORD_BOT_TOKEN not set. Discord notifications are disabled.');
     return;
   }
-
-  if (botReady) return;
-
-  await client.login(DISCORD_TOKEN);
-
-  await new Promise((resolve, reject) => {
-    if (botReady) { resolve(); return; }
-    client.once('ready', resolve);
-    setTimeout(() => reject(new Error('Discord bot login timeout')), 15000);
-  });
+  try {
+    await getClient(DISCORD_TOKEN);
+  } catch (error) {
+    console.error('❌ Global Discord bot failed to login at startup:', error.message);
+  }
 }
 
 /**
@@ -64,18 +182,16 @@ export async function loginBot() {
  */
 export async function sendApprovalCard(incidentData, context) {
   const channelId = context?.project?.discordChannelId || CHANNEL_ID;
-  if (!DISCORD_TOKEN || !channelId) {
+  const token = context?.project?.discordBotToken || DISCORD_TOKEN;
+
+  if (!token || !channelId) {
     console.warn('⚠️  Discord credentials missing — skipping HITL notification.');
     return { ...incidentData, hitl_status: 'SKIPPED_NO_AUTH' };
   }
 
-  if (!botReady) {
-    console.error('❌ Discord bot is not ready. Was loginBot() called at startup?');
-    return { ...incidentData, hitl_status: 'FAILED_BOT_NOT_READY' };
-  }
-
   try {
-    const channel = await client.channels.fetch(channelId);
+    const activeClient = await getClient(token);
+    const channel = await activeClient.channels.fetch(channelId);
 
     const severityColor = incidentData.severity === 'P1' ? 0xff0000
       : incidentData.severity === 'P2' ? 0xffa500
@@ -167,91 +283,3 @@ export async function sendApprovalCard(incidentData, context) {
     return { ...incidentData, hitl_status: 'FAILED', discord_error: error.message };
   }
 }
-
-client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isButton()) return;
-
-  const parts = interaction.customId.split('_');
-  const action = parts[0];
-  const incidentId = parts.slice(1).join('_');
-
-  clearIncidentTimeout(incidentId);
-
-  if (action === 'approve') {
-    const acceptedEmbed = new EmbedBuilder()
-      .setColor(0x00c853)
-      .setTitle(`✅ Fix Approved: ${incidentId}`)
-      .setDescription(`Approved by **${interaction.user.tag}**. Deploying automated PR…`)
-      .setTimestamp();
-
-    await interaction.update({ embeds: [acceptedEmbed], components: [], content: '' });
-
-    // Notify thread so there is an audit trail.
-    const approveThread = interaction.message.thread;
-    if (approveThread) {
-      try {
-        await approveThread.send(`✅ Fix approved by **${interaction.user.tag}**. PR pipeline running…`);
-      } catch (_) {}
-    }
-
-    try {
-      await fetch(`${ORCHESTRATOR_URL}/api/v1/callback/approve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-callback-secret': process.env.INTERNAL_CALLBACK_SECRET || '',
-        },
-        body: JSON.stringify({
-          incidentId: incidentId,
-          action: 'APPROVE',
-          comment: `Approved by Discord user ${interaction.user.tag}`
-        }),
-      });
-    } catch (err) {
-      console.error('❌ Failed to notify orchestrator:', err.message);
-    }
-  } else if (action === 'ignore') {
-    // Update the original card in-place with a clear IGNORED state.
-    // Do NOT delete the message — deletion causes the prior channel message
-    // (often a "Fix Accepted") to become visible, misleading the viewer.
-    const ignoredEmbed = new EmbedBuilder()
-      .setColor(0x5c5c5c)
-      .setTitle(`🗑️ Incident Ignored: ${incidentId}`)
-      .setDescription(`Dismissed by **${interaction.user.tag}**. No action will be taken.`)
-      .setTimestamp();
-
-    await interaction.update({ embeds: [ignoredEmbed], components: [], content: '' });
-
-    // Send a thread message so there is an audit trail inside the thread.
-    const thread = interaction.message.thread;
-    if (thread) {
-      try {
-        await thread.send(`🗑️ Incident dismissed by **${interaction.user.tag}**. Archived with no action.`);
-        await thread.setArchived(true).catch(() => {});
-      } catch (err) {
-        console.warn(`⚠️ Could not update thread on ignore: ${err.message}`);
-      }
-    }
-
-    await removeIncident(incidentId);
-
-    try {
-      await fetch(`${ORCHESTRATOR_URL}/api/v1/callback/approve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-callback-secret': process.env.INTERNAL_CALLBACK_SECRET || '',
-        },
-        body: JSON.stringify({
-          incidentId: incidentId,
-          action: 'REJECT',
-          comment: `Rejected by Discord user ${interaction.user.tag}`
-        }),
-      });
-    } catch (err) {
-      console.error('❌ Failed to notify orchestrator on ignore:', err.message);
-    }
-
-    console.log(`🗑️ Incident ${incidentId} ignored by ${interaction.user.tag}`);
-  }
-});

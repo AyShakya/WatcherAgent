@@ -23,7 +23,8 @@ export async function processQueueJob(jobName: string, data: JobData) {
       i.*,
       p.name as p_name, p.github_owner as p_github_owner, 
       p.github_repo as p_github_repo, p.github_token as p_github_token, 
-      p.discord_channel_id as p_discord_channel_id, p.openrouter_key as p_openrouter_key, 
+      p.discord_channel_id as p_discord_channel_id, p.discord_bot_token as p_discord_bot_token,
+      p.openrouter_key as p_openrouter_key, 
       p.pinecone_namespace as p_pinecone_namespace, p.pinecone_api_key as p_pinecone_api_key
     FROM incidents i
     JOIN projects p ON i.project_id = p.id
@@ -45,6 +46,7 @@ export async function processQueueJob(jobName: string, data: JobData) {
       githubOwner: incident.p_github_owner,
       githubRepo: incident.p_github_repo,
       discordChannelId: incident.p_discord_channel_id,
+      discordBotToken: incident.p_discord_bot_token || undefined,
       pineconeNamespace: incident.p_pinecone_namespace,
       pineconeApiKey: incident.p_pinecone_api_key || undefined,
       openrouterKey: incident.p_openrouter_key,
