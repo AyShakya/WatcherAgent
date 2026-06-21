@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Eye, EyeOff } from 'lucide-react';
 
 export default function ProjectModal({
   showProjectModal,
@@ -36,6 +36,11 @@ export default function ProjectModal({
   handleVerifyLlmKey
 }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  
+  // Eye toggle states for password/token fields
+  const [showGithubToken, setShowGithubToken] = useState(false);
+  const [showDiscordBotToken, setShowDiscordBotToken] = useState(false);
+  const [showOpenRouterKey, setShowOpenRouterKey] = useState(false);
 
   if (!showProjectModal) return null;
 
@@ -113,14 +118,23 @@ export default function ProjectModal({
           <div className="flex flex-col gap-4 mb-4">
             <div className="flex flex-col gap-2 text-left">
               <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">GitHub PAT Token</label>
-              <input 
-                type="password" 
-                value={projGithubToken} 
-                onChange={(e) => setProjGithubToken(e.target.value)} 
-                placeholder="ghp_xxxxxxxxxxxx (Requires repo scopes)" 
-                required 
-                className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
-              />
+              <div className="relative w-full">
+                <input 
+                  type={showGithubToken ? "text" : "password"} 
+                  value={projGithubToken} 
+                  onChange={(e) => setProjGithubToken(e.target.value)} 
+                  placeholder="ghp_xxxxxxxxxxxx (Requires repo scopes)" 
+                  required 
+                  className="bg-paper-surface border border-warm-gray/20 rounded-lg pl-4 pr-10 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowGithubToken(!showGithubToken)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-warm-gray hover:text-ink-black cursor-pointer flex items-center justify-center p-1 outline-none transition-colors"
+                >
+                  {showGithubToken ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -158,13 +172,22 @@ export default function ProjectModal({
               <div className="px-5 py-5 border-t border-warm-gray/10 bg-surface-container-lowest/40 flex flex-col gap-4">
                 <div className="flex flex-col gap-2 text-left">
                   <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Discord Bot Token (Optional)</label>
-                  <input 
-                    type="password" 
-                    value={projDiscordBotToken || ''} 
-                    onChange={(e) => setProjDiscordBotToken(e.target.value)} 
-                    placeholder="Falls back to global server bot if empty" 
-                    className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
-                  />
+                  <div className="relative w-full">
+                    <input 
+                      type={showDiscordBotToken ? "text" : "password"} 
+                      value={projDiscordBotToken || ''} 
+                      onChange={(e) => setProjDiscordBotToken(e.target.value)} 
+                      placeholder="Falls back to global server bot if empty" 
+                      className="bg-paper-surface border border-warm-gray/20 rounded-lg pl-4 pr-10 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowDiscordBotToken(!showDiscordBotToken)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-warm-gray hover:text-ink-black cursor-pointer flex items-center justify-center p-1 outline-none transition-colors"
+                    >
+                      {showDiscordBotToken ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="border-t border-warm-gray/10 my-2"></div>
@@ -191,13 +214,22 @@ export default function ProjectModal({
                      'Google AI Studio API Key (Optional)'}
                   </label>
                   <div className="flex gap-2 w-full">
-                    <input 
-                      type="password" 
-                      value={projOpenRouterKey || ''} 
-                      onChange={(e) => setProjOpenRouterKey(e.target.value)} 
-                      placeholder="Falls back to system-wide fallbacks if empty" 
-                      className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary flex-1"
-                    />
+                    <div className="relative flex-1">
+                      <input 
+                        type={showOpenRouterKey ? "text" : "password"} 
+                        value={projOpenRouterKey || ''} 
+                        onChange={(e) => setProjOpenRouterKey(e.target.value)} 
+                        placeholder="Falls back to system-wide fallbacks if empty" 
+                        className="bg-paper-surface border border-warm-gray/20 rounded-lg pl-4 pr-10 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowOpenRouterKey(!showOpenRouterKey)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-warm-gray hover:text-ink-black cursor-pointer flex items-center justify-center p-1 outline-none transition-colors"
+                      >
+                        {showOpenRouterKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                     <button
                       type="button"
                       onClick={() => handleVerifyLlmKey(projLlmProvider, projOpenRouterKey)}
