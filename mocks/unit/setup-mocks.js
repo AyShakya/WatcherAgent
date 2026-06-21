@@ -28,6 +28,9 @@ const require = createRequire(import.meta.url);
 const pineconeModule = require('@pinecone-database/pinecone');
 const OriginalPinecone = pineconeModule.Pinecone;
 
+// Stateful vector store for testing memory recall / similar error twice
+export const mockVectors = [];
+
 class MockPinecone extends OriginalPinecone {
   constructor(opts) {
     super(opts);
@@ -43,6 +46,26 @@ class MockPinecone extends OriginalPinecone {
         },
         query: async (options) => {
           console.log(`[MOCK PINECONE] Executing query in namespace: "${options.namespace || 'default'}"`);
+          const signatureMatches = mockVectors.filter(v => 
+            v.metadata?.chunk_type === 'error_signature' && 
+            (!options.filter?.service || v.metadata?.service === (options.filter.service.$eq || options.filter.service))
+          );
+          if (global.testRecallEmpty) {
+            return {
+              matches: signatureMatches.map(m => ({
+                score: 0.95,
+                metadata: m.metadata
+              }))
+            };
+          }
+          if (signatureMatches.length > 0) {
+            return {
+              matches: signatureMatches.map(m => ({
+                score: 0.95,
+                metadata: m.metadata
+              }))
+            };
+          }
           return {
             matches: [
               {
@@ -63,7 +86,12 @@ class MockPinecone extends OriginalPinecone {
         },
         upsert: async (payload) => {
           console.log(`[MOCK PINECONE] Upserted vectors into Pinecone:`, JSON.stringify(payload));
-          return { upsertedCount: payload.records.length };
+          if (payload && Array.isArray(payload.records)) {
+            for (const rec of payload.records) {
+              mockVectors.push(rec);
+            }
+          }
+          return { upsertedCount: payload.records ? payload.records.length : 0 };
         }
       };
     };
@@ -102,6 +130,26 @@ try {
       },
       query: async (options) => {
         console.log(`[MOCK PINECONE] Executing query in namespace: "${options.namespace || 'default'}"`);
+        const signatureMatches = mockVectors.filter(v => 
+          v.metadata?.chunk_type === 'error_signature' && 
+          (!options.filter?.service || v.metadata?.service === (options.filter.service.$eq || options.filter.service))
+        );
+        if (global.testRecallEmpty) {
+          return {
+            matches: signatureMatches.map(m => ({
+              score: 0.95,
+              metadata: m.metadata
+            }))
+          };
+        }
+        if (signatureMatches.length > 0) {
+          return {
+            matches: signatureMatches.map(m => ({
+              score: 0.95,
+              metadata: m.metadata
+            }))
+          };
+        }
         return {
           matches: [
             {
@@ -122,7 +170,12 @@ try {
       },
       upsert: async (payload) => {
         console.log(`[MOCK PINECONE] Upserted vectors into Pinecone:`, JSON.stringify(payload));
-        return { upsertedCount: payload.records.length };
+        if (payload && Array.isArray(payload.records)) {
+          for (const rec of payload.records) {
+            mockVectors.push(rec);
+          }
+        }
+        return { upsertedCount: payload.records ? payload.records.length : 0 };
       }
     };
   };

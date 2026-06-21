@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test:unit": "node unit/library.test.js",
+    "test:recall": "node unit/runbook-recall.test.js",
     "test:e2e": "node e2e/e2e.test.js"
   },
   "dependencies": {

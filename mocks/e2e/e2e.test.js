@@ -1,8 +1,14 @@
 import assert from 'node:assert';
 import test from 'node:test';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const API_BASE = 'http://localhost:3001/api/v1';
-const INTERNAL_SECRET = 'orchestration-callback-key-9999';
+const INTERNAL_SECRET = process.env.INTERNAL_CALLBACK_SECRET || 'orchestration-callback-key-9999';
 
 test('E2E integration test: complete incident lifecycle flow', async (t) => {
   const testId = Math.floor(Math.random() * 1000000);
