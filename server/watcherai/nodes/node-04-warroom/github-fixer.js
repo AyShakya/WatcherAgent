@@ -180,33 +180,118 @@ export async function createFixPR(incidentData, context) {
     r => r.source === 'HISTORICAL_FIX' && r.fix_diff && r.fix_diff.trim().length > 10
   );
   if (historicalFix) {
-    console.log(`🧠 Memory recall hit! Replaying fix from incident ${historicalFix.incident_id} (skipping LLM audit phases)`);
-    aiFix = {
-      file_path: historicalFix.fix_file || null,
-      diff: historicalFix.fix_diff,
-      new_content: null, // diff-only replay; GitHub PR body will show the diff
-      reasoning: `[MEMORY RECALL from ${historicalFix.incident_id}] ${historicalFix.root_cause || historicalFix.steps?.[0] || 'Previously resolved identical error.'}`,
-      confidence: historicalFix.relevance || 0.95,
-      recalled_from: historicalFix.incident_id,
-      recalled_pr: historicalFix.pr_url || null,
-    };
+    console.log(`🧠 Memory recall hit! Checking feasibility for incident ${historicalFix.incident_id}...`);
+    
+    let isRecallFeasible = false;
+    let currentContent = null;
+    let appliedContent = null;
 
-    // If there's no file to commit we still create a PR with the postmortem
-    // so the incident is tracked on GitHub.
-    if (!aiFix.file_path) {
-      console.warn('⚠️ Memory recall: no file_path in historical fix — PR will document the incident only.');
+    try {
+      const client = new Octokit({ auth: gitToken });
+      const gitContext = { octokit: client, owner, repo };
+
+      // 1. Check if the historical PR was actually merged
+      const prNumberMatch = historicalFix.pr_url?.match(/\/pull\/(\d+)/);
+      const prNumber = prNumberMatch ? parseInt(prNumberMatch[1], 10) : null;
+      let prMerged = true;
+
+      if (prNumber) {
+        const { data: prDetails } = await client.rest.pulls.get({
+          owner,
+          repo,
+          pull_number: prNumber,
+        });
+        prMerged = prDetails.merged === true;
+        if (!prMerged) {
+          console.warn(`⚠️ Memory recall PR #${prNumber} was not merged. Discarding recall.`);
+        }
+      }
+
+      if (prMerged && historicalFix.fix_file) {
+        // 2. Fetch the target file content to verify modification and clean applicability
+        currentContent = await getFileContent(historicalFix.fix_file, gitContext);
+        if (currentContent) {
+          // Check if the change is already present (e.g. if the error recurred even with the fix applied)
+          const addedLines = historicalFix.fix_diff
+            .split('\n')
+            .filter(line => line.startsWith('+') && !line.startsWith('+++'))
+            .map(line => line.slice(1).trim())
+            .filter(line => line.length > 5);
+
+          const alreadyApplied = addedLines.length > 0 && addedLines.every(line => currentContent.includes(line));
+          if (alreadyApplied) {
+            console.warn(`⚠️ Memory recall: The fix from ${historicalFix.incident_id} is already present in the target file, yet the error recurred. Discarding stale recall.`);
+          } else {
+            // 3. Diff applies cleanly - Use LLM to cleanly merge the diff into the current content
+            console.log(`🛠️ Applying historical diff via LLM to current file: ${historicalFix.fix_file}`);
+            const applyPrompt = `
+            Apply the following historical unified diff to the current file content.
+            
+            HISTORICAL DIFF:
+            ${historicalFix.fix_diff}
+            
+            CURRENT FILE CONTENT:
+            ${currentContent}
+            
+            Return the updated file content. Keep all other code, imports, and formatting exactly the same.
+            Return ONLY the raw updated file content. Do not include markdown code block formatting (no backticks).
+            `;
+            const result = await callLLM({
+              prompt: applyPrompt,
+              systemPrompt: "Return ONLY the raw updated file content. No markdown wrappers.",
+              responseFormat: "text",
+              maxTokens: 4096,
+              openrouterKey: context?.project?.openrouterKey,
+              llmProvider: context?.project?.llmProvider,
+              llmModel: context?.project?.llmModel,
+            });
+
+            if (result && result.trim().length > 10) {
+              appliedContent = result;
+              isRecallFeasible = true;
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('⚠️ Verification of memory recall failed, falling back to full audit:', err.message);
     }
 
-    // Jump straight to GitHub deployment (skip phases 1–3)
-    try {
-      baseBranch = await getDefaultBranch(gitContext);
-      const { data: baseRef } = await client.rest.git.getRef({ owner: owner, repo: repo, ref: `heads/${baseBranch}` });
-      const baseSha = baseRef.object.sha;
+    if (isRecallFeasible && appliedContent && historicalFix.fix_file) {
+      aiFix = {
+        file_path: historicalFix.fix_file,
+        diff: historicalFix.fix_diff,
+        new_content: appliedContent,
+        reasoning: `[MEMORY RECALL from ${historicalFix.incident_id}] Applied past resolved diff cleanly.`,
+        confidence: historicalFix.relevance || 0.95,
+        recalled_from: historicalFix.incident_id,
+        recalled_pr: historicalFix.pr_url || null,
+      };
 
-      console.log(`🌿 Creating recall branch: ${branchName}`);
-      await client.rest.git.createRef({ owner: owner, repo: repo, ref: `refs/heads/${branchName}`, sha: baseSha });
+      try {
+        baseBranch = await getDefaultBranch(gitContext);
+        const { data: baseRef } = await client.rest.git.getRef({ owner: owner, repo: repo, ref: `heads/${baseBranch}` });
+        const baseSha = baseRef.object.sha;
 
-      const postmortemBody = `
+        console.log(`🌿 Creating recall branch: ${branchName}`);
+        await client.rest.git.createRef({ owner: owner, repo: repo, ref: `refs/heads/${branchName}`, sha: baseSha });
+
+        // Apply the code fix to the file!
+        console.log(`🛠️ Applying code fix to ${aiFix.file_path}...`);
+        let fileSha;
+        try {
+          const { data: fileData } = await client.rest.repos.getContent({ owner: owner, repo: repo, path: aiFix.file_path, ref: branchName });
+          fileSha = fileData.sha;
+        } catch (e) {}
+
+        await client.rest.repos.createOrUpdateFileContents({
+          owner: owner, repo: repo, path: aiFix.file_path,
+          message: `fix: replayed memory-recall fix for ${incidentData.incident_id}`,
+          content: Buffer.from(aiFix.new_content).toString('base64'),
+          branch: branchName, sha: fileSha
+        });
+
+        const postmortemBody = `
 # 🧠 Guardian Memory Recall: ${incidentData.incident_id}
 > This fix was resolved automatically via **Pinecone memory recall** — no LLM re-analysis needed.
 
@@ -214,6 +299,7 @@ export async function createFixPR(incidentData, context) {
 - **Service:** ${incidentData.service}
 - **Severity:** ${incidentData.severity}
 - **Category:** ${categoryLabel(incidentData.error_category || historicalFix.error_category || 'UNKNOWN')}
+- **Status:** RESOLVED
 - **Recalled from:** [${historicalFix.incident_id}](${historicalFix.pr_url || '#'})
 - **Recall confidence:** ${((aiFix.confidence || 0.95) * 100).toFixed(0)}%
 
@@ -229,35 +315,36 @@ ${(aiFix.diff || 'No diff stored — see referenced PR.').slice(0, 8000)}
 - **Approver:** ${incidentData.hitl?.approver || 'Human-in-the-Loop'}
 - **PR created:** ${new Date().toISOString()}
 - **Resolution method:** MEMORY_RECALL
-      `;
+        `;
 
-      await client.rest.repos.createOrUpdateFileContents({
-        owner: owner, repo: repo,
-        path: `incidents/${incidentData.incident_id}/POSTMORTEM.md`,
-        message: `docs: memory-recall postmortem for ${incidentData.incident_id}`,
-        content: Buffer.from(postmortemBody).toString('base64'),
-        branch: branchName,
-      });
+        await client.rest.repos.createOrUpdateFileContents({
+          owner: owner, repo: repo,
+          path: `incidents/${incidentData.incident_id}/POSTMORTEM.md`,
+          message: `docs: memory-recall postmortem for ${incidentData.incident_id}`,
+          content: Buffer.from(postmortemBody).toString('base64'),
+          branch: branchName,
+        });
 
-      const { data: pr } = await client.rest.pulls.create({
-        owner: owner, repo: repo,
-        title: `fix(recall): ${incidentData.service} ${incidentData.incident_id} — memory replay`,
-        head: branchName, base: baseBranch, body: postmortemBody,
-      });
+        const { data: pr } = await client.rest.pulls.create({
+          owner: owner, repo: repo,
+          title: `fix(recall): ${incidentData.service} ${incidentData.incident_id} — memory replay`,
+          head: branchName, base: baseBranch, body: postmortemBody,
+        });
 
-      console.log(`🚀 Memory Recall PR Created: ${pr.html_url}`);
-      return {
-        ...incidentData,
-        pr_url: pr.html_url,
-        pr_status: 'CREATED',
-        ai_fix_suggestion: aiFix,
-        resolution_method: 'MEMORY_RECALL',
-        fix_initiated_at: new Date().toISOString(),
-        resolved_at: new Date().toISOString(),
-      };
-    } catch (recallErr) {
-      console.error('❌ Memory recall PR failed, falling through to full LLM pipeline:', recallErr.message);
-      // Fall through to the full pipeline below
+        console.log(`🚀 Memory Recall PR Created: ${pr.html_url}`);
+        return {
+          ...incidentData,
+          pr_url: pr.html_url,
+          pr_status: 'CREATED',
+          ai_fix_suggestion: aiFix,
+          resolution_method: 'MEMORY_RECALL',
+          fix_initiated_at: new Date().toISOString(),
+          resolved_at: new Date().toISOString(),
+        };
+      } catch (recallErr) {
+        console.error('❌ Memory recall branch/PR failed, falling through to full LLM pipeline:', recallErr.message);
+        // Fall through to the full pipeline below
+      }
     }
   }
   // ── END MEMORY RECALL FAST-PATH ─────────────────────────────────────────────
