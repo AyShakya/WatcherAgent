@@ -1,14 +1,20 @@
 // services/incident-store.js
-// File-backed store for active incidents and HITL expiry windows
+// PostgreSQL-backed store for active incidents and HITL expiry windows, with in-memory fallback for tests
 
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
+import pg from 'pg';
+import dotenv from 'dotenv';
 
-const storeDir = process.env.INCIDENT_STORE_DIR || path.resolve('.data');
-const storeFile = path.join(storeDir, 'incidents.json');
+dotenv.config();
+
 const HITL_TIMEOUT_MS = parseInt(process.env.HITL_TIMEOUT_MS || '900000', 10);
+const useInMemory = process.env.NODE_ENV === 'test' || !process.env.DATABASE_URL;
+
+const pool = useInMemory ? null : new pg.Pool({
+  connectionString: process.env.DATABASE_URL
+});
 
 const timeouts = new Map();
+const memoryStore = new Map();
 
 export function saveIncidentTimeout(id, timeout) {
   timeouts.set(id, timeout);
@@ -21,79 +27,126 @@ export function clearIncidentTimeout(id) {
   }
 }
 
-async function ensureStoreFile() {
-  await fs.mkdir(storeDir, { recursive: true });
-
-  try {
-    await fs.access(storeFile);
-  } catch {
-    await fs.writeFile(storeFile, '{}', 'utf8');
-  }
-}
-
-async function readStore() {
-  await ensureStoreFile();
-  const content = await fs.readFile(storeFile, 'utf8');
-
-  try {
-    return JSON.parse(content);
-  } catch {
-    return {};
-  }
-}
-
-async function writeStore(data) {
-  await ensureStoreFile();
-  const tempFile = `${storeFile}.tmp`;
-  await fs.writeFile(tempFile, JSON.stringify(data, null, 2), 'utf8');
-  await fs.rename(tempFile, storeFile);
-}
-
-function isExpired(expiresAt) {
-  return !expiresAt || Date.now() > new Date(expiresAt).getTime();
-}
-
 export async function saveIncident(id, data) {
-  const incidents = await readStore();
-  incidents[id] = {
-    data,
-    expiresAt: new Date(Date.now() + HITL_TIMEOUT_MS).toISOString(),
-  };
-  await writeStore(incidents);
+  if (useInMemory) {
+    memoryStore.set(id, {
+      data,
+      expiresAt: new Date(Date.now() + HITL_TIMEOUT_MS).toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const sql = `
+      UPDATE incidents
+      SET triage = $1, status = 'AWAITING_APPROVAL', updated_at = NOW()
+      WHERE id = $2
+    `;
+    await pool.query(sql, [JSON.stringify(data), id]);
+  } catch (error) {
+    console.warn(`⚠️ Failed to save incident to Postgres: ${error.message}. Falling back to in-memory.`);
+    memoryStore.set(id, {
+      data,
+      expiresAt: new Date(Date.now() + HITL_TIMEOUT_MS).toISOString(),
+    });
+  }
 }
 
 export async function getIncident(id) {
-  const incidents = await readStore();
-  const entry = incidents[id];
-
-  if (!entry) {
-    return null;
+  if (useInMemory || !pool) {
+    const entry = memoryStore.get(id);
+    if (!entry) return null;
+    if (new Date() > new Date(entry.expiresAt)) {
+      memoryStore.delete(id);
+      return null;
+    }
+    return entry.data;
   }
 
-  if (isExpired(entry.expiresAt)) {
-    delete incidents[id];
-    await writeStore(incidents);
-    return null;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(id)) {
+    return memoryStore.get(id)?.data || null;
   }
 
-  return entry.data;
+  try {
+    const sql = `
+      SELECT triage, status, created_at FROM incidents
+      WHERE id = $1
+    `;
+    const result = await pool.query(sql, [id]);
+    if (result.rows.length === 0) {
+      return memoryStore.get(id)?.data || null;
+    }
+
+    const row = result.rows[0];
+    if (row.status !== 'AWAITING_APPROVAL') {
+      return null;
+    }
+
+    const isExpired = Date.now() > new Date(row.created_at).getTime() + HITL_TIMEOUT_MS;
+    if (isExpired) {
+      await pool.query("UPDATE incidents SET status = 'MUTED', updated_at = NOW() WHERE id = $1", [id]);
+      return null;
+    }
+
+    return typeof row.triage === 'string' ? JSON.parse(row.triage) : row.triage;
+  } catch (error) {
+    console.warn(`⚠️ Failed to fetch incident from Postgres: ${error.message}. Falling back to in-memory.`);
+    return memoryStore.get(id)?.data || null;
+  }
 }
 
 export async function removeIncident(id) {
-  const incidents = await readStore();
-  delete incidents[id];
-  await writeStore(incidents);
+  memoryStore.delete(id);
+
+  if (useInMemory || !pool) {
+    return;
+  }
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(id)) {
+    return;
+  }
+
+  try {
+    const sql = `
+      UPDATE incidents
+      SET status = 'MUTED', updated_at = NOW()
+      WHERE id = $1 AND status = 'AWAITING_APPROVAL'
+    `;
+    await pool.query(sql, [id]);
+  } catch (error) {
+    console.warn(`⚠️ Failed to remove incident in Postgres: ${error.message}`);
+  }
 }
 
-/**
- * Returns all non-expired incidents as an array, newest first.
- * Used by GET /api/incidents in the dashboard.
- */
 export async function getAllIncidents() {
-  const incidents = await readStore();
-  const now = Date.now();
-  return Object.values(incidents)
-    .filter((entry) => !entry.expiresAt || now <= new Date(entry.expiresAt).getTime())
-    .map((entry) => entry.data)
-    .sort((a, b) => new Date(b.hitl?.hitl_initiated_at || b.triggered_at || 0) - new Date(a.hitl?.hitl_initiated_at || a.triggered_at || 0));
+  if (useInMemory || !pool) {
+    const now = Date.now();
+    return Array.from(memoryStore.entries())
+      .filter(([_, entry]) => new Date(entry.expiresAt).getTime() >= now)
+      .map(([_, entry]) => entry.data)
+      .sort((a, b) => new Date(b.triggered_at || 0) - new Date(a.triggered_at || 0));
+  }
+
+  try {
+    const expiryCutoff = new Date(Date.now() - HITL_TIMEOUT_MS);
+    const sql = `
+      SELECT triage, created_at FROM incidents
+      WHERE status = 'AWAITING_APPROVAL'
+        AND created_at >= $1
+      ORDER BY created_at DESC
+    `;
+    const result = await pool.query(sql, [expiryCutoff]);
+    return result.rows.map(row => {
+      return typeof row.triage === 'string' ? JSON.parse(row.triage) : row.triage;
+    });
+  } catch (error) {
+    console.warn(`⚠️ Failed to get all incidents from Postgres: ${error.message}. Returning in-memory.`);
+    const now = Date.now();
+    return Array.from(memoryStore.entries())
+      .filter(([_, entry]) => new Date(entry.expiresAt).getTime() >= now)
+      .map(([_, entry]) => entry.data)
+      .sort((a, b) => new Date(b.triggered_at || 0) - new Date(a.triggered_at || 0));
+  }
 }
