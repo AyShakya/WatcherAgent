@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { query } from '../db/index.js';
 import { encrypt, decrypt } from '../utils/crypto.js';
 
@@ -23,6 +24,7 @@ export interface Project {
 }
 
 export interface CreateProjectInput {
+  id?: string;
   user_id: string;
   name: string;
   description?: string;
@@ -54,17 +56,19 @@ function decryptProject(project: Project | null): Project | null {
 }
 
 export async function createProject(input: CreateProjectInput): Promise<Project> {
+  const projectId = input.id || crypto.randomUUID();
   const sql = `
     INSERT INTO projects (
-      user_id, name, description, webhook_secret, 
+      id, user_id, name, description, webhook_secret, 
       github_owner, github_repo, github_token, 
       discord_channel_id, openrouter_key, pinecone_namespace,
       pinecone_api_key, discord_bot_token, llm_provider, llm_model
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
     RETURNING *
   `;
   const params = [
+    projectId,
     input.user_id,
     input.name,
     input.description || null,

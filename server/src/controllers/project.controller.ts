@@ -60,15 +60,19 @@ export async function create(req: AuthenticatedRequest, res: Response) {
       llm_model,
     } = req.body;
 
+    // Generate a unique project ID upfront to use for namespace isolation
+    const projectId = crypto.randomUUID();
     // Generate a secure unique webhook secret for alert ingestion
     const webhook_secret = `wh_${crypto.randomBytes(24).toString('hex')}`;
 
-    // Automatically generate a unique, clean pinecone namespace based on project name for isolation
+    // Automatically generate a unique, clean pinecone namespace based on project name + ID for isolation
     const cleanProjectSlug = name.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'default';
-    const generatedNamespace = `watcher-${cleanProjectSlug}-${crypto.randomBytes(4).toString('hex')}`;
-    const pinecone_namespace = req.body.pinecone_namespace || generatedNamespace;
+    const pinecone_namespace = req.body.pinecone_namespace 
+      ? `${req.body.pinecone_namespace.trim()}-${projectId}`
+      : `watcher-${cleanProjectSlug}-${projectId}`;
 
     const project = await ProjectModel.createProject({
+      id: projectId,
       user_id: userId,
       name,
       description,
@@ -140,7 +144,13 @@ export async function update(req: AuthenticatedRequest, res: Response) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const updated = await ProjectModel.updateProject(id, userId, req.body);
+    const updateData = { ...req.body };
+    if (updateData.pinecone_namespace) {
+      // Suffix custom namespace with project ID to guarantee isolation
+      updateData.pinecone_namespace = `${updateData.pinecone_namespace.trim()}-${id}`;
+    }
+
+    const updated = await ProjectModel.updateProject(id, userId, updateData);
     if (!updated) {
       return res.status(404).json({ error: 'Project not found or update failed' });
     }
