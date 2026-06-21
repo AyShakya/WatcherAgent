@@ -10,6 +10,8 @@ const EnvSchema = z.object({
   REDIS_PORT: z.string().transform(Number).default('6379'),
   JWT_SECRET: z.string().default('watcher-super-secret-key-12345'),
   INTERNAL_CALLBACK_SECRET: z.string().default('orchestration-callback-key-9999'),
+  ALLOWED_ORIGINS: z.string().optional(),
+  ENCRYPTION_KEY: z.string().default('watcher-default-encryption-key-32-chars-long'),
 });
 
 const parsedEnv = EnvSchema.safeParse(process.env);

@@ -1,4 +1,5 @@
 import { query } from './db.js';
+import { decrypt } from './utils/crypto.js';
 // Import the core WatcherAgent AI library interface
 // @ts-ignore
 import { runPhase1, runPhase2 } from '../../watcherai/index.js';
@@ -43,14 +44,14 @@ export async function processQueueJob(jobName: string, data: JobData) {
     project: {
       id: incident.project_id,
       name: incident.p_name,
-      githubToken: incident.p_github_token,
+      githubToken: decrypt(incident.p_github_token) || '',
       githubOwner: incident.p_github_owner,
       githubRepo: incident.p_github_repo,
       discordChannelId: incident.p_discord_channel_id,
-      discordBotToken: incident.p_discord_bot_token || undefined,
+      discordBotToken: decrypt(incident.p_discord_bot_token) || undefined,
       pineconeNamespace: incident.p_pinecone_namespace,
-      pineconeApiKey: incident.p_pinecone_api_key || undefined,
-      openrouterKey: incident.p_openrouter_key || undefined,
+      pineconeApiKey: decrypt(incident.p_pinecone_api_key) || undefined,
+      openrouterKey: decrypt(incident.p_openrouter_key) || undefined,
       llmProvider: incident.p_llm_provider || 'OPENROUTER',
       llmModel: incident.p_llm_model || undefined,
     },

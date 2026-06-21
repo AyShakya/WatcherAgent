@@ -1,4 +1,5 @@
 import { query } from '../db/index.js';
+import { encrypt, decrypt } from '../utils/crypto.js';
 
 export interface Project {
   id: string;
@@ -38,6 +39,20 @@ export interface CreateProjectInput {
   llm_model?: string;
 }
 
+/**
+ * Helper to decrypt project secret fields after reading from the database
+ */
+function decryptProject(project: Project | null): Project | null {
+  if (!project) return null;
+  return {
+    ...project,
+    github_token: decrypt(project.github_token) || '',
+    openrouter_key: decrypt(project.openrouter_key),
+    pinecone_api_key: decrypt(project.pinecone_api_key),
+    discord_bot_token: decrypt(project.discord_bot_token),
+  };
+}
+
 export async function createProject(input: CreateProjectInput): Promise<Project> {
   const sql = `
     INSERT INTO projects (
@@ -56,17 +71,17 @@ export async function createProject(input: CreateProjectInput): Promise<Project>
     input.webhook_secret,
     input.github_owner,
     input.github_repo,
-    input.github_token,
+    encrypt(input.github_token),
     input.discord_channel_id,
-    input.openrouter_key || null,
+    encrypt(input.openrouter_key),
     input.pinecone_namespace,
-    input.pinecone_api_key || null,
-    input.discord_bot_token || null,
+    encrypt(input.pinecone_api_key),
+    encrypt(input.discord_bot_token),
     input.llm_provider || 'OPENROUTER',
     input.llm_model || null,
   ];
   const result = await query(sql, params);
-  return result.rows[0];
+  return decryptProject(result.rows[0]) as Project;
 }
 
 export async function getProjectById(id: string, userId?: string): Promise<Project | null> {
@@ -80,20 +95,20 @@ export async function getProjectById(id: string, userId?: string): Promise<Proje
 
   const result = await query(sql, params);
   if (result.rows.length === 0) return null;
-  return result.rows[0];
+  return decryptProject(result.rows[0]);
 }
 
 export async function getProjectBySecret(webhookSecret: string): Promise<Project | null> {
   const sql = 'SELECT * FROM projects WHERE webhook_secret = $1 AND active = TRUE';
   const result = await query(sql, [webhookSecret]);
   if (result.rows.length === 0) return null;
-  return result.rows[0];
+  return decryptProject(result.rows[0]);
 }
 
 export async function listProjects(userId: string): Promise<Project[]> {
   const sql = 'SELECT * FROM projects WHERE user_id = $1 ORDER BY created_at DESC';
   const result = await query(sql, [userId]);
-  return result.rows;
+  return result.rows.map(row => decryptProject(row)) as Project[];
 }
 
 export async function updateProject(id: string, userId: string, fields: Partial<CreateProjectInput> & { active?: boolean }): Promise<Project | null> {
@@ -106,10 +121,18 @@ export async function updateProject(id: string, userId: string, fields: Partial<
     'github_token', 'discord_channel_id', 'discord_bot_token', 'openrouter_key', 'pinecone_namespace', 'pinecone_api_key', 'active', 'llm_provider', 'llm_model'
   ];
 
+  const secretFields = ['github_token', 'discord_bot_token', 'openrouter_key', 'pinecone_api_key'];
+
   for (const [key, value] of Object.entries(fields)) {
     if (value !== undefined && allowedFields.includes(key)) {
       setClauses.push(`"${key}" = $${paramIndex}`);
-      params.push(value);
+      
+      let finalValue = value;
+      if (secretFields.includes(key) && (typeof value === 'string' || value === null)) {
+        finalValue = encrypt(value);
+      }
+      
+      params.push(finalValue);
       paramIndex++;
     }
   }
@@ -128,7 +151,7 @@ export async function updateProject(id: string, userId: string, fields: Partial<
   `;
   const result = await query(sql, params);
   if (result.rows.length === 0) return null;
-  return result.rows[0];
+  return decryptProject(result.rows[0]);
 }
 
 export async function deleteProject(id: string, userId: string): Promise<boolean> {

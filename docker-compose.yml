@@ -47,6 +47,8 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -72,6 +74,7 @@ services:
       PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME:-guardian-knowledge}
       ORCHESTRATOR_URL: http://api:3001
       INTERNAL_CALLBACK_SECRET: ${INTERNAL_CALLBACK_SECRET:-orchestration-callback-key-9999}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

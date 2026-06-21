@@ -9,7 +9,14 @@ import { errorHandler } from './middleware/error.js';
 const app = express();
 const PORT = config.PORT;
 
-app.use(cors());
+const corsOrigin = config.ALLOWED_ORIGINS
+  ? config.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim())
+  : '*';
+
+app.use(cors({
+  origin: corsOrigin,
+  credentials: true
+}));
 app.use(express.json());
 
 // Health check endpoint
