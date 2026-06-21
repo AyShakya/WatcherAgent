@@ -86,6 +86,10 @@ export async function initDb() {
     await client.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS llm_provider VARCHAR(50) DEFAULT \'OPENROUTER\'');
     await client.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS llm_model VARCHAR(255)');
 
+    // Index for fast incident deduplication checks (robustness under load)
+    await client.query('CREATE INDEX IF NOT EXISTS idx_incidents_dedup ON incidents (project_id, error_signature, status, created_at DESC)');
+
+
     // 5. Create runs table
     await client.query(`
       CREATE TABLE IF NOT EXISTS runs (

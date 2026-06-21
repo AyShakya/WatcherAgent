@@ -13,6 +13,11 @@ const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 const REPO_OWNER = process.env.GITHUB_REPO_OWNER;
 const REPO_NAME = process.env.GITHUB_REPO_NAME;
 
+// Git tree cache to prevent GitHub API rate limits
+const repoTreeCache = new Map();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+
 /** Strip control characters (except \n \r \t) that break JSON serialization */
 function sanitize(str) {
   if (!str) return '';
@@ -218,25 +223,47 @@ async function getCandidatePaths(keywords, service, defaultBranch, gitContext) {
   const owner = gitContext?.owner || REPO_OWNER;
   const repo = gitContext?.repo || REPO_NAME;
 
-  // 1. Crawl the full repo tree
+  // 1. Crawl the full repo tree (with caching)
+  const cacheKey = `${owner}/${repo}/${defaultBranch}`;
+  const cacheEntry = repoTreeCache.get(cacheKey);
+  const now = Date.now();
   let allSourceFiles = [];
-  try {
-    const { data: tree } = await client.rest.git.getTree({
-      owner: owner,
-      repo: repo,
-      tree_sha: defaultBranch,
-      recursive: true,
-    });
 
-    allSourceFiles = tree.tree.filter(
-      f => f.type === 'blob'
-        && !f.path.includes('node_modules')
-        && !f.path.includes('.git')
-        && !f.path.includes('package-lock')
-        && SOURCE_EXTENSIONS.test(f.path)
-    ).map(f => f.path);
+  if (cacheEntry && (now - cacheEntry.timestamp < CACHE_TTL_MS)) {
+    console.log(`⚡ Using cached repository tree for ${cacheKey} (${cacheEntry.paths.length} source files)`);
+    allSourceFiles = cacheEntry.paths;
+  } else {
+    try {
+      const { data: tree } = await client.rest.git.getTree({
+        owner: owner,
+        repo: repo,
+        tree_sha: defaultBranch,
+        recursive: true,
+      });
 
-    // For small repos (<= 60 files) just pass everything to the LLM ranker
+      allSourceFiles = tree.tree.filter(
+        f => f.type === 'blob'
+          && !f.path.includes('node_modules')
+          && !f.path.includes('.git')
+          && !f.path.includes('package-lock')
+          && SOURCE_EXTENSIONS.test(f.path)
+      ).map(f => f.path);
+
+      repoTreeCache.set(cacheKey, {
+        paths: allSourceFiles,
+        timestamp: now
+      });
+    } catch (e) {
+      console.error('❌ Failed to fetch repo tree:', e.message);
+      if (cacheEntry) {
+        console.warn(`⚠️ Using expired cache fallback for ${cacheKey}`);
+        allSourceFiles = cacheEntry.paths;
+      }
+    }
+  }
+
+  // Populate candidates based on filtered matches
+  if (allSourceFiles.length > 0) {
     if (allSourceFiles.length <= 60) {
       allSourceFiles.forEach(p => candidates.add(p));
     } else {
@@ -255,8 +282,6 @@ async function getCandidatePaths(keywords, service, defaultBranch, gitContext) {
         }
       });
     }
-  } catch (e) {
-    console.error('❌ Failed to fetch repo tree:', e.message);
   }
 
   // 2. Try GitHub code search (may be rate-limited or slow to index new files)
