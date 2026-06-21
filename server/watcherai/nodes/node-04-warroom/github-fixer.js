@@ -376,6 +376,16 @@ STEP 4 — VERIFY: List 2 edge cases your fix might introduce.
       llmModel: context?.project?.llmModel,
     });
 
+    if (aiFix.uncertain === true) {
+      console.warn(`⚠️ LLM is uncertain about fix: ${aiFix.uncertainty_reason || 'No reason provided.'}`);
+      return {
+        ...incidentData,
+        pr_status: 'SKIPPED_UNCERTAIN',
+        ai_fix_suggestion: aiFix,
+        fix_initiated_at: new Date().toISOString(),
+      };
+    }
+
     const validatedPath = finalPaths.find((p) => p === aiFix.file_path);
     if (!validatedPath) {
       console.error(`❌ AI returned file_path "${aiFix.file_path}" which is not in audited candidate paths.`);
