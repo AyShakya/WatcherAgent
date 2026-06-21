@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { getProjectBySecret } from '../models/project.js';
 import { createIncident } from '../models/incident.js';
 import { addIngestionJob } from '../queue/index.js';
+import { query } from '../db/index.js';
 
 export async function handleWebhook(req: Request, res: Response) {
   try {
@@ -127,8 +128,12 @@ export async function handleWebhook(req: Request, res: Response) {
       ? (body.alert?.affectedRegions ?? body.regions) 
       : affectedRegions;
 
-    const mappedPayload = {
+    const idempotencyKey = (req.headers['idempotency-key'] || req.headers['x-idempotency-key'] || '') as string;
+
+    const mappedPayload: any = {
       incident_id: incidentId,
+      external_incident_id: incidentId || undefined,
+      idempotency_key: idempotencyKey || undefined,
       service,
       alert: {
         latencyMs,
@@ -144,6 +149,31 @@ export async function handleWebhook(req: Request, res: Response) {
       pagerduty_url: pagerdutyUrl || undefined,
       runbook_hint: runbookHint || undefined,
     };
+
+    // Check if an active incident with the same error_signature, external_incident_id, or idempotency_key
+    // exists for this project created in the last 5 minutes (noise/time-window deduplication)
+    const checkSql = `
+      SELECT id, status FROM incidents
+      WHERE project_id = $1
+        AND (
+          error_signature = $2
+          OR (raw_payload->>'external_incident_id' = $3 AND $3 <> '')
+          OR (raw_payload->>'idempotency_key' = $4 AND $4 <> '')
+        )
+        AND status NOT IN ('CLOSED_AND_LEARNED', 'MUTED', 'FAILED')
+        AND created_at >= NOW() - INTERVAL '5 minutes'
+      LIMIT 1
+    `;
+    const checkResult = await query(checkSql, [project.id, errorSignature, incidentId, idempotencyKey]);
+    if (checkResult.rows.length > 0) {
+      const existing = checkResult.rows[0];
+      console.log(`ℹ️ Duplicate webhook detected. Active incident ${existing.id} already exists in state ${existing.status} for project ${project.id}. Skipping ingestion.`);
+      return res.json({
+        status: 'duplicate',
+        message: 'Duplicate incident alert detected and deduped',
+        incident_id: existing.id,
+      });
+    }
 
     // Insert new incident in TRIGGERED state
     const incident = await createIncident({

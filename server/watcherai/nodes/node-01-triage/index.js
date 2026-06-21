@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { callLLM } from '../shared/ai.js';
 import { triagePrompt as userPromptFunc } from '../../prompts/triage.js';
 import { categorizeError } from '../shared/categorize.js';
+import { THRESHOLDS, CRITICAL_SERVICES, CRITICAL_SERVICE_MULTIPLIER } from './thresholds.js';
 
 dotenv.config();
 
@@ -54,6 +55,33 @@ function normalizeAndValidateTriageResult(aiResult, input) {
   return normalized;
 }
 
+/**
+ * Deterministically evaluates metrics against thresholds
+ */
+function getDeterministicSeverity(input, isCritical) {
+  const alert = input.alert || {};
+  const latency = alert.latencyMs ?? alert.latency ?? input.latencyMs ?? input.latency ?? 0;
+  const errorRate = alert.errorRate ?? alert.error_rate ?? input.errorRate ?? input.error_rate ?? 0;
+  const duration = alert.durationMin ?? alert.duration ?? input.durationMin ?? input.duration ?? 0;
+  const txAffected = alert.transactionsAffected ?? alert.affected_users ?? input.transactionsAffected ?? input.affected_users ?? 0;
+
+  for (const level of ['P1', 'P2', 'P3']) {
+    const limits = THRESHOLDS[level];
+    const multiplier = (level === 'P1' && isCritical) ? CRITICAL_SERVICE_MULTIPLIER : 1.0;
+
+    let matches = 0;
+    if (latency >= (limits.latencyMs * multiplier)) matches++;
+    if (errorRate >= (limits.errorRate * multiplier)) matches++;
+    if (duration >= (limits.durationMin * multiplier)) matches++;
+    if (txAffected >= (limits.transactionsAffected * multiplier)) matches++;
+
+    if (matches >= limits.criteriaRequired) {
+      return level;
+    }
+  }
+  return null;
+}
+
 export async function triageIncident(input, context) {
   const incident_id = input.incident_id || `INC-${Math.floor(Math.random() * 9000) + 1000}`;
 
@@ -85,13 +113,25 @@ ${JSON.stringify(input, null, 2)}
 
     console.log(`🎯 Triage Result for ${incident_id}: ${aiResult.reasoning}`);
 
-    const isCritical = !!aiResult.is_critical;
+    const isCritical = !!aiResult.is_critical || CRITICAL_SERVICES.includes((input.service || '').toLowerCase());
     const errorType = aiResult.error_type || 'unknown';
     const rawMsg    = aiResult.raw_error_message || '';
+
+    // Apply deterministic threshold check override as a guardrail
+    let finalSeverity = aiResult.severity;
+    const deterministicSev = getDeterministicSeverity(input, isCritical);
+    if (deterministicSev) {
+      const severityRanking = { 'P1': 3, 'P2': 2, 'P3': 1 };
+      if (severityRanking[deterministicSev] > severityRanking[finalSeverity]) {
+        console.log(`⚠️ Deterministic guardrail override: Promoting severity from ${finalSeverity} to ${deterministicSev} based on payload metrics.`);
+        finalSeverity = deterministicSev;
+      }
+    }
+
     return {
       incident_id,
       service: aiResult.service || input.service || 'unknown-service',
-      severity: aiResult.severity,
+      severity: finalSeverity,
       confidence: aiResult.confidence,
       reasoning: aiResult.reasoning,
       raw_error_message: rawMsg,
@@ -101,7 +141,7 @@ ${JSON.stringify(input, null, 2)}
       error_type: errorType,
       error_category: categorizeError(rawMsg, errorType),
       isCriticalService: isCritical,
-      criticalMultiplierApplied: isCritical && aiResult.severity === 'P1',
+      criticalMultiplierApplied: isCritical && finalSeverity === 'P1',
       alert_raw: input,
       triggered_at: input.triggered_at || new Date().toISOString(),
       triage_completed_at: new Date().toISOString(),
@@ -115,10 +155,13 @@ ${JSON.stringify(input, null, 2)}
 function getFallbackTriage(input, incident_id) {
   const rawError = input.error || input.message || 'AI Triage unreachable. Check raw logs.';
 
+  const isCritical = CRITICAL_SERVICES.includes((input.service || '').toLowerCase());
+  const deterministicSev = getDeterministicSeverity(input, isCritical) || 'P2';
+
   return {
     incident_id,
     service: input.service || 'unknown',
-    severity: 'P2',
+    severity: deterministicSev,
     confidence: 50,
     reasoning: rawError,
     raw_error_message: rawError,
@@ -127,8 +170,8 @@ function getFallbackTriage(input, incident_id) {
     affected_files: [],
     error_type: 'unknown',
     error_category: categorizeError(rawError, 'unknown'),
-    isCriticalService: false,
-    criticalMultiplierApplied: false,
+    isCriticalService: isCritical,
+    criticalMultiplierApplied: isCritical && deterministicSev === 'P1',
     alert_raw: input,
     triggered_at: new Date().toISOString(),
     triage_completed_at: new Date().toISOString(),
