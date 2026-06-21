@@ -7,6 +7,8 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import ConsoleDashboard from './components/ConsoleDashboard';
 import DiscordSetupGuide from './components/DiscordSetupGuide';
+import GithubSetupGuide from './components/GithubSetupGuide';
+import WebhookSetupGuide from './components/WebhookSetupGuide';
 import ProjectModal from './components/ProjectModal';
 import IncidentDetailsDrawer from './components/IncidentDetailsDrawer';
 
@@ -14,7 +16,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api
 
 function App() {
   const [view, setView] = useState('LANDING'); // LANDING, SIGN_IN, SIGN_UP, DASHBOARD
-  const [dashboardTab, setDashboardTab] = useState('CONSOLE'); // CONSOLE, SETUP
+  const [dashboardTab, setDashboardTab] = useState('CONSOLE'); // CONSOLE, SETUP, GITHUB_SETUP, WEBHOOK_SETUP
   const [token, setToken] = useState(localStorage.getItem('watcher_token') || '');
   const [user, setUser] = useState(null);
   
@@ -560,11 +562,15 @@ function App() {
                 getSeverityBadgeClass={getSeverityBadgeClass}
                 getStatusBadgeClass={getStatusBadgeClass}
               />
-            ) : (
+            ) : dashboardTab === 'SETUP' ? (
               <DiscordSetupGuide 
                 globalBot={globalBotInfo} 
                 loading={loadingBotInfo} 
               />
+            ) : dashboardTab === 'GITHUB_SETUP' ? (
+              <GithubSetupGuide />
+            ) : (
+              <WebhookSetupGuide />
             )}
           </main>
 

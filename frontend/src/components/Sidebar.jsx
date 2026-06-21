@@ -1,4 +1,4 @@
-import { Eye, Settings, Plus, LogOut, Activity, X } from 'lucide-react';
+import { Eye, Settings, Plus, LogOut, Activity, X, GitBranch, Zap } from 'lucide-react';
 
 export default function Sidebar({
   user,
@@ -26,6 +26,8 @@ export default function Sidebar({
       >
         <Activity className={`w-4 h-4 ${dashboardTab === 'CONSOLE' ? 'animate-pulse' : ''}`} /> Console Dashboard
       </button>
+
+      <div className="text-[10px] font-bold tracking-wider text-warm-gray mt-4 mb-2 ml-3 text-left">GUIDES & SETUP</div>
       <button 
         type="button"
         className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-semibold cursor-pointer active:scale-95 duration-150 transition-all text-left w-full border-none bg-transparent ${
@@ -40,6 +42,36 @@ export default function Sidebar({
       >
         <Settings className="w-4 h-4" /> Discord Bot Setup
       </button>
+      <button 
+        type="button"
+        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-semibold cursor-pointer active:scale-95 duration-150 transition-all text-left w-full border-none bg-transparent ${
+          dashboardTab === 'GITHUB_SETUP' 
+            ? 'bg-paper-surface border border-warm-gray/20 text-primary' 
+            : 'text-on-surface-variant hover:text-on-surface hover:bg-paper-surface/50'
+        }`}
+        onClick={() => {
+          setDashboardTab('GITHUB_SETUP');
+          setMobileSidebarOpen(false);
+        }}
+      >
+        <GitBranch className="w-4 h-4" /> GitHub Repo Setup
+      </button>
+      <button 
+        type="button"
+        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-semibold cursor-pointer active:scale-95 duration-150 transition-all text-left w-full border-none bg-transparent ${
+          dashboardTab === 'WEBHOOK_SETUP' 
+            ? 'bg-paper-surface border border-warm-gray/20 text-primary' 
+            : 'text-on-surface-variant hover:text-on-surface hover:bg-paper-surface/50'
+        }`}
+        onClick={() => {
+          setDashboardTab('WEBHOOK_SETUP');
+          setMobileSidebarOpen(false);
+        }}
+      >
+        <Zap className="w-4 h-4" /> Webhook Alert Setup
+      </button>
+
+      <div className="text-[10px] font-bold tracking-wider text-warm-gray mt-4 mb-2 ml-3 text-left">ACTIONS</div>
       <button 
         type="button"
         className="flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-semibold text-on-surface-variant hover:text-on-surface hover:bg-paper-surface/50 cursor-pointer active:scale-95 duration-150 transition-all text-left w-full border-none bg-transparent"

@@ -19,12 +19,16 @@ export default function Header({
         </button>
         <div className="text-left min-w-0">
           <h1 className="font-display text-lg md:text-2xl font-bold m-0 mb-1 tracking-tight text-ink-black truncate">
-            {dashboardTab === 'CONSOLE' ? 'Platform Console' : 'Discord Bot Setup'}
+            {dashboardTab === 'CONSOLE' ? 'Platform Console' : 
+             dashboardTab === 'SETUP' ? 'Discord Bot Setup' :
+             dashboardTab === 'GITHUB_SETUP' ? 'GitHub Repository Setup' :
+             'Webhook Alert Integration'}
           </h1>
           <p className="text-[11px] md:text-xs text-on-surface-variant m-0 truncate hidden md:block">
-            {dashboardTab === 'CONSOLE' 
-              ? 'Monitor multi-project alerts, manage BullMQ queues, and oversee resolutions.' 
-              : 'Step-by-step documentation on how to configure and invite your Discord bot.'}
+            {dashboardTab === 'CONSOLE' ? 'Monitor multi-project alerts, manage BullMQ queues, and oversee resolutions.' : 
+             dashboardTab === 'SETUP' ? 'Step-by-step documentation on how to configure and invite your Discord bot.' :
+             dashboardTab === 'GITHUB_SETUP' ? 'Learn how to generate personal access tokens and link your repository.' :
+             'Configure alert triggers for PagerDuty, Render, and custom VPS servers.'}
           </p>
         </div>
       </div>
