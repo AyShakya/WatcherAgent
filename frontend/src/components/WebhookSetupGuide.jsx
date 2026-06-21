@@ -53,6 +53,19 @@ export default function WebhookSetupGuide() {
           </div>
         </div>
 
+        {/* Memory Recall Accuracy Tip */}
+        <div className="bg-primary/5 border-l-[4px] border-primary rounded-r-xl p-5 mb-8 text-left flex gap-4">
+          <div className="p-1.5 bg-primary/10 rounded-lg text-primary h-fit shrink-0">
+            <Settings className="w-5 h-5" />
+          </div>
+          <div className="text-left flex-1">
+            <h4 className="m-0 mb-1 text-sm font-bold text-ink-black uppercase tracking-wider">Maximizing Agent Accuracy</h4>
+            <p className="m-0 text-xs text-on-surface-variant leading-relaxed font-medium">
+              To drastically improve the agent's code fixing accuracy, make sure your webhook logs or payloads contain the **recall trace** (error signature, stack trace, and root frames). Including these details allows the Watcher Agent's Pinecone vector engine to perform precision memory recall matching, helping it identify the correct historical fix.
+            </p>
+          </div>
+        </div>
+
         {/* Webhook Endpoint Box */}
         <h3 className="font-display text-base font-bold text-ink-black mb-2">Your Webhook URL Format</h3>
         <p className="text-sm text-on-surface-variant leading-relaxed mb-4">

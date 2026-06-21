@@ -71,6 +71,13 @@ export async function handleApproval(req: Request, res: Response) {
         isCriticalService: triage?.isCriticalService || false,
         criticalMultiplierApplied: triage?.criticalMultiplierApplied || false,
         alert_raw: incidentWithProject.raw_payload,
+        runbooks: (() => {
+          try {
+            return typeof runbook === 'string' ? JSON.parse(runbook) : (runbook || []);
+          } catch {
+            return [];
+          }
+        })(),
         triggered_at: incidentWithProject.created_at.toISOString(),
         triage_completed_at: new Date().toISOString(),
       };
