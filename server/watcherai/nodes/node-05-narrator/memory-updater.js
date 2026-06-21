@@ -66,7 +66,7 @@ export async function updateAgentMemory(incidentData, context) {
   const chunks = [
     {
       id: `${incidentId}::error_signature`,
-      embedText: `ERROR ${incidentData.error_type || 'runtime'}: ${normalizedSignature}`,
+      embedText: `[Service: ${meta(incidentData.service, 'unknown')}] [Category: ${errCategory}] ERROR ${incidentData.error_type || 'runtime'}: ${normalizedSignature}`,
       metadata: {
         chunk_type: 'error_signature',
         incident_id: incidentId,
@@ -136,24 +136,36 @@ export async function updateAgentMemory(incidentData, context) {
   try {
     const pinecone = new Pinecone({ apiKey });
 
-    const namespace = context?.project?.pineconeNamespace;
+    const namespace = context?.project?.pineconeNamespace || (context?.project?.id ? `project_${context.project.id}` : undefined);
     const index = pinecone.index(INDEX_NAME);
     const targetIndex = namespace ? index.namespace(namespace) : index;
 
     console.log(`🧠 Updating Pinecone Memory for ${incidentId} (Namespace: ${namespace || 'default'}) with ${chunks.length} chunks...`);
 
-    const upsertPromises = chunks.map(async (chunk) => {
-      const embedding = await getEmbedding(chunk.embedText, pinecone);
-      await targetIndex.upsert({
-        records: [{
-          id: chunk.id,
-          values: embedding,
-          metadata: chunk.metadata
-        }]
-      });
+    if (!pinecone.inference) {
+      throw new Error('Pinecone client not initialized with inference capabilities. Ensure you are using SDK v7+');
+    }
+
+    const embedTexts = chunks.map(c => c.embedText.slice(0, 8000));
+    console.log(`🧠 Generating batch embeddings for ${chunks.length} text chunks...`);
+    
+    const response = await pinecone.inference.embed({
+      model: 'multilingual-e5-large',
+      inputs: embedTexts,
+      parameters: { inputType: 'passage', truncate: 'END' }
     });
 
-    await Promise.all(upsertPromises);
+    if (!response || !response.data || response.data.length !== chunks.length) {
+      throw new Error('Pinecone batch embedding returned invalid data: response length mismatch');
+    }
+
+    const records = chunks.map((chunk, index) => ({
+      id: chunk.id,
+      values: response.data[index].values,
+      metadata: chunk.metadata
+    }));
+
+    await targetIndex.upsert({ records });
     const successCount = chunks.length;
 
     return {

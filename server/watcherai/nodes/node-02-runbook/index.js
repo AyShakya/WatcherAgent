@@ -7,9 +7,9 @@ import { searchRunbooks } from './pinecone-rag.js';
  * Fetches relevant runbooks and past fixes using Pinecone RAG.
  */
 export async function fetchRunbook(input, context) {
-  const { service, reasoning } = input;
+  const { service, reasoning, error_category, error_type } = input;
   
-  const results = await searchRunbooks(service, reasoning, context);
+  const results = await searchRunbooks(service, reasoning, context, error_category, error_type);
   
   return {
     ...input,

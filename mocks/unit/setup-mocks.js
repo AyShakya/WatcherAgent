@@ -73,7 +73,7 @@ class MockPinecone extends OriginalPinecone {
         embed: async (options) => {
           console.log(`[MOCK PINECONE INFERENCE] Generating embedding vector for text: "${options.inputs[0].slice(0, 40)}..."`);
           return {
-            data: [{ values: new Array(1024).fill(0.123) }]
+            data: (options.inputs || []).map(() => ({ values: new Array(1024).fill(0.123) }))
           };
         }
       },
@@ -133,7 +133,7 @@ try {
         embed: async (options) => {
           console.log(`[MOCK PINECONE INFERENCE] Generating embedding vector for text: "${options.inputs[0].slice(0, 40)}..."`);
           return {
-            data: [{ values: new Array(1024).fill(0.123) }]
+            data: (options.inputs || []).map(() => ({ values: new Array(1024).fill(0.123) }))
           };
         }
       };

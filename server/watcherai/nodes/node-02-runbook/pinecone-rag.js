@@ -23,7 +23,7 @@ function getPineconeClient(context) {
 /**
  * Queries Pinecone for relevant runbooks and past fixes.
  */
-export async function searchRunbooks(service, errorReasoning, context) {
+export async function searchRunbooks(service, errorReasoning, context, category, errorType) {
   const pinecone = getPineconeClient(context);
 
   if (!pinecone) {
@@ -31,16 +31,19 @@ export async function searchRunbooks(service, errorReasoning, context) {
     return getLocalFallback(service, errorReasoning);
   }
 
+  const errCategory = category || 'UNKNOWN';
+  const errType = errorType || 'runtime';
   const normalizedQuery = normalizeErrorSignature(errorReasoning);
+  const queryText = `[Service: ${service || 'unknown'}] [Category: ${errCategory}] ERROR ${errType}: ${normalizedQuery}`;
 
   try {
     const index = pinecone.index(INDEX_NAME);
-    const namespace = context?.project?.pineconeNamespace;
+    const namespace = context?.project?.pineconeNamespace || (context?.project?.id ? `project_${context.project.id}` : undefined);
     const targetIndex = namespace ? index.namespace(namespace) : index;
 
-    console.log(`🔍 Querying Pinecone RAG for service ${service} (Namespace: ${namespace || 'default'}) using normalized error signature: "${normalizedQuery}"`);
+    console.log(`🔍 Querying Pinecone RAG for service ${service} (Namespace: ${namespace || 'default'}) using structured query: "${queryText}"`);
 
-    const queryEmbedding = await getEmbedding(normalizedQuery, pinecone);
+    const queryEmbedding = await getEmbedding(queryText, pinecone);
 
     // Pass 1: strict same-service query
     const serviceFilter = {
