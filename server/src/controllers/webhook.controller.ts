@@ -80,6 +80,23 @@ export async function handleWebhook(req: Request, res: Response) {
       triggeredAt = pdIncident.created_at || triggeredAt;
       pagerdutyUrl = pdIncident.html_url || pagerdutyUrl;
     }
+    // 5. Detect Render / Deploy webhook formats (Ignore started and succeeded events)
+    else if (body.event && typeof body.event === 'string' && body.event.startsWith('deploy.')) {
+      const eventType = body.event;
+      const deployStatus = body.deploy?.status || '';
+
+      if (eventType === 'deploy.succeeded' || eventType === 'deploy.started' || deployStatus === 'succeeded') {
+        return res.json({
+          status: 'ignored',
+          message: `Webhook ignored: Deployment is successful or started (${eventType})`
+        });
+      }
+
+      // Populate service and error fields for failures
+      service = body.service?.name || service;
+      errorSignature = `Deployment Failed: Render deploy [${body.deploy?.id || 'unknown'}] status is '${deployStatus || eventType}'`;
+      incidentId = body.deploy?.id || incidentId;
+    }
 
     // Standardize metrics and fallback values
     if (!incidentId) {
