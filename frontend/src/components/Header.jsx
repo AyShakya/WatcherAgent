@@ -37,9 +37,10 @@ export default function Header({
         {dashboardTab === 'CONSOLE' && (
           <>
             <button 
-              className="bg-transparent border border-warm-gray/30 text-on-surface rounded-lg p-2.5 md:px-4 md:py-2.5 text-[13px] font-semibold cursor-pointer flex items-center gap-2 transition-all duration-150 hover:bg-paper-surface/50"
+              className="bg-transparent border border-warm-gray/30 text-on-surface rounded-lg p-2.5 md:px-4 md:py-2.5 text-[13px] font-semibold cursor-pointer flex items-center gap-2 transition-all duration-150 hover:bg-paper-surface/50 disabled:opacity-60 disabled:cursor-not-allowed"
               onClick={fetchDashboardData}
               title="Refresh Console"
+              disabled={isRefreshing}
             >
               <RefreshCw className={`w-4 h-4 text-primary ${isRefreshing ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Refresh Console</span>

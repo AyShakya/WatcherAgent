@@ -1,4 +1,5 @@
-import { GitBranch, Edit, Trash2, Check, Copy, Play } from 'lucide-react';
+import { useState } from 'react';
+import { GitBranch, Edit, Trash2, Check, Copy, Play, Loader2 } from 'lucide-react';
 
 export default function ProjectCard({
   project,
@@ -9,6 +10,8 @@ export default function ProjectCard({
   handleTriggerTestIncident,
   API_BASE
 }) {
+  const [isFiring, setIsFiring] = useState(false);
+
   return (
     <div className="bg-surface-container border border-warm-gray/20 rounded-lg p-5 text-left transition-all duration-200 hover:border-primary/25">
       <div className="flex justify-between items-start mb-4">
@@ -61,10 +64,28 @@ export default function ProjectCard({
         <div className="mt-3">
           <button 
             type="button"
-            className="w-full flex items-center justify-center gap-1.5 bg-success/10 border border-success/20 hover:bg-success/20 text-success rounded-lg py-2.5 text-xs font-semibold cursor-pointer transition-all duration-150 active:scale-[0.98]"
-            onClick={() => handleTriggerTestIncident(project.webhook_secret, project.name)}
+            className="w-full flex items-center justify-center gap-1.5 bg-success/10 border border-success/20 hover:bg-success/20 text-success rounded-lg py-2.5 text-xs font-semibold cursor-pointer transition-all duration-150 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+            onClick={async () => {
+              setIsFiring(true);
+              try {
+                await handleTriggerTestIncident(project.webhook_secret, project.name);
+              } finally {
+                setIsFiring(false);
+              }
+            }}
+            disabled={isFiring}
           >
-            <Play className="w-3.5 h-3.5" /> Fire Test Alert (Ingestion Queue)
+            {isFiring ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Firing Test Alert...</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-3.5 h-3.5" />
+                <span>Fire Test Alert (Ingestion Queue)</span>
+              </>
+            )}
           </button>
         </div>
       </div>

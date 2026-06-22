@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Eye, EyeOff } from 'lucide-react';
+import { ChevronDown, ChevronRight, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export default function ProjectModal({
   showProjectModal,
@@ -315,12 +315,17 @@ export default function ProjectModal({
             </button>
             <button 
               type="submit" 
-              className="bg-primary text-on-primary border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer transition-all duration-150 hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed" 
+              className="bg-primary text-on-primary border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer transition-all duration-150 hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-1.5" 
               disabled={projFormLoading}
             >
-              {projFormLoading 
-                ? (editingProject ? 'Saving Changes...' : 'Configuring Project...') 
-                : (editingProject ? 'Save Changes' : 'Activate Project Webhook')}
+              {projFormLoading ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>{editingProject ? 'Saving Changes...' : 'Configuring Project...'}</span>
+                </>
+              ) : (
+                <span>{editingProject ? 'Save Changes' : 'Activate Project Webhook'}</span>
+              )}
             </button>
           </div>
         </form>

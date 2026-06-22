@@ -16,7 +16,7 @@ export default function IncidentsTable({
   const currentIncidents = incidents.slice((clampedIncidentPage - 1) * INCIDENTS_PER_PAGE, clampedIncidentPage * INCIDENTS_PER_PAGE);
 
   return (
-    <div className="col-span-1 lg:col-span-5 bg-surface-container-low border border-warm-gray/20 rounded-xl flex flex-col overflow-hidden h-[500px] lg:h-full shadow-xs">
+    <div className="col-span-1 lg:col-span-5 bg-surface-container-low border border-warm-gray/20 rounded-xl flex flex-col overflow-hidden h-[520px] lg:h-[680px] shadow-xs">
       <div className="px-6 py-[18px] border-b border-warm-gray/10 text-left bg-surface-container-low shrink-0">
         <h2 className="font-display text-base font-semibold m-0 text-ink-black">Active Incident Remediation logs</h2>
       </div>

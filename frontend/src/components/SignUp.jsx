@@ -1,4 +1,4 @@
-import { Eye, User, Mail, Lock } from 'lucide-react';
+import { Eye, User, Mail, Lock, Loader2 } from 'lucide-react';
 
 export default function SignUp({
   setView,
@@ -70,10 +70,15 @@ export default function SignUp({
           </div>
           <button 
             type="submit" 
-            className="bg-primary text-on-primary border-none rounded-lg py-3.5 text-[14px] font-semibold cursor-pointer mt-2.5 transition-all duration-150 hover:opacity-90 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed w-full" 
+            className="bg-primary text-on-primary border-none rounded-lg py-3.5 text-[14px] font-semibold cursor-pointer mt-2.5 transition-all duration-150 hover:opacity-90 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed w-full flex items-center justify-center gap-2" 
             disabled={authLoading}
           >
-            {authLoading ? 'Creating Account...' : 'Initialize Onboarding'}
+            {authLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Creating Account...</span>
+              </>
+            ) : 'Initialize Onboarding'}
           </button>
         </form>
         <div className="mt-6 text-center text-sm text-on-surface-variant">

@@ -74,7 +74,7 @@ export default function ConsoleDashboard({
       />
 
       {/* Content Layout Split */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 md:px-8 pb-8 mt-6 min-h-0 lg:h-full lg:overflow-hidden bg-transparent">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 md:px-8 pb-8 mt-6 bg-transparent">
         
         {/* Left Column: Projects List */}
         <ProjectsList 

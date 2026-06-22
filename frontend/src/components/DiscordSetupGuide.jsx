@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, Eye, Cpu, Plus, ExternalLink, Check, Copy, CheckCircle2 } from 'lucide-react';
+import { Settings, Eye, Cpu, Plus, ExternalLink, Check, Copy, CheckCircle2, Loader2 } from 'lucide-react';
 
 export default function DiscordSetupGuide({ globalBot, loading }) {
   const [copiedLink, setCopiedLink] = useState(false);
@@ -39,8 +39,9 @@ export default function DiscordSetupGuide({ globalBot, loading }) {
 
         {/* Global Shared Bot helper card */}
         {loading ? (
-          <div className="h-[96px] animate-pulse rounded-xl mb-8 bg-surface-container-lowest border border-warm-gray/20 flex items-center justify-center text-xs text-warm-gray font-semibold">
-            Retrieving global shared bot configurations...
+          <div className="h-[96px] rounded-xl mb-8 bg-surface-container-lowest border border-warm-gray/20 flex items-center justify-center text-xs text-warm-gray font-semibold gap-2">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            <span>Retrieving global shared bot configurations...</span>
           </div>
         ) : globalBot?.isActive ? (
           <div className="bg-gradient-to-r from-[#5865F2]/10 to-[#5865F2]/5 border border-[#5865F2]/20 rounded-xl p-5 md:p-6 mb-8 text-left flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-fade shadow-sm">

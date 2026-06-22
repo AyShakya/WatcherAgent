@@ -21,10 +21,19 @@ export default function ProjectsList({
   const currentProjects = projects.slice((clampedProjectPage - 1) * PROJECTS_PER_PAGE, clampedProjectPage * PROJECTS_PER_PAGE);
 
   return (
-    <div className="col-span-1 lg:col-span-7 bg-surface-container-low border border-warm-gray/20 rounded-xl flex flex-col overflow-hidden h-[500px] lg:h-full shadow-xs">
+    <div className="col-span-1 lg:col-span-7 bg-surface-container-low border border-warm-gray/20 rounded-xl flex flex-col overflow-hidden h-[520px] lg:h-[680px] shadow-xs">
       <div className="px-6 py-[18px] border-b border-warm-gray/10 text-left bg-surface-container-low flex justify-between items-center shrink-0">
         <h2 className="font-display text-base font-semibold m-0 text-ink-black">Configured Webhooks & Repositories</h2>
       </div>
+      
+      {/* Background reloading indicator bar */}
+      {loadingProjects && projects.length > 0 ? (
+        <div className="h-[2px] w-full bg-primary/10 overflow-hidden relative shrink-0">
+          <div className="h-full bg-primary absolute rounded-full animate-loading-slide"></div>
+        </div>
+      ) : (
+        <div className="h-[2px] w-full bg-transparent shrink-0"></div>
+      )}
       
       {loadingProjects && projects.length === 0 ? (
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 min-h-0">
@@ -48,7 +57,7 @@ export default function ProjectsList({
         </div>
       ) : (
         <>
-          <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 min-h-0">
+          <div className={`flex-1 overflow-y-auto p-6 flex flex-col gap-4 min-h-0 transition-opacity duration-200 ${loadingProjects ? 'opacity-60 pointer-events-none' : ''}`}>
             {currentProjects.map(project => (
               <ProjectCard 
                 key={project.id}

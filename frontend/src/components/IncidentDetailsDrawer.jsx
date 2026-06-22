@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GitBranch, ExternalLink } from 'lucide-react';
+import { GitBranch, ExternalLink, Loader2 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
 
@@ -142,9 +142,14 @@ export default function IncidentDetailsDrawer({
                   type="button"
                   onClick={() => handleAction('APPROVE')}
                   disabled={actionLoading}
-                  className="flex-1 bg-success hover:bg-success/90 text-on-primary border border-none rounded-lg py-2.5 text-xs font-bold cursor-pointer active:scale-95 duration-150 transition-all disabled:opacity-60"
+                  className="flex-1 bg-success hover:bg-success/90 text-on-primary border border-none rounded-lg py-2.5 text-xs font-bold cursor-pointer active:scale-95 duration-150 transition-all disabled:opacity-60 flex items-center justify-center gap-1.5"
                 >
-                  {actionLoading ? 'Processing...' : 'Approve & Patch Code'}
+                  {actionLoading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Processing...</span>
+                    </>
+                  ) : 'Approve & Patch Code'}
                 </button>
                 <button
                   type="button"

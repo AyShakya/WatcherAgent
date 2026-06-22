@@ -528,7 +528,7 @@ function App() {
           />
 
           {/* Main Content Area */}
-          <main className="flex-1 flex flex-col overflow-y-auto lg:overflow-hidden relative">
+          <main className="flex-1 flex flex-col overflow-y-auto scroll-smooth relative">
             <Header 
               dashboardTab={dashboardTab}
               setMobileSidebarOpen={setMobileSidebarOpen}
