@@ -7,7 +7,6 @@ export default function IncidentDetailsDrawer({
   selectedIncident,
   setSelectedIncident,
   getSeverityBadgeClass,
-  getStatusBadgeClass,
   token,
   onActionSuccess
 }) {
@@ -40,7 +39,7 @@ export default function IncidentDetailsDrawer({
       } else {
         setActionError(data.error || `Failed to ${action.toLowerCase()} incident.`);
       }
-    } catch (err) {
+    } catch {
       setActionError('Network connection failure.');
     } finally {
       setActionLoading(false);

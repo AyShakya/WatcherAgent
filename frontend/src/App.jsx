@@ -282,15 +282,51 @@ function App() {
     }
   };
 
-  const handleAuthSubmit = async (e, type) => {
-    e.preventDefault();
+  const handleAuthSubmit = async (e, type, localEmail, localPassword, localName) => {
+    if (e) e.preventDefault();
     setAuthLoading(true);
     setAuthError('');
-    
+
+    const email = localEmail !== undefined ? localEmail : authEmail;
+    const password = localPassword !== undefined ? localPassword : authPassword;
+    const name = localName !== undefined ? localName : authName;
+
+    // --- Frontend Validation with clear Issue & Solution ---
+    if (type === 'SIGN_UP') {
+      if (!name || name.trim() === '') {
+        setAuthError("Issue: Full Name is required for signing up.\nSolution: Please enter your full name in the registration form.");
+        setAuthLoading(false);
+        return;
+      }
+      if (!email || !/\S+@\S+\.\S+/.test(email)) {
+        setAuthError("Issue: Email address is invalid or empty.\nSolution: Please enter a valid email address (e.g. name@company.com).");
+        setAuthLoading(false);
+        return;
+      }
+      if (!password || password.length < 6) {
+        const len = password ? password.length : 0;
+        setAuthError(`Issue: Password is too short (current length: ${len}).\nSolution: Password should be minimum 6 characters long.`);
+        setAuthLoading(false);
+        return;
+      }
+    } else {
+      // SIGN_IN
+      if (!email || !/\S+@\S+\.\S+/.test(email)) {
+        setAuthError("Issue: Email address is invalid or empty.\nSolution: Please enter a valid email address.");
+        setAuthLoading(false);
+        return;
+      }
+      if (!password || password.length < 1) {
+        setAuthError("Issue: Password is required to access your account.\nSolution: Please enter your password.");
+        setAuthLoading(false);
+        return;
+      }
+    }
+
     const url = type === 'SIGN_UP' ? `${API_BASE}/auth/signup` : `${API_BASE}/auth/login`;
     const payload = type === 'SIGN_UP' 
-      ? { email: authEmail, password: authPassword, name: authName }
-      : { email: authEmail, password: authPassword };
+      ? { email, password, name }
+      : { email, password };
 
     try {
       const res = await fetch(url, {
@@ -306,21 +342,45 @@ function App() {
         setAuthPassword('');
         setAuthName('');
       } else {
-        setAuthError(data.error || 'Authentication failed. Please try again.');
+        if (data.details && Array.isArray(data.details)) {
+          // Parse backend zod validation errors
+          const formatted = data.details.map(d => {
+            const field = d.path ? d.path[d.path.length - 1] : 'field';
+            const displayField = field.replace(/_/g, ' ');
+            const capitalizedField = displayField.charAt(0).toUpperCase() + displayField.slice(1);
+            let solution = `Please specify a valid value for the ${displayField}.`;
+            if (field === 'password') {
+              solution = 'Password should be minimum 6 characters long.';
+            } else if (field === 'email') {
+              solution = 'Please enter a valid email format (e.g. user@example.com).';
+            }
+            return `Issue: ${capitalizedField} validation failed - ${d.message}.\nSolution: ${solution}`;
+          }).join('\n\n');
+          setAuthError(formatted);
+        } else {
+          // General auth errors
+          let solution = 'Please double check your credentials and try again.';
+          if (data.error && data.error.includes('already exists')) {
+            solution = 'Please use a different email address or log in to your existing account.';
+          } else if (data.error && data.error.includes('Invalid email or password')) {
+            solution = 'Please check if you typed the correct email and password. If you forgot your password, please reset it.';
+          }
+          setAuthError(`Issue: ${data.error || 'Authentication failed'}\nSolution: ${solution}`);
+        }
       }
     } catch {
-      setAuthError('Unable to connect to the backend server.');
+      setAuthError('Issue: Unable to connect to the backend server.\nSolution: Please check your network connection and ensure the backend service is running.');
     } finally {
       setAuthLoading(false);
     }
   };
 
-  const handleCreateProject = async (e) => {
-    e.preventDefault();
+  const handleCreateProject = async (e, localPayload) => {
+    if (e) e.preventDefault();
     setProjFormLoading(true);
     setProjFormError('');
 
-    const payload = {
+    const payload = localPayload || {
       name: projName,
       description: projDesc,
       github_owner: projGithubOwner,
@@ -332,6 +392,33 @@ function App() {
       llm_provider: projLlmProvider,
       llm_model: projLlmModel
     };
+
+    // --- Frontend Validation for Projects ---
+    if (!payload.name || payload.name.trim() === '') {
+      setProjFormError("Issue: Project Name is required.\nSolution: Please enter a name for your project.");
+      setProjFormLoading(false);
+      return;
+    }
+    if (!payload.github_owner || payload.github_owner.trim() === '') {
+      setProjFormError("Issue: GitHub Owner/Organization is required.\nSolution: Please enter the GitHub username or organization name that owns the repository.");
+      setProjFormLoading(false);
+      return;
+    }
+    if (!payload.github_repo || payload.github_repo.trim() === '') {
+      setProjFormError("Issue: GitHub Repository name is required.\nSolution: Please enter the name of the GitHub repository.");
+      setProjFormLoading(false);
+      return;
+    }
+    if (!payload.github_token || payload.github_token.trim() === '') {
+      setProjFormError("Issue: GitHub Personal Access Token (PAT) is required.\nSolution: Please enter a valid GitHub token with repo scope permissions.");
+      setProjFormLoading(false);
+      return;
+    }
+    if (!payload.discord_channel_id || payload.discord_channel_id.trim() === '') {
+      setProjFormError("Issue: Discord Channel ID is required.\nSolution: Please enter the target Discord channel ID where alerts will be dispatched.");
+      setProjFormLoading(false);
+      return;
+    }
 
     try {
       const url = editingProject 
@@ -375,10 +462,27 @@ function App() {
         setProjLlmCredits(null);
         setProjLlmVerificationError('');
       } else {
-        setProjFormError(data.error || `Failed to ${editingProject ? 'update' : 'create'} project.`);
+        if (data.details && Array.isArray(data.details)) {
+          // Parse backend zod validation errors
+          const formatted = data.details.map(d => {
+            const field = d.path ? d.path[d.path.length - 1] : 'field';
+            const displayField = field.replace(/_/g, ' ');
+            const capitalizedField = displayField.charAt(0).toUpperCase() + displayField.slice(1);
+            let solution = `Please specify a valid value for the ${displayField}.`;
+            if (field === 'github_token') {
+              solution = 'Please generate and paste a valid GitHub Personal Access Token (PAT) with repo scopes.';
+            } else if (field === 'discord_channel_id') {
+              solution = 'Please copy a valid Discord channel ID from Discord settings.';
+            }
+            return `Issue: ${capitalizedField} validation failed - ${d.message}.\nSolution: ${solution}`;
+          }).join('\n\n');
+          setProjFormError(formatted);
+        } else {
+          setProjFormError(`Issue: ${data.error || 'Failed to process project credentials'}\nSolution: Please verify validation errors and try again.`);
+        }
       }
     } catch {
-      setProjFormError('Failed to communicate with the backend.');
+      setProjFormError('Issue: Failed to communicate with the backend.\nSolution: Please check your network connection and ensure the server is running.');
     } finally {
       setProjFormLoading(false);
     }
@@ -575,40 +679,43 @@ function App() {
           </main>
 
           {/* PROJECT CREATION MODAL */}
-          <ProjectModal 
-            showProjectModal={showProjectModal}
-            setShowProjectModal={setShowProjectModal}
-            editingProject={editingProject}
-            projName={projName}
-            setProjName={setProjName}
-            projDesc={projDesc}
-            setProjDesc={setProjDesc}
-            projGithubOwner={projGithubOwner}
-            setProjGithubOwner={setProjGithubOwner}
-            projGithubRepo={projGithubRepo}
-            setProjGithubRepo={setProjGithubRepo}
-            projGithubToken={projGithubToken}
-            setProjGithubToken={setProjGithubToken}
-            projDiscordChannel={projDiscordChannel}
-            setProjDiscordChannel={setProjDiscordChannel}
-            projDiscordBotToken={projDiscordBotToken}
-            setProjDiscordBotToken={setProjDiscordBotToken}
-            projOpenRouterKey={projOpenRouterKey}
-            setProjOpenRouterKey={setProjOpenRouterKey}
-            projFormError={projFormError}
-            setProjFormError={setProjFormError}
-            projFormLoading={projFormLoading}
-            handleCreateProject={handleCreateProject}
-            projLlmProvider={projLlmProvider}
-            setProjLlmProvider={setProjLlmProvider}
-            projLlmModel={projLlmModel}
-            setProjLlmModel={setProjLlmModel}
-            projLlmModelsList={projLlmModelsList}
-            projLlmCredits={projLlmCredits}
-            projLlmVerifying={projLlmVerifying}
-            projLlmVerificationError={projLlmVerificationError}
-            handleVerifyLlmKey={handleVerifyLlmKey}
-          />
+          {showProjectModal && (
+            <ProjectModal 
+              key={editingProject ? editingProject.id : 'new-project'}
+              showProjectModal={showProjectModal}
+              setShowProjectModal={setShowProjectModal}
+              editingProject={editingProject}
+              projName={projName}
+              setProjName={setProjName}
+              projDesc={projDesc}
+              setProjDesc={setProjDesc}
+              projGithubOwner={projGithubOwner}
+              setProjGithubOwner={setProjGithubOwner}
+              projGithubRepo={projGithubRepo}
+              setProjGithubRepo={setProjGithubRepo}
+              projGithubToken={projGithubToken}
+              setProjGithubToken={setProjGithubToken}
+              projDiscordChannel={projDiscordChannel}
+              setProjDiscordChannel={setProjDiscordChannel}
+              projDiscordBotToken={projDiscordBotToken}
+              setProjDiscordBotToken={setProjDiscordBotToken}
+              projOpenRouterKey={projOpenRouterKey}
+              setProjOpenRouterKey={setProjOpenRouterKey}
+              projFormError={projFormError}
+              setProjFormError={setProjFormError}
+              projFormLoading={projFormLoading}
+              handleCreateProject={handleCreateProject}
+              projLlmProvider={projLlmProvider}
+              setProjLlmProvider={setProjLlmProvider}
+              projLlmModel={projLlmModel}
+              setProjLlmModel={setProjLlmModel}
+              projLlmModelsList={projLlmModelsList}
+              projLlmCredits={projLlmCredits}
+              projLlmVerifying={projLlmVerifying}
+              projLlmVerificationError={projLlmVerificationError}
+              handleVerifyLlmKey={handleVerifyLlmKey}
+            />
+          )}
 
           {/* INCIDENT DETAILS DRAWER */}
           <IncidentDetailsDrawer 

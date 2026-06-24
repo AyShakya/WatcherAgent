@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, Eye, Zap, AlertTriangle, Check, Copy, ExternalLink } from 'lucide-react';
+import { Settings, Zap, AlertTriangle, Check, Copy } from 'lucide-react';
 
 export default function WebhookSetupGuide() {
   const [copiedLink, setCopiedLink] = useState(false);

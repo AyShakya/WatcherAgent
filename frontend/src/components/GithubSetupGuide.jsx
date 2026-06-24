@@ -1,8 +1,6 @@
-import { useState } from 'react';
-import { Settings, Eye, GitBranch, ExternalLink, Check, Copy, CheckCircle2 } from 'lucide-react';
+import { Eye, GitBranch, ExternalLink, CheckCircle2 } from 'lucide-react';
 
 export default function GithubSetupGuide() {
-  const [copiedLink, setCopiedLink] = useState(false);
   const patGuideUrl = "https://github.com/settings/tokens";
 
   return (

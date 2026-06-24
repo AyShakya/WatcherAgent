@@ -6,29 +6,19 @@ export default function ProjectModal({
   setShowProjectModal,
   editingProject,
   projName,
-  setProjName,
   projDesc,
-  setProjDesc,
   projGithubOwner,
-  setProjGithubOwner,
   projGithubRepo,
-  setProjGithubRepo,
   projGithubToken,
-  setProjGithubToken,
   projDiscordChannel,
-  setProjDiscordChannel,
   projDiscordBotToken,
-  setProjDiscordBotToken,
   projOpenRouterKey,
-  setProjOpenRouterKey,
   projFormError,
   setProjFormError,
   projFormLoading,
   handleCreateProject,
   projLlmProvider,
-  setProjLlmProvider,
   projLlmModel,
-  setProjLlmModel,
   projLlmModelsList,
   projLlmCredits,
   projLlmVerifying,
@@ -42,7 +32,92 @@ export default function ProjectModal({
   const [showDiscordBotToken, setShowDiscordBotToken] = useState(false);
   const [showOpenRouterKey, setShowOpenRouterKey] = useState(false);
 
+  // Local state to prevent lag on keystroke
+  const [name, setName] = useState(projName || '');
+  const [desc, setDesc] = useState(projDesc || '');
+  const [githubOwner, setGithubOwner] = useState(projGithubOwner || '');
+  const [githubRepo, setGithubRepo] = useState(projGithubRepo || '');
+  const [githubToken, setGithubToken] = useState(projGithubToken || '');
+  const [discordChannel, setDiscordChannel] = useState(projDiscordChannel || '');
+  const [discordBotToken, setDiscordBotToken] = useState(projDiscordBotToken || '');
+  const [openRouterKey, setOpenRouterKey] = useState(projOpenRouterKey || '');
+  const [llmProvider, setLlmProvider] = useState(projLlmProvider || 'OPENROUTER');
+  const [llmModel, setLlmModel] = useState(projLlmModel || '');
+
+  // Adjust local state when parent LLM model changes (e.g. from key verification loaded defaults)
+  const [prevProjLlmModel, setPrevProjLlmModel] = useState(projLlmModel);
+  if (projLlmModel !== prevProjLlmModel) {
+    setPrevProjLlmModel(projLlmModel);
+    setLlmModel(projLlmModel || '');
+  }
+
+  // Adjust local state when parent LLM provider changes
+  const [prevProjLlmProvider, setPrevProjLlmProvider] = useState(projLlmProvider);
+  if (projLlmProvider !== prevProjLlmProvider) {
+    setPrevProjLlmProvider(projLlmProvider);
+    setLlmProvider(projLlmProvider || 'OPENROUTER');
+  }
+
   if (!showProjectModal) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    handleCreateProject(e, {
+      name,
+      description: desc,
+      github_owner: githubOwner,
+      github_repo: githubRepo,
+      github_token: githubToken,
+      discord_channel_id: discordChannel,
+      discord_bot_token: discordBotToken,
+      openrouter_key: openRouterKey,
+      llm_provider: llmProvider,
+      llm_model: llmModel
+    });
+  };
+
+  const renderError = (errorText) => {
+    if (!errorText) return null;
+    
+    const blocks = errorText.split('\n\n').filter(Boolean);
+    
+    return (
+      <div className="flex flex-col gap-3 px-8 pt-4 pb-0 shrink-0">
+        {blocks.map((block, idx) => {
+          const issueMatch = block.match(/Issue:\s*(.*)/i);
+          const solutionMatch = block.match(/Solution:\s*(.*)/i);
+          
+          if (issueMatch || solutionMatch) {
+            const issue = issueMatch ? issueMatch[1] : '';
+            const solution = solutionMatch ? solutionMatch[1] : '';
+            
+            return (
+              <div key={idx} className="bg-danger/5 border-l-4 border-danger p-4 rounded-r-lg text-left text-xs font-sans shadow-sm">
+                {issue && (
+                  <div className="mb-2 flex flex-col gap-0.5">
+                    <span className="font-bold text-danger uppercase tracking-wider text-[9px] bg-danger/10 px-1.5 py-0.5 rounded w-max">Issue</span>
+                    <span className="text-on-surface font-medium mt-0.5">{issue}</span>
+                  </div>
+                )}
+                {solution && (
+                  <div className="flex flex-col gap-0.5 mt-1.5">
+                    <span className="font-bold text-success uppercase tracking-wider text-[9px] bg-success/10 px-1.5 py-0.5 rounded w-max">Solution</span>
+                    <span className="text-on-surface-variant font-medium mt-0.5">{solution}</span>
+                  </div>
+                )}
+              </div>
+            );
+          }
+          
+          return (
+            <div key={idx} className="bg-danger/10 border border-danger/20 text-danger text-[13px] p-3 rounded-md text-center font-medium">
+              {block}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div className="fixed inset-0 bg-ink-black/20 backdrop-blur-[2px] flex items-center justify-center p-4 z-50 animate-fade">
@@ -66,13 +141,10 @@ export default function ProjectModal({
             &times;
           </button>
         </div>
-        {projFormError && (
-          <div className="bg-danger/10 border-l-[3px] border-l-danger text-danger text-xs px-8 py-3 font-semibold text-left shrink-0">
-            {projFormError}
-          </div>
-        )}
+
+        {renderError(projFormError)}
         
-        <form onSubmit={handleCreateProject} className="px-8 py-6 overflow-y-auto text-left max-h-[70vh] flex-1">
+        <form onSubmit={handleSubmit} className="px-8 py-6 overflow-y-auto text-left max-h-[70vh] flex-1">
           {/* Required Configuration */}
           <div className="text-[10px] font-bold tracking-widest text-primary uppercase mb-3 pb-1 border-b border-dashed border-warm-gray/20">Required Settings</div>
           
@@ -81,8 +153,8 @@ export default function ProjectModal({
               <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Project / Service Name</label>
               <input 
                 type="text" 
-                value={projName} 
-                onChange={(e) => setProjName(e.target.value)} 
+                value={name} 
+                onChange={(e) => setName(e.target.value)} 
                 placeholder="e.g. Production Analytics API" 
                 required 
                 className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
@@ -95,8 +167,8 @@ export default function ProjectModal({
               <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">GitHub Owner</label>
               <input 
                 type="text" 
-                value={projGithubOwner} 
-                onChange={(e) => setProjGithubOwner(e.target.value)} 
+                value={githubOwner} 
+                onChange={(e) => setGithubOwner(e.target.value)} 
                 placeholder="org-or-username" 
                 required 
                 className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
@@ -106,8 +178,8 @@ export default function ProjectModal({
               <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">GitHub Repo Name</label>
               <input 
                 type="text" 
-                value={projGithubRepo} 
-                onChange={(e) => setProjGithubRepo(e.target.value)} 
+                value={githubRepo} 
+                onChange={(e) => setGithubRepo(e.target.value)} 
                 placeholder="repo-slug" 
                 required 
                 className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
@@ -121,8 +193,8 @@ export default function ProjectModal({
               <div className="relative w-full">
                 <input 
                   type={showGithubToken ? "text" : "password"} 
-                  value={projGithubToken} 
-                  onChange={(e) => setProjGithubToken(e.target.value)} 
+                  value={githubToken} 
+                  onChange={(e) => setGithubToken(e.target.value)} 
                   placeholder="ghp_xxxxxxxxxxxx (Requires repo scopes)" 
                   required 
                   className="bg-paper-surface border border-warm-gray/20 rounded-lg pl-4 pr-10 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
@@ -143,8 +215,8 @@ export default function ProjectModal({
               <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Discord Incident Channel ID</label>
               <input 
                 type="text" 
-                value={projDiscordChannel} 
-                onChange={(e) => setProjDiscordChannel(e.target.value)} 
+                value={discordChannel} 
+                onChange={(e) => setDiscordChannel(e.target.value)} 
                 placeholder="e.g. 1122334455" 
                 required 
                 className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
@@ -175,8 +247,8 @@ export default function ProjectModal({
                   <div className="relative w-full">
                     <input 
                       type={showDiscordBotToken ? "text" : "password"} 
-                      value={projDiscordBotToken || ''} 
-                      onChange={(e) => setProjDiscordBotToken(e.target.value)} 
+                      value={discordBotToken || ''} 
+                      onChange={(e) => setDiscordBotToken(e.target.value)} 
                       placeholder="Falls back to global server bot if empty" 
                       className="bg-paper-surface border border-warm-gray/20 rounded-lg pl-4 pr-10 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
                     />
@@ -195,8 +267,8 @@ export default function ProjectModal({
                 <div className="flex flex-col gap-2 text-left w-full">
                   <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">LLM Provider</label>
                   <select
-                    value={projLlmProvider}
-                    onChange={(e) => setProjLlmProvider(e.target.value)}
+                    value={llmProvider}
+                    onChange={(e) => setLlmProvider(e.target.value)}
                     className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
                   >
                     <option value="OPENROUTER">OpenRouter (Unified API Gateway)</option>
@@ -208,17 +280,17 @@ export default function ProjectModal({
 
                 <div className="flex flex-col gap-2 text-left">
                   <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">
-                    {projLlmProvider === 'OPENROUTER' ? 'OpenRouter API Key (Optional)' :
-                     projLlmProvider === 'OPENAI' ? 'OpenAI Secret Key (Optional)' :
-                     projLlmProvider === 'ANTHROPIC' ? 'Anthropic API Key (Optional)' :
+                    {llmProvider === 'OPENROUTER' ? 'OpenRouter API Key (Optional)' :
+                     llmProvider === 'OPENAI' ? 'OpenAI Secret Key (Optional)' :
+                     llmProvider === 'ANTHROPIC' ? 'Anthropic API Key (Optional)' :
                      'Google AI Studio API Key (Optional)'}
                   </label>
                   <div className="flex gap-2 w-full">
                     <div className="relative flex-1">
                       <input 
                         type={showOpenRouterKey ? "text" : "password"} 
-                        value={projOpenRouterKey || ''} 
-                        onChange={(e) => setProjOpenRouterKey(e.target.value)} 
+                        value={openRouterKey || ''} 
+                        onChange={(e) => setOpenRouterKey(e.target.value)} 
                         placeholder="Falls back to system-wide fallbacks if empty" 
                         className="bg-paper-surface border border-warm-gray/20 rounded-lg pl-4 pr-10 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
                       />
@@ -232,7 +304,7 @@ export default function ProjectModal({
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleVerifyLlmKey(projLlmProvider, projOpenRouterKey)}
+                      onClick={() => handleVerifyLlmKey(llmProvider, openRouterKey)}
                       disabled={projLlmVerifying}
                       className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 rounded-lg px-4 py-2 text-xs font-semibold shrink-0 cursor-pointer active:scale-95 duration-150 transition-all disabled:opacity-50"
                     >
@@ -265,8 +337,8 @@ export default function ProjectModal({
                   <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Target Model</label>
                   {projLlmModelsList && projLlmModelsList.length > 0 ? (
                     <select
-                      value={projLlmModel}
-                      onChange={(e) => setProjLlmModel(e.target.value)}
+                      value={llmModel}
+                      onChange={(e) => setLlmModel(e.target.value)}
                       className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
                     >
                       {projLlmModelsList.map((m) => (
@@ -276,8 +348,8 @@ export default function ProjectModal({
                   ) : (
                     <input
                       type="text"
-                      value={projLlmModel}
-                      onChange={(e) => setProjLlmModel(e.target.value)}
+                      value={llmModel}
+                      onChange={(e) => setLlmModel(e.target.value)}
                       placeholder="Enter model slug (e.g. google/gemini-2.5-flash)"
                       className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
                     />
@@ -295,8 +367,8 @@ export default function ProjectModal({
                   <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Custom Runbook preferences (Optional)</label>
                   <input 
                     type="text" 
-                    value={projDesc} 
-                    onChange={(e) => setProjDesc(e.target.value)} 
+                    value={desc} 
+                    onChange={(e) => setDesc(e.target.value)} 
                     placeholder="e.g. Run setup scripts before testing patches" 
                     className="bg-paper-surface border border-warm-gray/20 rounded-lg px-4 py-3 text-sm text-on-surface outline-none font-sans transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary w-full"
                   />
