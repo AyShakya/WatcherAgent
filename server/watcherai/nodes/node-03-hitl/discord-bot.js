@@ -11,6 +11,25 @@ import {
   EmbedBuilder,
 } from 'discord.js';
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
+
+// Load .env searching upwards from current working directory
+const loadEnv = () => {
+  let currentDir = process.cwd();
+  for (let i = 0; i < 4; i++) {
+    const envPath = path.join(currentDir, '.env');
+    if (fs.existsSync(envPath)) {
+      dotenv.config({ path: envPath });
+      break;
+    }
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) break;
+    currentDir = parentDir;
+  }
+};
+loadEnv();
+
 import {
   getIncident,
   removeIncident,
@@ -18,8 +37,6 @@ import {
   clearIncidentTimeout,
 } from '../../services/incident-store.js';
 import { categoryLabel } from '../shared/categorize.js';
-
-dotenv.config();
 
 const DISCORD_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CHANNEL_ID = process.env.DISCORD_INCIDENT_CHANNEL_ID;

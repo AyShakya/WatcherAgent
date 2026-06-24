@@ -2,7 +2,88 @@ import { Request, Response } from 'express';
 import { getIncidentWithProject, updateIncident } from '../models/incident.js';
 import { addFixJob } from '../queue/index.js';
 import { config } from '../config/index.js';
+import { decrypt } from '../utils/crypto.js';
 import jwt from 'jsonwebtoken';
+
+async function updateDiscordStatus(incident: any, project: any, action: 'APPROVE' | 'REJECT', source: 'Web' | 'Discord', approver: string) {
+  try {
+    const messageId = incident.discord_message_id;
+    const channelId = project.discord_channel_id;
+    const rawToken = project.discord_bot_token;
+    const botToken = (rawToken ? decrypt(rawToken) : null) || process.env.DISCORD_BOT_TOKEN;
+
+    if (!botToken || !channelId || !messageId) {
+      console.log('ℹ️ Discord message update skipped: token, channelId or messageId is missing.');
+      return;
+    }
+
+    const embed = {
+      color: action === 'APPROVE' ? 0x00c853 : 0x5c5c5c,
+      title: action === 'APPROVE' ? `✅ Fix Approved: inc-${incident.id}` : `🗑️ Incident Ignored: inc-${incident.id}`,
+      description: action === 'APPROVE'
+        ? `Approved by **${approver}** via **${source}**. Deploying automated PR...`
+        : `Dismissed by **${approver}** via **${source}**. No action will be taken.`,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Update original alert message to remove buttons and show status
+    const url = `https://discord.com/api/v10/channels/${channelId}/messages/${messageId}`;
+    const patchRes = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bot ${botToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        embeds: [embed],
+        components: [], // Remove buttons
+      }),
+    });
+
+    if (!patchRes.ok) {
+      const errText = await patchRes.text();
+      console.error(`❌ Discord API message patch failed: Status ${patchRes.status} - ${errText}`);
+    }
+
+    // Try to notify the thread as well
+    const triage = typeof incident.triage === 'string' ? JSON.parse(incident.triage) : incident.triage;
+    const threadId = triage?.hitl?.discord_thread_id || triage?.discord_thread_id;
+    if (threadId) {
+      const threadUrl = `https://discord.com/api/v10/channels/${threadId}/messages`;
+      const threadMsg = action === 'APPROVE'
+        ? `✅ Fix approved by **${approver}** via **${source}**. PR pipeline running...`
+        : `🗑️ Incident dismissed by **${approver}** via **${source}**. Archived with no action.`;
+      
+      const threadRes = await fetch(threadUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bot ${botToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: threadMsg,
+        }),
+      });
+
+      if (threadRes.ok && action === 'REJECT') {
+        // Try to archive thread
+        const threadChannelUrl = `https://discord.com/api/v10/channels/${threadId}`;
+        await fetch(threadChannelUrl, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bot ${botToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            archived: true,
+          }),
+        }).catch(() => {});
+      }
+    }
+  } catch (err: any) {
+    console.error('❌ Failed to update Discord status from orchestrator callback:', err.message || err);
+  }
+}
 
 export async function handleApproval(req: Request, res: Response) {
   try {
@@ -85,6 +166,14 @@ export async function handleApproval(req: Request, res: Response) {
       // Enqueue job to perform Phase 2 fix (GitHub War Room PR -> Learning update)
       await addFixJob(incidentId, phase1Output);
 
+      // Update original Discord card to show "Approved" and remove buttons
+      const source = clientSecret === config.INTERNAL_CALLBACK_SECRET ? 'Discord' : 'Web';
+      const approverName = comment?.match(/Approved by Discord user (.*)/)?.[1] 
+        || comment?.match(/Approved by (.*)/)?.[1]
+        || (source === 'Web' ? 'Operator' : 'Discord User');
+
+      await updateDiscordStatus(incidentWithProject, incidentWithProject.project, 'APPROVE', source, approverName);
+
       return res.json({
         message: 'Incident approved. Remediation queued.',
         status: 'FIXING',
@@ -97,6 +186,14 @@ export async function handleApproval(req: Request, res: Response) {
         root_cause: comment || 'Rejected by operator',
         updated_at: new Date(),
       });
+
+      // Update original Discord card to show "Rejected" and remove buttons
+      const source = clientSecret === config.INTERNAL_CALLBACK_SECRET ? 'Discord' : 'Web';
+      const approverName = comment?.match(/Rejected by Discord user (.*)/)?.[1]
+        || comment?.match(/Rejected by (.*)/)?.[1]
+        || (source === 'Web' ? 'Operator' : 'Discord User');
+
+      await updateDiscordStatus(incidentWithProject, incidentWithProject.project, 'REJECT', source, approverName);
 
       return res.json({
         message: 'Incident muted and rejected.',

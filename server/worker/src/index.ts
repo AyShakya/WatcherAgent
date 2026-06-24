@@ -1,10 +1,27 @@
-import { Worker } from 'bullmq';
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
+
+// Load .env searching upwards from current working directory
+const loadEnv = () => {
+  let currentDir = process.cwd();
+  for (let i = 0; i < 4; i++) {
+    const envPath = path.join(currentDir, '.env');
+    if (fs.existsSync(envPath)) {
+      dotenv.config({ path: envPath });
+      break;
+    }
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) break;
+    currentDir = parentDir;
+  }
+};
+loadEnv();
+
+import { Worker } from 'bullmq';
 import { processQueueJob } from './processor.js';
 // @ts-ignore
 import { loginBot } from '../../watcherai/nodes/node-03-hitl/discord-bot.js';
-
-dotenv.config();
 
 console.log('🚀 Watcher Queue Worker starting...');
 

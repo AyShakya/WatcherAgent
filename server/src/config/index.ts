@@ -1,7 +1,23 @@
 import dotenv from 'dotenv';
 import { z } from 'zod';
+import path from 'path';
+import fs from 'fs';
 
-dotenv.config();
+// Load .env searching upwards from current working directory
+const loadEnv = () => {
+  let currentDir = process.cwd();
+  for (let i = 0; i < 4; i++) {
+    const envPath = path.join(currentDir, '.env');
+    if (fs.existsSync(envPath)) {
+      dotenv.config({ path: envPath });
+      break;
+    }
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) break;
+    currentDir = parentDir;
+  }
+};
+loadEnv();
 
 const EnvSchema = z.object({
   PORT: z.string().transform(Number).default('3001'),
