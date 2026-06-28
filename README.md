@@ -38,21 +38,21 @@ WatcherAgent is engineered with a high-throughput, queue-backed, event-driven ar
 
 ```mermaid
 graph TD
-    Alert[Monitoring System Alert] -->|POST /webhook| Express[Express TS API Server]
+    Alert[Monitoring System Alert] -->|POST /api/v1/webhook/:secret| Express[Express TS API Server]
     Express -->|Enqueues Ingestion Job| Bull[BullMQ / Redis Queue]
     Worker[TypeScript Queue Worker] -->|Polls Queue| Bull
     Worker -->|Executes Phase 1| Engine[WatcherAI Engine]
-    Engine -->|Node 01: Triage| OpenRouter[OpenRouter LLM API]
+    Engine -->|Node 01: Triage| OpenRouter[OpenRouter / Direct LLM APIs]
     Engine -->|Node 02: Runbook RAG| Pinecone[Pinecone Vector DB]
     Engine -->|Node 03: HITL Gateway| Discord[Discord Channel Embed]
     
-    Discord -->|Human clicks Accept & Fix| Express
+    Discord -->|Human clicks Accept & Fix / Ignore| Express
     Express -->|Enqueues Remediation Job| Bull
     Worker -->|Executes Phase 2| Engine
     Engine -->|Node 04: GitHub Fixer| GitHub[GitHub API / PR & PM]
     Engine -->|Node 05: Narrator| Pinecone
     
-    Frontend[Vite + React 19 Dashboard] -->|Polls /api/v1/incidents| Express
+    Frontend[Vite + React 19 Dashboard] -->|Interacts with REST endpoints| Express
 ```
 
 ---
@@ -73,7 +73,7 @@ sequenceDiagram
     participant Disc as Discord Channel (HITL)
     participant GH as GitHub API
 
-    Mon->>Srv: Webhook Alert Payload
+    Mon->>Srv: Webhook Alert Payload (POST /api/v1/webhook/:secret)
     Srv->>Q: Enqueue INCIDENT_INGESTION
     Q->>W: Dequeue and isolate job context
     W->>AI: Execute Phase 1 Pipeline
@@ -83,17 +83,19 @@ sequenceDiagram
     AI->>Disc: Node 03: Deploy Interactive Approval Embed
     Disc-->>W: Awaiting Approval (Message ID saved)
     
-    Note over Disc, W: Human verifies and clicks "Accept & Fix"
+    Note over Disc, W: Human verifies and clicks "Accept & Fix" or "Ignore"
     
-    Disc->>Srv: Trigger Accept Callback
+    Disc->>Srv: Trigger callback (POST /api/v1/callback/approve)
     Srv->>Q: Enqueue INCIDENT_FIX
     Q->>W: Dequeue and isolate fix context
     W->>AI: Execute Phase 2 Pipeline
-    AI->>GH: Node 04: 3-Phase LLM Audit / PR Creation (or fast-path replay)
+    AI->>GH: Node 04: 3-Phase LLM Audit / PR Creation (guided by recalled context)
     GH-->>AI: PR URL returned
     AI->>PM: Node 05: Index resolution diff & metadata
     W->>Srv: Remediation Complete
 ```
+
+---
 
 ---
 
@@ -104,29 +106,28 @@ Runs Node 1 (Triage) ➔ Node 2 (Runbook RAG) ➔ Node 3 (Discord Approval).
 
 #### 🕵️ Node 01 — Triage
 `server/watcherai/nodes/node-01-triage/`
-Receives the raw webhook payload and calls the LLM (via OpenRouter) to classify the incident. Returns:
-- **Severity** — P1 / P2 / P3 derived purely from payload evidence.
+Receives the raw webhook payload and calls the LLM (via OpenRouter or direct APIs) to classify the incident. Returns:
+- **Severity** — P1 / P2 / P3 derived from payload evidence, with deterministic threshold check promotions as a guardrail.
 - **Error category** — one of 11 deterministic categories (HTTP_5XX, DATABASE, NETWORK, etc.).
 - **Root frame** — the exact file, line, and function the LLM identifies as the origin.
 - **Normalized error signature** — dynamic values stripped, used as the vector query key.
 - **Confidence** — 0–100, used downstream to decide whether to escalate.
-- *Graceful fallback*: Assigns P2 severity and 50% confidence if the LLM is unresponsive.
+- *Graceful fallback*: Assigns P2 severity (or matches deterministic thresholds) and 50% confidence (95% if deterministic thresholds match) if the LLM is unresponsive.
 
 #### 🕵️ Node 02 — Runbook
 `server/watcherai/nodes/node-02-runbook/`
-Queries Pinecone for historical fixes using the normalized error signature as a vector query.
-- **Two-pass recall strategy**:
-  1. Same-service query at threshold `0.78` — finds prior fixes for the exact same service.
-  2. Cross-service fallback at threshold `0.82` — finds fixes for the same error pattern in any service.
-- *Graceful fallback*: Falls back to a local runbook library keyed by service name and error keywords (DB, Redis, payment, etc.) if no matches are found above the thresholds.
+Queries Pinecone for historical fixes using the normalized error signature as a vector query, isolated by project namespace.
+- **Lookup Strategy**:
+  - Same-service query at threshold `0.78` — finds prior fixes for the exact same service namespace.
+- *Graceful fallback*: Falls back to a local runbook library keyed by service name and error keywords (DB, Redis, payment, etc.) if no matches are found above the threshold or if Pinecone is unresponsive.
 
 #### 🕵️ Node 03 — HITL Gateway
 `server/watcherai/nodes/node-03-hitl/`
 Sends an interactive Discord embed card containing:
 - Severity, confidence score, and categorized error labels.
 - Top 3 runbook steps (or memory recall notification if a past fix is matched).
-- **Accept & Fix** button → enqueues the Phase 2 fixing pipeline.
-- **Ignore** button → updates the Discord embed state in-place to prevent visual clutter.
+- **Accept & Fix** button → triggers approval callback to `/api/v1/callback/approve` and enqueues Phase 2.
+- **Ignore** button → triggers rejection callback to `/api/v1/callback/approve` and updates the Discord embed state in-place to prevent visual clutter.
 - *Self-clean*: Automatically expires incidents waiting longer than the configured timeout.
 
 ---
@@ -141,11 +142,11 @@ Creates a GitHub Pull Request with an AI-generated fix. Runs three phases sequen
 2. **File Discovery & Ranking**: Crawls the repo tree using cached paths, then ranks the top 5 candidate files via LLM.
 3. **Deep Audit & Fix**: LLM audits file contents and generates a unified diff and full replacement.
 
-- **Memory Recall Fast-Path**: If Node 02 returned a `HISTORICAL_FIX` runbook with a stored diff, Phase 1-3 are skipped entirely. The known fix is replayed directly to open a "Memory Recall" PR. This bypasses LLM latency, running **3-5x faster** with zero token consumption.
+- **Memory Recall Context Guide**: If Node 02 returned a historical fix with a stored diff, this context is injected directly into the LLM prompt to guide the audit, allowing 100% conceptual reuse while verifying correct AST integration.
 - **Duplicate PR Guard**: Detects open PRs on the same branch and links to them instead of opening duplicate pull requests.
 - **Enterprise Safety Guardrails**:
   1. *JSON Syntax Guard*: Checks validity of updated JSON files before committing.
-  2. *Diff Size Guard*: Automatically aborts the branch and flags failure if changes exceed 30% of the target file.
+  2. *Diff Size Guard*: Automatically aborts the branch and flags failure if changes exceed 30% of the target file (skipped for tiny files under 20 lines).
 - Generates a markdown postmortem committed directly to `incidents/<INC-ID>/POSTMORTEM.md`.
 
 #### 🕵️ Node 05 — Narrator / Memory
@@ -155,7 +156,7 @@ Writes the resolved incident into Pinecone as 4 semantic vector chunks:
 - `fix`: The actual patch diff and reasoning context for replay.
 - `root_cause`: Comprehensive root cause explanation for semantic searches.
 - `symptom`: Service and severity description for broad symptom classification.
-- All chunks carry `error_category` in metadata, enabling filtered Pinecone queries.
+- The `error_signature` and `fix` chunks carry `error_category` in metadata, enabling filtered Pinecone queries.
 
 ---
 
@@ -165,8 +166,9 @@ WatcherAgent is organized as a clean, decoupled monorepo:
 
 | Directory | Purpose |
 |---|---|
-| `server/` | The TypeScript API server (Express) and distributed worker (BullMQ + Redis). |
+| `server/` | The core TypeScript Express API server hosting auth, project config, and webhook endpoints. |
 | `server/watcherai/` | The core agentic pipeline library containing the 5 modular execution nodes. |
+| `server/worker/` | The TypeScript distributed worker process polling Redis via BullMQ to execute resource-heavy Phase 1 & 2 agent pipelines. |
 | `frontend/` | The Vite + React 19 dashboard console powered by TailwindCSS v4. |
 
 The frontend communicates with the server via structured REST APIs. The server processes tasks asynchronously using Redis, ensuring that webhook ingestions remain resilient under load.
@@ -205,7 +207,7 @@ During the design and implementation of WatcherAgent, the following structural t
 - **BullMQ & Redis**: Operates as a distributed task manager, executing intensive LLM prompts and Git commits in isolated worker processes.
 - **PostgreSQL (`pg` client)**: Provides transactional consistency and durability for recording projects, execution runs, and incident status tables.
 - **Pinecone DB**: Powers our vector-based semantic cache, storing and recalling historical remediation patches in sub-3-second lookups.
-- **OpenRouter (Gemini 2.5/2.0 Flash)**: Grants high-concurrency LLM access, balancing code-generation accuracy with minimal response latency.
+- **LLM Providers (OpenRouter, OpenAI, Anthropic, Gemini)**: Connects to LLM endpoints to balance code-generation accuracy with minimal response latency. Supports Google Gemini 2.5/2.0 Flash, OpenAI GPT-4o, Anthropic Claude 3.5 Sonnet, etc.
 - **Discord.js (v14)**: Connects our backend to developers via clean Discord Embed blocks and callback button triggers.
 - **Octokit (GitHub SDK)**: Programmatically manages git checkouts, diff analysis, unified patch application, and pull request creation.
 - **Zod**: Protects the entry and exit points of every pipeline node, enforcing strict object schemas before any LLM execution begins.
@@ -214,7 +216,7 @@ During the design and implementation of WatcherAgent, the following structural t
 
 - **React 19**: Builds a state-driven, component-based dashboard to visualize incident lists and execution run steps.
 - **Vite**: Delivers instant development reloading and highly optimized production asset bundle sizing.
-- **TailwindCSS v4**: Renders a gorgeous, responsive, developer-first layout without stylesheet bloating or custom configurations.
+- **TailwindCSS v4**: Renders a gorgeous, responsive, developer-first layout using the new Vite plugin (`@tailwindcss/vite`).
 - **Lucide React**: Renders clean, lightweight vector icons representing service severity levels and incident status tags.
 
 ---
@@ -260,37 +262,55 @@ WatcherAgent/
 
 ## Environment Variables
 
-Copy `server/watcherai/.env.example` to `server/watcherai/.env` (and similarly for `server/.env`) and populate the configurations:
+Copy `.env.example` in the root directory to `.env` (the Express server and queue workers automatically search upwards to load it) and configure your variables:
 
 ```env
-# ── Server ───────────────────────────────────────────────────────────────────
+# ── Server & Infrastructure ──────────────────────────────────────────────────
 PORT=3001
-INTERNAL_CALLBACK_SECRET=<generate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))">
+DATABASE_URL=postgres://postgres:password@localhost:5432/watcher
+REDIS_HOST=localhost
+REDIS_PORT=6379
+JWT_SECRET=watcher-super-secret-key-12345
+ENCRYPTION_KEY=watcher-default-encryption-key-32-chars-long
+INTERNAL_CALLBACK_SECRET=orchestration-callback-key-9999
+ORCHESTRATOR_URL=http://localhost:3001
+ALLOWED_ORIGINS=
 PIPELINE_TIMEOUT_MS=90000
 
-# ── OpenRouter (LLM) ─────────────────────────────────────────────────────────
+# ── Pinecone (Global Vector Memory) ──────────────────────────────────────────
+PINECONE_API_KEY=your_pinecone_api_key_here
+PINECONE_INDEX_NAME=guardian-knowledge
+PINECONE_SCORE_THRESHOLD=0.78        # Same-service lookup sensitivity (lower = broader)
+PINECONE_SCORE_THRESHOLD_BROAD=0.82  # Cross-service lookup sensitivity
+
+# ── LLM Configuration ────────────────────────────────────────────────────────
 OPENROUTER_API_KEY=sk-or-v1-...
 DEFAULT_LLM_MODEL=google/gemini-2.5-flash
+LLM_TIMEOUT_MS=30000
 
-# ── Pinecone (Vector memory) ─────────────────────────────────────────────────
-PINECONE_API_KEY=pcsk_...
-PINECONE_INDEX_NAME=watcher-knowledge
-PINECONE_SCORE_THRESHOLD=0.78        # recall sensitivity (lower = broader)
+# ── Global Service Fallbacks (Optional) ──────────────────────────────────────
+# Used if not configured at the project level in the UI
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+GEMINI_API_KEY=
+DISCORD_BOT_TOKEN=your_global_discord_bot_token_here
+GITHUB_TOKEN=
+GITHUB_REPO_OWNER=
+GITHUB_REPO_NAME=
 
-# ── Discord (HITL) ───────────────────────────────────────────────────────────
-DISCORD_BOT_TOKEN=MTU...
-DISCORD_INCIDENT_CHANNEL_ID=147396...
-HITL_TIMEOUT_MS=900000               # 15 minutes
-
-# ── GitHub (Fix deployment) ──────────────────────────────────────────────────
-GITHUB_TOKEN=github_pat_...          # Needs Contents + Pull requests: Read & write
-GITHUB_REPO_OWNER=your-username
-GITHUB_REPO_NAME=your-repo
-
-# ── Noise filter (optional) ──────────────────────────────────────────────────
+# ── Noise Filter Thresholds (Optional) ───────────────────────────────────────
 NOISE_ERROR_RATE_THRESHOLD=0.02      # below this → skip pipeline
 NOISE_LATENCY_MS_THRESHOLD=200
 NOISE_DURATION_MIN_THRESHOLD=1
+```
+
+### Frontend Configuration
+
+Copy `frontend/.env.example` to `frontend/.env` and configure:
+
+```env
+# URL pointing to the backend API server's v1 endpoints
+VITE_API_BASE_URL=http://localhost:3001/api/v1
 ```
 
 > **GitHub PAT requirements**: Ensure your Personal Access Token has **Read and write** permissions for both **Contents** and **Pull requests**.
@@ -301,25 +321,48 @@ NOISE_DURATION_MIN_THRESHOLD=1
 
 ## Running Locally
 
-**1. Install all backend dependencies**
+**1. Install all monorepo dependencies**
+
+First, install dependencies for the API server, queue worker, core AI agent library, and the frontend dashboard:
+
 ```bash
+# Install Express API server dependencies
 cd server
+npm install
+
+# Install Background Queue Worker dependencies
+cd worker
+npm install
+
+# Install WatcherAI agent dependencies
+cd ../watcherai
 npm install
 ```
 
 **2. Seed Pinecone database** (one-time index preparation)
 ```bash
-cd watcherai
+# Seed the Pinecone index with mock structure (run from server/watcherai)
 npm run seed:pinecone
 ```
 
 **3. Run the development environment**
+
+You need to run the API server, the background queue worker, and local database services.
+
+*Option A: Run everything locally with external Postgres/Redis instances:*
 ```bash
-cd ..
+# In Terminal 1 (API Server):
+cd server
+npm run dev
+
+# In Terminal 2 (Queue Worker):
+cd server/worker
 npm run dev
 ```
-*Or execute via Docker Compose for a production-like database configuration:*
+
+*Option B: Run via Docker Compose for a production-like database configuration:*
 ```bash
+# Starts Postgres, Redis, the API server, the Queue Worker, and NGINX Proxy
 docker-compose up --build
 ```
 
@@ -423,10 +466,24 @@ Triage automatically maps incoming alerts to one of the following classification
 
 | Method | Route | Description |
 |---|---|---|
-| `POST` | `/api/v1/webhook` | Ingest a monitoring webhook event |
-| `GET` | `/api/v1/incidents` | List current database incidents |
-| `GET` | `/api/v1/incidents/:id` | Get incident details and associated runs |
-| `POST` | `/api/v1/projects` | Create a project config (tokens, repositories) |
-| `POST` | `/api/v1/projects/validate-llm` | Verify validity of credentials and credit status |
-| `POST` | `/api/v1/callback/discord-approve` | Discord Accept button trigger endpoint |
-| `POST` | `/api/v1/callback/discord-ignore` | Discord Ignore button trigger endpoint |
+| **Authentication** | | |
+| `POST` | `/api/v1/auth/signup` | Register a new user/administrator |
+| `POST` | `/api/v1/auth/login` | Authenticate administrator and retrieve JWT token |
+| `GET` | `/api/v1/auth/me` | Fetch information about the authenticated administrator |
+| **Projects** | | |
+| `POST` | `/api/v1/projects` | Onboard a new project configuration (GitHub, Discord, LLM details) |
+| `GET` | `/api/v1/projects` | List all project configurations |
+| `GET` | `/api/v1/projects/:id` | Retrieve credentials and configurations for a specific project |
+| `PATCH` | `/api/v1/projects/:id` | Modify an existing project configuration |
+| `DELETE` | `/api/v1/projects/:id` | Remove a project configuration from the platform |
+| `POST` | `/api/v1/projects/validate-llm` | Validate LLM provider API credentials and credits |
+| **Incidents & Runs** | | |
+| `GET` | `/api/v1/incidents` | List all registered incidents |
+| `GET` | `/api/v1/incidents/:id` | Fetch detailed information for a specific incident |
+| `GET` | `/api/v1/incidents/:id/runs` | Fetch execution run records and logs for a specific incident |
+| **Webhook Ingress** | | |
+| `POST` | `/api/v1/webhook/:secret` | Ingest a monitoring webhook event (supports Sentry, Grafana, Datadog, PagerDuty, Render) |
+| `POST` | `/api/v1/webhook/wh/:secret` | Alias endpoint to ingest a monitoring webhook event |
+| **Callbacks & Integrations** | | |
+| `POST` | `/api/v1/callback/approve` | Process manual approvals/rejections from Discord buttons or the UI drawer |
+| `GET` | `/api/v1/discord/bot-info` | Retrieve Discord bot connection state and client details |
