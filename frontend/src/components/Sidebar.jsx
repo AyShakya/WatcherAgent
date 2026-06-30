@@ -1,4 +1,5 @@
 import { Eye, Settings, Plus, LogOut, Activity, X, GitBranch, Zap } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Sidebar({
   user,
@@ -9,94 +10,116 @@ export default function Sidebar({
   handleOpenCreateModal,
   handleLogout
 }) {
-  const sidebarNavItems = (
-    <nav className="flex flex-col gap-1.5 flex-1">
-      <div className="text-[10px] font-bold tracking-wider text-warm-gray mt-4 mb-2 ml-3 text-left">MANAGEMENT</div>
-      <button 
-        type="button"
-        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-semibold cursor-pointer active:scale-95 duration-150 transition-all text-left w-full border-none bg-transparent ${
-          dashboardTab === 'CONSOLE' 
-            ? 'bg-paper-surface border border-warm-gray/20 text-primary' 
-            : 'text-on-surface-variant hover:text-on-surface hover:bg-paper-surface/50'
-        }`}
-        onClick={() => {
-          setDashboardTab('CONSOLE');
-          setMobileSidebarOpen(false);
-        }}
-      >
-        <Activity className={`w-4 h-4 ${dashboardTab === 'CONSOLE' ? 'animate-pulse' : ''}`} /> Console Dashboard
-      </button>
+  const navItems = [
+    { id: 'CONSOLE', label: 'Console Dashboard', icon: Activity, section: 'MANAGEMENT' },
+    { id: 'SETUP', label: 'Discord Bot Setup', icon: Settings, section: 'GUIDES & SETUP' },
+    { id: 'GITHUB_SETUP', label: 'GitHub Repo Setup', icon: GitBranch, section: 'GUIDES & SETUP' },
+    { id: 'WEBHOOK_SETUP', label: 'Webhook Alert Setup', icon: Zap, section: 'GUIDES & SETUP' },
+  ];
 
-      <div className="text-[10px] font-bold tracking-wider text-warm-gray mt-4 mb-2 ml-3 text-left">GUIDES & SETUP</div>
-      <button 
-        type="button"
-        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-semibold cursor-pointer active:scale-95 duration-150 transition-all text-left w-full border-none bg-transparent ${
-          dashboardTab === 'SETUP' 
-            ? 'bg-paper-surface border border-warm-gray/20 text-primary' 
-            : 'text-on-surface-variant hover:text-on-surface hover:bg-paper-surface/50'
-        }`}
-        onClick={() => {
-          setDashboardTab('SETUP');
-          setMobileSidebarOpen(false);
-        }}
-      >
-        <Settings className="w-4 h-4" /> Discord Bot Setup
-      </button>
-      <button 
-        type="button"
-        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-semibold cursor-pointer active:scale-95 duration-150 transition-all text-left w-full border-none bg-transparent ${
-          dashboardTab === 'GITHUB_SETUP' 
-            ? 'bg-paper-surface border border-warm-gray/20 text-primary' 
-            : 'text-on-surface-variant hover:text-on-surface hover:bg-paper-surface/50'
-        }`}
-        onClick={() => {
-          setDashboardTab('GITHUB_SETUP');
-          setMobileSidebarOpen(false);
-        }}
-      >
-        <GitBranch className="w-4 h-4" /> GitHub Repo Setup
-      </button>
-      <button 
-        type="button"
-        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-semibold cursor-pointer active:scale-95 duration-150 transition-all text-left w-full border-none bg-transparent ${
-          dashboardTab === 'WEBHOOK_SETUP' 
-            ? 'bg-paper-surface border border-warm-gray/20 text-primary' 
-            : 'text-on-surface-variant hover:text-on-surface hover:bg-paper-surface/50'
-        }`}
-        onClick={() => {
-          setDashboardTab('WEBHOOK_SETUP');
-          setMobileSidebarOpen(false);
-        }}
-      >
-        <Zap className="w-4 h-4" /> Webhook Alert Setup
-      </button>
-
-      <div className="text-[10px] font-bold tracking-wider text-warm-gray mt-4 mb-2 ml-3 text-left">ACTIONS</div>
-      <button 
-        type="button"
-        className="flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-semibold text-on-surface-variant hover:text-on-surface hover:bg-paper-surface/50 cursor-pointer active:scale-95 duration-150 transition-all text-left w-full border-none bg-transparent"
-        onClick={() => {
-          setMobileSidebarOpen(false);
-          handleOpenCreateModal();
-        }}
-      >
-        <Plus className="w-4 h-4" /> Create Project
-      </button>
-    </nav>
-  );
+  const renderNavGroup = (sectionName) => {
+    const items = navItems.filter(item => item.section === sectionName);
+    return (
+      <div key={sectionName} className="flex flex-col gap-1 mb-5">
+        {/* Eyebrow label for category */}
+        <div className="flex items-center gap-2 mb-2 ml-3">
+          <span className="w-1 h-1 rounded-full bg-cobalt-spark"></span>
+          <span className="font-apkpraktikal text-[9px] font-bold tracking-widest text-slate uppercase">
+            {sectionName}
+          </span>
+        </div>
+        
+        {items.map(item => {
+          const Icon = item.icon;
+          const isActive = dashboardTab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className={`flex items-center justify-between px-3.5 py-3 rounded-full text-xs font-apkpraktikal uppercase tracking-wider transition-all duration-150 border-none cursor-pointer w-full text-left bg-transparent ${
+                isActive 
+                  ? 'bg-mist text-carbon-ink font-bold border border-ash/50' 
+                  : 'text-slate hover:text-carbon-ink hover:bg-mist/30'
+              }`}
+              onClick={() => {
+                setDashboardTab(item.id);
+                setMobileSidebarOpen(false);
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <Icon className={`w-4 h-4 stroke-[1.5px] ${isActive ? 'text-cobalt-spark' : 'text-slate'}`} />
+                <span>{item.label}</span>
+              </div>
+              {isActive && (
+                <motion.span 
+                  layoutId="activeIndicator"
+                  transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                  className="text-cobalt-spark text-sm font-bold"
+                >
+                  →
+                </motion.span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
 
   const profileCard = (
-    <div className="flex items-center gap-3 p-3 rounded-lg bg-surface-container-low border border-warm-gray/20 mb-6">
-      <div className="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-sm select-none">
+    <div className="flex items-center gap-3 p-3.5 rounded-xl bg-mist/50 border border-ash mb-6">
+      <div className="w-9 h-9 rounded-full bg-carbon-ink text-canvas-white flex items-center justify-center font-apkpraktikal font-bold text-xs select-none">
         {user?.name?.charAt(0).toUpperCase() || 'U'}
       </div>
       <div className="flex flex-col text-left min-w-0">
-        <span className="text-[13px] font-semibold text-ink-black whitespace-nowrap overflow-hidden text-ellipsis">
+        <span className="font-apk-galeria text-[13px] font-medium text-carbon-ink whitespace-nowrap overflow-hidden text-ellipsis">
           {user?.name || 'User Profile'}
         </span>
-        <span className="text-[11px] text-on-surface-variant whitespace-nowrap overflow-hidden text-ellipsis">
+        <span className="font-apkpraktikal text-[10px] text-iron whitespace-nowrap overflow-hidden text-ellipsis">
           {user?.email}
         </span>
+      </div>
+    </div>
+  );
+
+  const sidebarContent = (
+    <div className="flex flex-col h-full justify-between">
+      <div className="flex-1 overflow-y-auto pr-1">
+        {profileCard}
+        {renderNavGroup('MANAGEMENT')}
+        {renderNavGroup('GUIDES & SETUP')}
+
+        <div className="flex flex-col gap-1 mt-4">
+          <div className="flex items-center gap-2 mb-2 ml-3">
+            <span className="w-1 h-1 rounded-full bg-cobalt-spark"></span>
+            <span className="font-apkpraktikal text-[9px] font-bold tracking-widest text-slate uppercase">
+              ACTIONS
+            </span>
+          </div>
+          <button 
+            type="button"
+            className="flex items-center justify-between px-3.5 py-3 rounded-full text-xs font-apkpraktikal uppercase tracking-wider text-iron hover:text-carbon-ink hover:bg-mist/30 transition-all border-none bg-transparent cursor-pointer w-full"
+            onClick={() => {
+              setMobileSidebarOpen(false);
+              handleOpenCreateModal();
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <Plus className="w-4 h-4 text-cobalt-spark stroke-[1.5px]" />
+              <span>Create Project</span>
+            </div>
+            <span className="text-slate text-xs">+</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-auto pt-6 border-t border-ash">
+        <button 
+          className="w-full flex items-center justify-center gap-2 bg-transparent text-iron border border-ash hover:border-danger/30 hover:bg-danger/5 hover:text-danger rounded-full py-3 font-apkpraktikal text-xs font-bold uppercase tracking-widest cursor-pointer transition-all duration-150"
+          onClick={() => { setMobileSidebarOpen(false); handleLogout(); }}
+        >
+          <LogOut className="w-3.5 h-3.5 stroke-[1.5px]" /> Log Out
+        </button>
       </div>
     </div>
   );
@@ -104,69 +127,67 @@ export default function Sidebar({
   return (
     <>
       {/* Mobile Sidebar Overlay Drawer */}
-      {mobileSidebarOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex animate-fade">
-          <div 
-            className="fixed inset-0 bg-ink-black/40 backdrop-blur-xs transition-opacity duration-300"
-            onClick={() => setMobileSidebarOpen(false)}
-          ></div>
-          <aside className="relative w-[280px] max-w-[80%] h-full bg-surface-container border-r border-warm-gray/20 flex flex-col justify-between p-6 animate-slide-in-left shadow-2xl">
-            <div>
-              <div className="flex items-center justify-between mb-8">
+      <AnimatePresence>
+        {mobileSidebarOpen && (
+          <div className="lg:hidden fixed inset-0 z-50 flex">
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-carbon-ink/20 backdrop-blur-xs"
+              onClick={() => setMobileSidebarOpen(false)}
+            ></motion.div>
+            
+            {/* Drawer */}
+            <motion.aside 
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', stiffness: 220, damping: 24 }}
+              className="relative w-[280px] max-w-[85%] h-full bg-canvas-white border-r border-ash flex flex-col p-6 shadow-sm text-left"
+            >
+              <div className="flex items-center justify-between mb-8 shrink-0">
                 <div className="flex items-center gap-3">
-                  <Eye className="w-6 h-6 text-primary" />
+                  <div className="w-6.5 h-6.5 rounded-full bg-carbon-ink flex items-center justify-center text-canvas-white">
+                    <Eye className="w-3.5 h-3.5 text-lime-glow" />
+                  </div>
                   <div className="text-left">
-                    <span className="font-display text-lg font-bold block text-ink-black leading-tight">Watcher Console</span>
-                    <span className="text-[10px] text-warm-gray font-semibold tracking-wider uppercase block">Incident Management</span>
+                    <span className="font-apk-galeria text-base font-medium block text-carbon-ink leading-tight">watcher.agent</span>
+                    <span className="font-apkpraktikal text-[8px] text-slate font-bold tracking-widest uppercase block">Console Tower</span>
                   </div>
                 </div>
                 <button 
-                  className="bg-transparent border-none text-warm-gray hover:text-ink-black p-1 rounded-lg transition-colors cursor-pointer"
+                  className="bg-transparent border border-ash text-slate hover:text-carbon-ink p-1.5 rounded-full transition-colors cursor-pointer flex items-center justify-center"
                   onClick={() => setMobileSidebarOpen(false)}
                   title="Close Sidebar"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
               
-              {profileCard}
-              {sidebarNavItems}
-            </div>
-
-            <div className="mt-auto">
-              <button 
-                className="w-full flex items-center justify-center gap-2 bg-transparent text-on-surface-variant border border-warm-gray/30 rounded-lg py-3 text-[13px] font-semibold cursor-pointer transition-all duration-150 hover:bg-danger/10 hover:text-danger hover:border-danger/30"
-                onClick={() => { setMobileSidebarOpen(false); handleLogout(); }}
-              >
-                <LogOut className="w-3.5 h-3.5" /> Log Out
-              </button>
-            </div>
-          </aside>
-        </div>
-      )}
+              <div className="flex-1 overflow-hidden">
+                {sidebarContent}
+              </div>
+            </motion.aside>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-[260px] shrink-0 bg-surface-container border-r border-warm-gray/20 flex-col justify-between p-6">
-        <div>
-          <div className="flex items-center gap-3 mb-8">
-            <Eye className="w-6 h-6 text-primary" />
-            <div className="text-left">
-              <span className="font-display text-lg font-bold block text-ink-black leading-tight">Watcher Console</span>
-              <span className="text-[10px] text-warm-gray font-semibold tracking-wider uppercase block">Incident Management</span>
-            </div>
+      <aside className="hidden lg:flex w-[260px] shrink-0 bg-canvas-white border-r border-ash flex-col p-6 text-left">
+        <div className="flex items-center gap-3 mb-8 shrink-0">
+          <div className="w-7 h-7 rounded-full bg-carbon-ink flex items-center justify-center text-canvas-white">
+            <Eye className="w-4 h-4 text-lime-glow" />
           </div>
-          
-          {profileCard}
-          {sidebarNavItems}
+          <div className="text-left">
+            <span className="font-apk-galeria text-base font-medium block text-carbon-ink leading-tight">watcher.agent</span>
+            <span className="font-apkpraktikal text-[8px] text-slate font-bold tracking-widest uppercase block">Console Tower</span>
+          </div>
         </div>
-
-        <div className="mt-auto">
-          <button 
-            className="w-full flex items-center justify-center gap-2 bg-transparent text-on-surface-variant border border-warm-gray/30 rounded-lg py-3 text-[13px] font-semibold cursor-pointer transition-all duration-150 hover:bg-danger/10 hover:text-danger hover:border-danger/30"
-            onClick={handleLogout}
-          >
-            <LogOut className="w-3.5 h-3.5" /> Log Out
-          </button>
+        
+        <div className="flex-1 overflow-hidden">
+          {sidebarContent}
         </div>
       </aside>
     </>

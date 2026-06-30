@@ -1,16 +1,19 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps, react-hooks/immutability */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import LandingPage from './components/LandingPage';
 import SignIn from './components/SignIn';
 import SignUp from './components/SignUp';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import ConsoleDashboard from './components/ConsoleDashboard';
-import DiscordSetupGuide from './components/DiscordSetupGuide';
-import GithubSetupGuide from './components/GithubSetupGuide';
-import WebhookSetupGuide from './components/WebhookSetupGuide';
 import ProjectModal from './components/ProjectModal';
 import IncidentDetailsDrawer from './components/IncidentDetailsDrawer';
+import { Loader2 } from 'lucide-react';
+
+// Lazily load large guide components for dashboard optimization
+const DiscordSetupGuide = lazy(() => import('./components/DiscordSetupGuide'));
+const GithubSetupGuide = lazy(() => import('./components/GithubSetupGuide'));
+const WebhookSetupGuide = lazy(() => import('./components/WebhookSetupGuide'));
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
 
@@ -569,7 +572,7 @@ function App() {
     switch (status) {
       case 'TRIGGERED': return 'bg-primary/10 text-primary border border-primary/20 font-semibold';
       case 'AWAITING_APPROVAL': return 'bg-warning/10 text-warning border border-warning/20 font-semibold';
-      case 'FIXING': return 'bg-secondary/10 text-secondary border border-secondary/20 font-semibold';
+      case 'FIXING': return 'bg-cobalt-spark/10 text-cobalt-spark border border-cobalt-spark/20 font-semibold';
       case 'CLOSED_AND_LEARNED': return 'bg-success/10 text-success border border-success/20 font-semibold';
       case 'MUTED': return 'bg-warm-gray/10 text-warm-gray border border-warm-gray/20 font-semibold';
       default: return 'bg-danger/10 text-danger border border-danger/20 font-semibold';
@@ -666,15 +669,26 @@ function App() {
                 getSeverityBadgeClass={getSeverityBadgeClass}
                 getStatusBadgeClass={getStatusBadgeClass}
               />
-            ) : dashboardTab === 'SETUP' ? (
-              <DiscordSetupGuide 
-                globalBot={globalBotInfo} 
-                loading={loadingBotInfo} 
-              />
-            ) : dashboardTab === 'GITHUB_SETUP' ? (
-              <GithubSetupGuide />
             ) : (
-              <WebhookSetupGuide />
+              <Suspense fallback={
+                <div className="flex-1 flex items-center justify-center p-12 bg-canvas-white">
+                  <div className="flex items-center gap-2 font-apkpraktikal text-xs uppercase tracking-widest text-iron">
+                    <Loader2 className="w-4 h-4 animate-spin text-cobalt-spark" />
+                    <span>Loading Document Guide...</span>
+                  </div>
+                </div>
+              }>
+                {dashboardTab === 'SETUP' ? (
+                  <DiscordSetupGuide 
+                    globalBot={globalBotInfo} 
+                    loading={loadingBotInfo} 
+                  />
+                ) : dashboardTab === 'GITHUB_SETUP' ? (
+                  <GithubSetupGuide />
+                ) : (
+                  <WebhookSetupGuide />
+                )}
+              </Suspense>
             )}
           </main>
 

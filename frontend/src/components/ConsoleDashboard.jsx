@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import QuickMetrics from './QuickMetrics';
 import ProjectsList from './ProjectsList';
 import IncidentsTable from './IncidentsTable';
@@ -27,28 +28,47 @@ export default function ConsoleDashboard({
   getStatusBadgeClass
 }) {
   return (
-    <>
-      {/* Developer Guidance Banner */}
-      <div className="mx-4 md:mx-8 mt-6 bg-primary-container border border-primary/20 rounded-xl p-8 text-left text-on-primary-container relative overflow-hidden shadow-sm shrink-0">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="flex-1 flex flex-col min-h-0 bg-canvas-white"
+    >
+      {/* Developer Guidance Banner styled as the "Ice Blue Feature Panel" from Style Reference */}
+      <div className="mx-6 md:mx-8 mt-6 bg-ice-blue rounded-cards p-6 text-left relative overflow-hidden shrink-0">
         <div className="flex justify-between items-center select-none">
           <div>
-            <h3 className="font-display text-xl md:text-2xl font-bold text-ink-black mb-1">Watcher Platform Core</h3>
-            <p className="text-xs text-on-primary-fixed-variant opacity-85 font-semibold">Interactive Quick Start & Pipeline Architecture Guide</p>
+            {/* Eyebrow */}
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-cobalt-spark"></span>
+              <span className="font-apkpraktikal text-[9px] font-bold tracking-widest text-carbon-ink uppercase">OPERATIONAL ARCHITECTURE</span>
+            </div>
+            
+            <h3 className="font-apk-galeria text-lg md:text-xl font-medium text-carbon-ink">
+              Watcher Platform Core
+            </h3>
           </div>
+          
           <button 
             type="button"
             onClick={() => setGuideOpen(!guideOpen)}
-            className="px-4 py-1.5 border border-primary/30 text-ink-black font-semibold text-xs rounded-full hover:bg-white/10 transition-colors"
+            className="px-4 py-1.5 bg-canvas-white border border-ash text-carbon-ink font-apkpraktikal font-semibold text-[9px] uppercase tracking-widest rounded-full hover:bg-mist transition-colors cursor-pointer"
           >
-            {guideOpen ? 'Collapse' : 'Expand'}
+            {guideOpen ? 'Collapse' : 'Expand Details'}
           </button>
         </div>
         
         {guideOpen && (
-          <div className="mt-6 text-sm leading-relaxed border-t border-dashed border-primary/20 pt-6 animate-fade">
-            <p className="mb-4 text-on-primary-fixed-variant leading-relaxed">
-              WatcherAgent monitors a multi-project, Human-in-the-Loop AI Incident Remediation Pipeline backed by BullMQ. Follow this workflow to test the active agent pipeline:
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            transition={{ duration: 0.2 }}
+            className="mt-5 text-sm leading-relaxed border-t border-dashed border-silver/30 pt-5"
+          >
+            <p className="font-apk-galeria text-xs md:text-sm text-iron leading-relaxed mb-4">
+              WatcherAgent monitors a multi-project, Human-in-the-Loop AI Incident Remediation Pipeline backed by BullMQ. Follow this workflow to trigger and test the active agent pipeline:
             </p>
+            
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 { title: '1. Copy Webhook URL', desc: 'Onboard a project and copy the unique webhook URL. Alerts are routed here.' },
@@ -56,13 +76,13 @@ export default function ConsoleDashboard({
                 { title: '3. Approve on Discord', desc: 'The worker logs the incident and pings Discord. Click "Accept & Fix" on Discord.' },
                 { title: '4. Automated Fix', desc: 'The agent sandbox writes code, opens a GitHub PR, and updates Pinecone vectors.' }
               ].map(step => (
-                <div key={step.title} className="bg-white/60 backdrop-blur-sm border border-primary/10 rounded-lg p-4 shadow-sm text-left">
-                  <h4 className="m-0 mb-1 text-[13px] font-bold text-ink-black">{step.title}</h4>
-                  <p className="m-0 text-xs text-on-surface-variant leading-relaxed">{step.desc}</p>
+                <div key={step.title} className="bg-canvas-white border border-ash rounded-cards p-4 text-left">
+                  <h4 className="font-apk-galeria text-xs font-semibold text-carbon-ink m-0 mb-1">{step.title}</h4>
+                  <p className="font-apk-galeria text-[11px] text-iron m-0 leading-normal">{step.desc}</p>
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
 
@@ -74,7 +94,7 @@ export default function ConsoleDashboard({
       />
 
       {/* Content Layout Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 md:px-8 pb-8 mt-6 bg-transparent">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-6 md:px-8 pb-8 mt-6 bg-transparent min-h-0 flex-1">
         
         {/* Left Column: Projects List */}
         <ProjectsList 
@@ -105,6 +125,6 @@ export default function ConsoleDashboard({
         />
 
       </div>
-    </>
+    </motion.div>
   );
 }
