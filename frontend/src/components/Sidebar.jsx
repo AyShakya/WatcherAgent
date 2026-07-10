@@ -145,7 +145,7 @@ export default function Sidebar({
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', stiffness: 220, damping: 24 }}
-              className="relative w-[280px] max-w-[85%] h-full bg-canvas-white border-r border-ash flex flex-col p-6 shadow-sm text-left"
+              className="relative w-[min(90vw,320px)] max-w-[90vw] h-full max-h-[100dvh] bg-canvas-white border-r border-ash flex flex-col p-6 shadow-sm text-left overflow-hidden"
             >
               <div className="flex items-center justify-between mb-8 shrink-0">
                 <div className="flex items-center gap-3">
@@ -166,7 +166,7 @@ export default function Sidebar({
                 </button>
               </div>
               
-              <div className="flex-1 overflow-hidden">
+              <div className="flex-1 min-h-0 overflow-hidden">
                 {sidebarContent}
               </div>
             </motion.aside>
@@ -175,7 +175,7 @@ export default function Sidebar({
       </AnimatePresence>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-[260px] shrink-0 bg-canvas-white border-r border-ash flex-col p-6 text-left">
+      <aside className="hidden lg:flex w-[260px] shrink-0 bg-canvas-white border-r border-ash flex-col p-6 text-left min-h-0">
         <div className="flex items-center gap-3 mb-8 shrink-0">
           <div className="w-7 h-7 rounded-full bg-carbon-ink flex items-center justify-center text-canvas-white">
             <Eye className="w-4 h-4 text-lime-glow" />
@@ -186,7 +186,7 @@ export default function Sidebar({
           </div>
         </div>
         
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden">
           {sidebarContent}
         </div>
       </aside>

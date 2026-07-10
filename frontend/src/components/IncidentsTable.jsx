@@ -16,8 +16,8 @@ export default function IncidentsTable({
   const currentIncidents = incidents.slice((clampedIncidentPage - 1) * INCIDENTS_PER_PAGE, clampedIncidentPage * INCIDENTS_PER_PAGE);
 
   return (
-    <div className="col-span-1 lg:col-span-5 bg-canvas-white border border-ash rounded-xl flex flex-col overflow-hidden h-[520px] lg:h-[680px]">
-      <div className="px-6 py-[18px] border-b border-ash text-left bg-canvas-white shrink-0">
+    <div className="col-span-1 lg:col-span-5 bg-canvas-white border border-ash rounded-xl flex flex-col overflow-hidden min-h-[420px] lg:h-[680px] min-w-0">
+      <div className="px-4 sm:px-6 py-4 sm:py-[18px] border-b border-ash text-left bg-canvas-white shrink-0 min-w-0">
         <h2 className="font-apk-galeria text-base font-medium m-0 text-carbon-ink">Active Incident Remediation logs</h2>
       </div>
 
@@ -31,14 +31,14 @@ export default function IncidentsTable({
       )}
 
       {loadingIncidents && incidents.length === 0 ? (
-        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-2 min-h-0">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 flex flex-col gap-2 min-h-0">
           <div className="h-12 animate-skeleton rounded-cards shrink-0" />
           <div className="h-12 animate-skeleton rounded-cards shrink-0" style={{ animationDelay: '0.15s' }} />
           <div className="h-12 animate-skeleton rounded-cards shrink-0" style={{ animationDelay: '0.3s' }} />
           <div className="h-12 animate-skeleton rounded-cards shrink-0" style={{ animationDelay: '0.45s' }} />
         </div>
       ) : incidents.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center p-10 text-center min-h-0">
+        <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 text-center min-h-0">
           <div className="w-16 h-16 mb-4 rounded-full bg-mist flex items-center justify-center text-slate border border-ash shrink-0">
             <History className="w-5 h-5 stroke-[1.5px]" />
           </div>
@@ -49,8 +49,8 @@ export default function IncidentsTable({
         </div>
       ) : (
         <>
-          <div className="flex-1 overflow-y-auto min-h-0">
-            <table className="w-full border-collapse text-xs text-left table-fixed">
+          <div className="flex-1 overflow-y-auto overflow-x-auto min-h-0">
+            <table className="w-full min-w-[640px] border-collapse text-xs text-left table-fixed">
               <thead>
                 <tr>
                   <th className="bg-mist px-4 py-3 font-apkpraktikal text-[9px] font-bold uppercase text-iron border-b border-ash sticky top-0 z-[2] w-[20%] text-center">Severity</th>
@@ -88,7 +88,7 @@ export default function IncidentsTable({
             </table>
           </div>
           {totalIncidentPages > 1 && (
-            <div className="px-6 py-4 border-t border-ash flex justify-between items-center bg-canvas-white shrink-0 select-none rounded-b-xl">
+            <div className="px-4 sm:px-6 py-4 border-t border-ash flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center bg-canvas-white shrink-0 select-none rounded-b-xl">
               <span className="font-apk-galeria text-xs text-iron">
                 Showing <strong className="text-carbon-ink">{(clampedIncidentPage - 1) * INCIDENTS_PER_PAGE + 1}-{Math.min(clampedIncidentPage * INCIDENTS_PER_PAGE, incidents.length)}</strong> of <strong className="text-carbon-ink">{incidents.length}</strong>
               </span>

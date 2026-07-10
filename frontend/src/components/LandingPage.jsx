@@ -150,7 +150,7 @@ export default function LandingPage({ setView }) {
           initial={{ opacity: 0, rotate: -8, y: 10 }}
           animate={{ opacity: 1, rotate: -4, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="absolute top-10 left-[1%] w-52 bg-canvas-white border border-ash rounded-xl p-4 hidden xl:flex flex-col text-left z-20 hover:rotate-[-2deg] transition-transform duration-200 select-none"
+          className="absolute top-10 left-[1%] w-52 bg-canvas-white border border-ash rounded-xl p-4 hidden xl:flex flex-col text-left z-20 hover:rotate-[-2deg] transition-transform duration-200 select-none min-w-0"
         >
           <span className="font-apkpraktikal text-[8px] font-bold tracking-widest text-cobalt-spark uppercase mb-2">VECTOR CLUSTERING</span>
           <svg className="w-full h-24 text-slate mb-2" viewBox="0 0 100 80" fill="none" stroke="currentColor" strokeWidth="1.2">
@@ -176,7 +176,7 @@ export default function LandingPage({ setView }) {
           initial={{ opacity: 0, rotate: -5, y: 10 }}
           animate={{ opacity: 1, rotate: -2, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="absolute bottom-16 left-[2%] w-48 bg-canvas-white border border-ash rounded-xl p-4 hidden xl:flex flex-col text-left z-20 hover:rotate-[0deg] transition-transform duration-200 select-none"
+          className="absolute bottom-16 left-[2%] w-48 bg-canvas-white border border-ash rounded-xl p-4 hidden xl:flex flex-col text-left z-20 hover:rotate-[0deg] transition-transform duration-200 select-none min-w-0"
         >
           <span className="font-apkpraktikal text-[8px] font-bold tracking-widest text-cobalt-spark uppercase mb-2">DYNAMIC SCATTER</span>
           <svg className="w-full h-24 text-carbon-ink" viewBox="0 0 100 80" fill="none" stroke="currentColor" strokeWidth="1.2">
@@ -201,7 +201,7 @@ export default function LandingPage({ setView }) {
           initial={{ opacity: 0, rotate: 6, y: 10 }}
           animate={{ opacity: 1, rotate: 3, y: 0 }}
           transition={{ duration: 0.6, delay: 0.6 }}
-          className="absolute bottom-20 right-[1%] w-56 bg-canvas-white border border-ash rounded-xl p-4 hidden xl:flex flex-col text-left z-20 hover:rotate-[1deg] transition-transform duration-200 select-none"
+          className="absolute bottom-20 right-[1%] w-56 bg-canvas-white border border-ash rounded-xl p-4 hidden xl:flex flex-col text-left z-20 hover:rotate-[1deg] transition-transform duration-200 select-none min-w-0"
         >
           <span className="font-apkpraktikal text-[8px] font-bold tracking-widest text-cobalt-spark uppercase mb-2">BULLMQ PIPELINE</span>
           <div className="flex flex-col gap-2 font-mono text-[9px] text-iron bg-mist p-2.5 rounded border border-ash/40 mb-2">
@@ -229,7 +229,7 @@ export default function LandingPage({ setView }) {
           initial={{ opacity: 0, rotate: 5, y: 10 }}
           animate={{ opacity: 1, rotate: 2, y: 0 }}
           transition={{ duration: 0.6, delay: 0.7 }}
-          className="absolute top-8 right-[2%] w-52 bg-canvas-white border border-ash rounded-xl p-4 hidden xl:flex flex-col text-left z-20 hover:rotate-[0deg] transition-transform duration-200 select-none"
+          className="absolute top-8 right-[2%] w-52 bg-canvas-white border border-ash rounded-xl p-4 hidden xl:flex flex-col text-left z-20 hover:rotate-[0deg] transition-transform duration-200 select-none min-w-0"
         >
           <span className="font-apkpraktikal text-[8px] font-bold tracking-widest text-cobalt-spark uppercase mb-2">OVERHEAD LOGS</span>
           <svg className="w-full h-24 text-carbon-ink mb-2" viewBox="0 0 100 80" fill="none" stroke="currentColor" strokeWidth="1.2">
@@ -251,7 +251,7 @@ export default function LandingPage({ setView }) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 bg-mist border border-ash rounded-full mb-10 z-30"
+          className="inline-flex items-center gap-2 px-4 py-1.5 bg-mist border border-ash rounded-full mb-8 sm:mb-10 z-30 max-w-full"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-cobalt-spark"></span>
           <span className="font-apkpraktikal text-[10px] text-carbon-ink uppercase tracking-widest font-semibold">v2.4 Autonomous Incident Manager</span>
@@ -262,7 +262,7 @@ export default function LandingPage({ setView }) {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="font-apk-galeria text-4xl md:text-6xl lg:text-7.5xl text-carbon-ink max-w-3xl mx-auto leading-[1.05] tracking-tight mb-8 z-30 relative"
+          className="font-apk-galeria text-4xl md:text-6xl lg:text-7.5xl text-carbon-ink max-w-3xl mx-auto leading-[1.05] tracking-tight mb-6 sm:mb-8 z-30 relative"
         >
           Autonomously Triage, Notify & <br />
           <span className="text-slate italic font-light">Resolve Production Incidents</span>
@@ -273,7 +273,7 @@ export default function LandingPage({ setView }) {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="font-apk-galeria text-base md:text-lg text-iron max-w-2xl mx-auto mb-14 leading-relaxed z-30 relative"
+          className="font-apk-galeria text-base md:text-lg text-iron max-w-2xl mx-auto mb-10 sm:mb-14 leading-relaxed z-30 relative"
         >
           WatcherAgent monitors application endpoints, requests approval checkouts via Discord channels, and deploys tested code patches automatically. Elevate SRE using agentic workflows.
         </motion.p>
@@ -283,7 +283,7 @@ export default function LandingPage({ setView }) {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-5 mb-12 w-full max-w-md mx-auto z-30 relative"
+          className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-4 sm:gap-5 mb-10 sm:mb-12 w-full max-w-md mx-auto z-30 relative"
         >
           {/* Lime Glow conversion button - Primary Hero Action */}
           <motion.button 
@@ -308,9 +308,9 @@ export default function LandingPage({ setView }) {
       </main>
 
       {/* COMPATIBLE TELEMETRY & ACTION STACK ribbon (Replaces client logos) */}
-      <section className="border-t border-b border-ash bg-canvas-white py-12 w-full z-10 shrink-0 select-none overflow-hidden mb-28">
-        <div className="max-w-[1280px] mx-auto px-8 flex flex-col lg:flex-row lg:items-center justify-between gap-8 text-left">
-          <div className="flex flex-col gap-1 min-w-[240px]">
+      <section className="border-t border-b border-ash bg-canvas-white py-12 w-full z-10 shrink-0 select-none overflow-hidden mb-20 sm:mb-28">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 sm:gap-8 text-left">
+          <div className="flex flex-col gap-1 min-w-0 lg:min-w-[240px]">
             <span className="font-apkpraktikal text-[9px] font-bold text-slate uppercase tracking-widest">TELEMETRY & TOOLING STACK</span>
             <h4 className="font-apk-galeria text-lg font-medium text-carbon-ink m-0">Native SaaS Integrations</h4>
           </div>

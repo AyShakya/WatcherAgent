@@ -622,7 +622,7 @@ function App() {
 
       {/* 4. DASHBOARD VIEW */}
       {view === 'DASHBOARD' && (
-        <div className="flex h-screen w-full overflow-hidden animate-fade relative z-10">
+        <div className="flex min-h-[100dvh] w-full overflow-hidden animate-fade relative z-10">
           
           <Sidebar 
             user={user}
@@ -635,7 +635,7 @@ function App() {
           />
 
           {/* Main Content Area */}
-          <main className="flex-1 flex flex-col overflow-y-auto scroll-smooth relative">
+          <main className="flex-1 min-w-0 flex flex-col overflow-y-auto overflow-x-hidden scroll-smooth relative">
             <Header 
               dashboardTab={dashboardTab}
               setMobileSidebarOpen={setMobileSidebarOpen}

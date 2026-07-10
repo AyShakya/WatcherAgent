@@ -35,8 +35,8 @@ export default function ConsoleDashboard({
       className="flex-1 flex flex-col min-h-0 bg-canvas-white"
     >
       {/* Developer Guidance Banner styled as the "Ice Blue Feature Panel" from Style Reference */}
-      <div className="mx-6 md:mx-8 mt-6 bg-ice-blue rounded-cards p-6 text-left relative overflow-hidden shrink-0">
-        <div className="flex justify-between items-center select-none">
+      <div className="mx-4 sm:mx-6 md:mx-8 mt-4 sm:mt-6 bg-ice-blue rounded-cards p-4 sm:p-6 text-left relative overflow-hidden shrink-0 min-w-0">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 select-none">
           <div>
             {/* Eyebrow */}
             <div className="flex items-center gap-1.5 mb-1">
@@ -94,7 +94,7 @@ export default function ConsoleDashboard({
       />
 
       {/* Content Layout Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-6 md:px-8 pb-8 mt-6 bg-transparent min-h-0 flex-1">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 px-4 sm:px-6 md:px-8 pb-6 sm:pb-8 mt-4 sm:mt-6 bg-transparent min-h-0 flex-1 min-w-0">
         
         {/* Left Column: Projects List */}
         <ProjectsList 

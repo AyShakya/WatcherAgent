@@ -48,7 +48,7 @@ export default function IncidentDetailsDrawer({
   return (
     <AnimatePresence>
       {selectedIncident && (
-        <div className="fixed inset-0 z-50 flex justify-end">
+        <div className="fixed inset-0 z-50 flex justify-end overflow-hidden">
           {/* Backdrop fade */}
           <motion.div 
             initial={{ opacity: 0 }}
@@ -64,15 +64,15 @@ export default function IncidentDetailsDrawer({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 220, damping: 24 }}
-            className="relative max-w-[520px] w-full h-full bg-canvas-white border-l border-ash flex flex-col overflow-hidden text-left"
+            className="relative w-full sm:max-w-[520px] h-full max-h-[100dvh] bg-canvas-white border-l border-ash flex flex-col overflow-hidden text-left min-w-0"
           >
             {/* Header strip */}
-            <div className="px-8 py-6 border-b border-ash flex justify-between items-center bg-canvas-white shrink-0">
-              <div className="flex items-center gap-3">
+            <div className="px-5 sm:px-8 py-5 sm:py-6 border-b border-ash flex justify-between items-center gap-3 bg-canvas-white shrink-0 min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
                 <span className={`font-apkpraktikal text-[8px] font-bold rounded-full px-2 py-0.5 tracking-wider uppercase ${getSeverityBadgeClass(selectedIncident.severity)}`}>
                   {selectedIncident.severity}
                 </span>
-                <h2 className="font-apk-galeria text-lg font-medium m-0 text-carbon-ink">
+                <h2 className="font-apk-galeria text-base sm:text-lg font-medium m-0 text-carbon-ink break-words min-w-0">
                   Incident: {selectedIncident.id.slice(0, 8)}...
                 </h2>
               </div>
@@ -85,7 +85,7 @@ export default function IncidentDetailsDrawer({
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-6 text-left min-h-0">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden px-5 sm:px-8 py-5 sm:py-6 flex flex-col gap-6 text-left min-h-0 min-w-0">
               
               {/* Pipeline Visual Progress */}
               <div className="flex flex-col gap-2">
@@ -93,9 +93,9 @@ export default function IncidentDetailsDrawer({
                   <span className="w-1.5 h-1.5 rounded-full bg-cobalt-spark"></span>
                   <span className="font-apkpraktikal text-[9px] font-bold uppercase text-iron tracking-widest">Pipeline Visual Progress</span>
                 </div>
-                <div className="flex items-center justify-between mt-1 bg-mist border border-ash px-4 py-5 rounded-cards relative overflow-x-auto">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-1 bg-mist border border-ash px-4 py-4 sm:py-5 rounded-cards relative overflow-hidden sm:overflow-x-auto">
                   {/* Connector line */}
-                  <div className="absolute top-[28px] left-[10%] right-[10%] h-[1px] bg-slate/20 z-[1]"></div>
+                  <div className="absolute top-[28px] left-[10%] right-[10%] h-[1px] bg-slate/20 z-[1] hidden sm:block"></div>
                   
                   {[
                     { num: 1, label: 'Triage', getState: () => selectedIncident.status === 'CLOSED_AND_LEARNED' ? 'completed' : (selectedIncident.status === 'TRIGGERED' || selectedIncident.status === 'QUEUED') ? 'active' : 'completed' },
@@ -111,7 +111,7 @@ export default function IncidentDetailsDrawer({
                       : 'bg-canvas-white border-ash text-slate';
                     const labelClass = state === 'completed' ? 'text-carbon-ink font-semibold' : state === 'active' ? 'text-cobalt-spark font-semibold' : 'text-slate';
                     return (
-                      <div key={step.num} className="flex flex-col items-center flex-1 relative z-10 min-w-[70px]">
+                      <div key={step.num} className="flex flex-col items-center flex-1 relative z-10 min-w-[56px] sm:min-w-[70px]">
                         <div className={`w-6 h-6 rounded-full border flex items-center justify-center text-[10px] font-apkpraktikal font-bold transition-all duration-300 ${dotClass}`}>
                           {step.num}
                         </div>
@@ -128,7 +128,7 @@ export default function IncidentDetailsDrawer({
                   <span className="w-1.5 h-1.5 rounded-full bg-cobalt-spark"></span>
                   <span className="font-apkpraktikal text-[9px] font-bold uppercase text-iron tracking-widest">Incident Execution Metadata</span>
                 </div>
-                <div className="bg-mist border border-ash px-4 py-4 rounded-cards grid grid-cols-2 gap-4 text-xs">
+                <div className="bg-mist border border-ash px-4 py-4 rounded-cards grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div className="flex flex-col gap-1">
                     <span className="font-apkpraktikal text-[8px] font-bold uppercase text-slate tracking-widest">Remediation Status</span>
                     <span className="font-apk-galeria text-carbon-ink font-medium">{selectedIncident.status}</span>
@@ -163,7 +163,7 @@ export default function IncidentDetailsDrawer({
                       ❌ {actionError}
                     </div>
                   )}
-                  <div className="flex gap-3 mt-4">
+                  <div className="flex flex-col sm:flex-row gap-3 mt-4">
                     {/* Primary Lime Glow CTA for approving pipeline code patch */}
                     <motion.button
                       whileHover={{ scale: 1.02 }}
@@ -202,7 +202,7 @@ export default function IncidentDetailsDrawer({
                   <span className="w-1.5 h-1.5 rounded-full bg-cobalt-spark"></span>
                   <span className="font-apkpraktikal text-[9px] font-bold uppercase text-iron tracking-widest">Normalized Error Signature</span>
                 </div>
-                <pre className="bg-mist border border-ash rounded-cards p-4 font-mono text-xs text-danger m-0 whitespace-pre-wrap break-all scrollbar-none">
+                <pre className="bg-mist border border-ash rounded-cards p-4 font-mono text-xs text-danger m-0 whitespace-pre-wrap break-all scrollbar-none min-w-0">
                   {selectedIncident.error_signature}
                 </pre>
               </div>

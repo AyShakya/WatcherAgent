@@ -9,8 +9,8 @@ export default function Header({
   isRefreshing
 }) {
   return (
-    <header className="h-20 shrink-0 border-b border-ash bg-canvas-white/80 backdrop-blur-md flex justify-between items-center px-6 md:px-8 sticky top-0 z-30">
-      <div className="flex items-center min-w-0">
+    <header className="shrink-0 border-b border-ash bg-canvas-white/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 md:px-8 py-4 md:py-0 min-h-20 sticky top-0 z-30">
+      <div className="flex items-center min-w-0 flex-1">
         <button 
           className="lg:hidden p-2 text-carbon-ink bg-transparent border border-ash cursor-pointer mr-3 rounded-full hover:bg-mist transition-colors flex items-center justify-center"
           onClick={() => setMobileSidebarOpen(true)}
@@ -34,7 +34,7 @@ export default function Header({
         </div>
       </div>
       
-      <div className="flex gap-2 shrink-0">
+      <div className="flex flex-wrap justify-end gap-2 shrink-0 max-w-full">
         {dashboardTab === 'CONSOLE' && (
           <>
             <motion.button 

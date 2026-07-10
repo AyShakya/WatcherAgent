@@ -14,16 +14,16 @@ export default function ProjectCard({
   const [isFiring, setIsFiring] = useState(false);
 
   return (
-    <div className="bg-canvas-white border border-ash rounded-cards p-5 text-left transition-all duration-200 hover:border-cobalt-spark/30">
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h3 className="font-apk-galeria text-base font-semibold m-0 mb-1.5 text-carbon-ink">{project.name}</h3>
-          <div className="flex items-center gap-1.5 font-apk-galeria text-xs text-iron font-medium">
+    <div className="bg-canvas-white border border-ash rounded-cards p-4 sm:p-5 text-left transition-all duration-200 hover:border-cobalt-spark/30 min-w-0">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-4 min-w-0">
+        <div className="min-w-0">
+          <h3 className="font-apk-galeria text-base font-semibold m-0 mb-1.5 text-carbon-ink break-words">{project.name}</h3>
+          <div className="flex items-center gap-1.5 font-apk-galeria text-xs text-iron font-medium min-w-0 break-words">
             <GitBranch className="w-3.5 h-3.5 text-cobalt-spark stroke-[1.5px]" />
-            <span>{project.github_owner}/{project.github_repo}</span>
+            <span className="break-all">{project.github_owner}/{project.github_repo}</span>
           </div>
         </div>
-        <div className="flex gap-1 shrink-0">
+        <div className="flex gap-1 shrink-0 self-start">
           <button 
             type="button"
             className="bg-transparent border-none text-slate cursor-pointer p-1.5 rounded-full transition-all duration-150 hover:bg-mist hover:text-carbon-ink flex items-center justify-center" 
@@ -53,7 +53,7 @@ export default function ProjectCard({
             Active
           </span>
         </div>
-        <div className="flex items-center bg-canvas-white border border-ash rounded-lg px-3 py-2 justify-between gap-3 overflow-hidden">
+        <div className="flex items-center bg-canvas-white border border-ash rounded-lg px-3 py-2 justify-between gap-3 overflow-hidden min-w-0">
           <code className="font-mono text-xs text-cobalt-spark whitespace-nowrap overflow-x-auto text-left scrollbar-none flex-1">
             {`${API_BASE}/webhook/${project.webhook_secret}`}
           </code>

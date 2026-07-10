@@ -144,7 +144,7 @@ export default function DiscordSetupGuide({ globalBot, loading }) {
                 <li>Go to the <strong>OAuth2</strong> tab, and click <strong>URL Generator</strong> under it.</li>
                 <li>Under <strong>Scopes</strong>, check the <code>bot</code> box.</li>
                 <li>Under <strong>Bot Permissions</strong>, select the following permissions:
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-2 font-apk-galeria text-xs text-iron max-w-[500px]">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 mt-2 font-apk-galeria text-xs text-iron max-w-[500px]">
                     <span className="flex items-center gap-1.5"><Check className="w-3 h-3 text-cobalt-spark" /> Send Messages</span>
                     <span className="flex items-center gap-1.5"><Check className="w-3 h-3 text-cobalt-spark" /> Create Public Threads</span>
                     <span className="flex items-center gap-1.5"><Check className="w-3 h-3 text-cobalt-spark" /> Send Messages in Threads</span>

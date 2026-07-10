@@ -121,7 +121,7 @@ export default function ProjectModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-hidden">
       {/* Backdrop */}
       <motion.div 
         initial={{ opacity: 0 }}
@@ -135,9 +135,9 @@ export default function ProjectModal({
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 260, damping: 26 }}
-        className="bg-canvas-white border border-ash rounded-xl w-full max-w-[600px] overflow-hidden flex flex-col max-h-[90vh] text-left z-10"
+        className="bg-canvas-white border border-ash rounded-xl w-full max-w-[600px] overflow-hidden flex flex-col max-h-[92dvh] text-left z-10 min-w-0"
       >
-        <div className="px-8 py-6 border-b border-ash flex justify-between items-center bg-canvas-white shrink-0">
+        <div className="px-5 sm:px-8 py-5 sm:py-6 border-b border-ash flex justify-between items-center gap-4 bg-canvas-white shrink-0 min-w-0">
           <div>
             {/* Eyebrow */}
             <div className="flex items-center gap-1.5 mb-1">
@@ -145,7 +145,7 @@ export default function ProjectModal({
               <span className="font-apkpraktikal text-[9px] font-bold uppercase text-iron tracking-widest">ONBOARDING GATE</span>
             </div>
 
-            <h2 className="font-apk-galeria text-xl font-medium m-0 text-carbon-ink">
+            <h2 className="font-apk-galeria text-lg sm:text-xl font-medium m-0 text-carbon-ink break-words">
               {editingProject ? 'Edit Project Credentials' : 'Onboard New Project'}
             </h2>
             <p className="font-apk-galeria text-xs text-iron mt-1">
@@ -165,7 +165,7 @@ export default function ProjectModal({
 
         {renderError(projFormError)}
         
-        <form onSubmit={handleSubmit} className="px-8 py-6 overflow-y-auto text-left max-h-[70vh] flex-1">
+        <form onSubmit={handleSubmit} className="px-5 sm:px-8 py-5 sm:py-6 overflow-y-auto overflow-x-hidden text-left max-h-[calc(92dvh-120px)] flex-1 min-w-0">
           {/* Required Configuration */}
           <div className="flex items-center gap-2 mb-4 pb-1 border-b border-dashed border-ash">
             <span className="w-1.5 h-1.5 rounded-full bg-cobalt-spark"></span>
@@ -330,7 +330,7 @@ export default function ProjectModal({
                       type="button"
                       onClick={() => handleVerifyLlmKey(llmProvider, openRouterKey)}
                       disabled={projLlmVerifying}
-                      className="bg-mist hover:bg-mist/80 text-carbon-ink border border-ash rounded-lg px-4 py-2 text-xs font-apkpraktikal uppercase tracking-widest shrink-0 cursor-pointer active:scale-95 duration-150 transition-all disabled:opacity-50"
+                      className="bg-mist hover:bg-mist/80 text-carbon-ink border border-ash rounded-lg px-4 py-2 text-xs font-apkpraktikal uppercase tracking-widest shrink-0 cursor-pointer active:scale-95 duration-150 transition-all disabled:opacity-50 w-full sm:w-auto"
                     >
                       {projLlmVerifying ? 'Verifying...' : 'Verify Key'}
                     </button>
@@ -401,11 +401,11 @@ export default function ProjectModal({
             )}
           </div>
 
-          <div className="flex justify-end gap-3 mt-8 shrink-0">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 mt-8 shrink-0">
             {/* Cancel Button - Outline/text styling */}
             <button 
               type="button" 
-              className="bg-transparent text-iron border border-ash rounded-full px-5 py-2.5 font-apkpraktikal text-xs font-bold uppercase tracking-widest cursor-pointer transition-all duration-150 hover:bg-mist" 
+              className="bg-transparent text-iron border border-ash rounded-full px-5 py-2.5 font-apkpraktikal text-xs font-bold uppercase tracking-widest cursor-pointer transition-all duration-150 hover:bg-mist w-full sm:w-auto" 
               onClick={() => { setShowProjectModal(false); setProjFormError(''); }}
             >
               Cancel
@@ -416,7 +416,7 @@ export default function ProjectModal({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               type="submit" 
-              className="bg-carbon-ink text-canvas-white border border-none rounded-full px-6 py-2.5 font-apkpraktikal text-xs font-bold uppercase tracking-widest cursor-pointer transition-all duration-150 disabled:opacity-60 flex items-center justify-center gap-1.5" 
+              className="bg-carbon-ink text-canvas-white border border-none rounded-full px-6 py-2.5 font-apkpraktikal text-xs font-bold uppercase tracking-widest cursor-pointer transition-all duration-150 disabled:opacity-60 flex items-center justify-center gap-1.5 w-full sm:w-auto" 
               disabled={projFormLoading}
             >
               {projFormLoading ? (

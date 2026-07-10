@@ -90,7 +90,7 @@ export default function GithubSetupGuide() {
               <div className="bg-mist border border-ash rounded-cards p-4 text-xs font-mono max-w-[600px] text-left">
                 <span className="text-slate block mb-1">Example Repository URL:</span>
                 <span className="text-carbon-ink font-semibold text-sm">https://github.com/<span className="text-cobalt-spark font-bold">organization-name</span>/<span className="text-cobalt-spark font-bold">service-repository</span></span>
-                <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-ash">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 pt-3 border-t border-ash">
                   <div>
                     <span className="font-apkpraktikal text-[9px] uppercase font-bold text-slate block">GitHub Owner</span>
                     <span className="font-apk-galeria text-carbon-ink font-medium text-sm">organization-name</span>

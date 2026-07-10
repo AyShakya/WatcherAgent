@@ -66,12 +66,12 @@ export default function SignUp({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-canvas-white graph-grid relative select-none">
+    <div className="min-h-[100dvh] flex items-center justify-center p-4 sm:p-6 bg-canvas-white graph-grid relative select-none overflow-hidden">
       
       {/* Back button */}
       <button 
         onClick={() => { setAuthError(''); setView('LANDING'); }}
-        className="absolute top-6 left-6 flex items-center gap-2 bg-transparent border border-ash text-iron font-apkpraktikal text-xs uppercase tracking-widest px-4 py-2 rounded-full cursor-pointer hover:bg-mist transition-colors"
+        className="absolute top-4 left-4 sm:top-6 sm:left-6 flex items-center gap-2 bg-transparent border border-ash text-iron font-apkpraktikal text-xs uppercase tracking-widest px-4 py-2 rounded-full cursor-pointer hover:bg-mist transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" /> Back
       </button>
@@ -80,7 +80,7 @@ export default function SignUp({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 100, damping: 15 }}
-        className="w-full max-w-[440px] bg-canvas-white border border-ash rounded-xl p-8 md:p-10 z-10 text-left"
+        className="w-full max-w-[440px] bg-canvas-white border border-ash rounded-xl p-6 sm:p-8 md:p-10 z-10 text-left min-w-0"
       >
         <div className="text-center mb-8">
           <div className="w-12 h-12 rounded-full bg-mist flex items-center justify-center text-carbon-ink mx-auto mb-4 border border-ash">
