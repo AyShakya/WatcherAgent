@@ -1,3 +1,8 @@
+if (process.env.MOCK_SERVICES === 'true') {
+  // @ts-ignore
+  await import('../../mocks/unit/setup-mocks.js');
+}
+
 import express from 'express';
 import cors from 'cors';
 import { config } from './config/index.js';

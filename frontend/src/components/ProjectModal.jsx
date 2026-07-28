@@ -24,7 +24,8 @@ export default function ProjectModal({
   projLlmCredits,
   projLlmVerifying,
   projLlmVerificationError,
-  handleVerifyLlmKey
+  handleVerifyLlmKey,
+  projPineconeNamespace
 }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   
@@ -44,6 +45,7 @@ export default function ProjectModal({
   const [openRouterKey, setOpenRouterKey] = useState(projOpenRouterKey || '');
   const [llmProvider, setLlmProvider] = useState(projLlmProvider || 'OPENROUTER');
   const [llmModel, setLlmModel] = useState(projLlmModel || '');
+  const [pineconeNamespace, setPineconeNamespace] = useState(projPineconeNamespace || '');
 
   // Adjust local state when parent LLM model changes (e.g. from key verification loaded defaults)
   const [prevProjLlmModel, setPrevProjLlmModel] = useState(projLlmModel);
@@ -73,7 +75,8 @@ export default function ProjectModal({
       discord_bot_token: discordBotToken,
       openrouter_key: openRouterKey,
       llm_provider: llmProvider,
-      llm_model: llmModel
+      llm_model: llmModel,
+      pinecone_namespace: pineconeNamespace
     });
   };
 
@@ -242,6 +245,20 @@ export default function ProjectModal({
                 value={discordChannel} 
                 onChange={(e) => setDiscordChannel(e.target.value)} 
                 placeholder="e.g. 1122334455" 
+                required 
+                className="bg-mist border border-ash rounded-lg px-4 py-3 text-sm text-carbon-ink outline-none transition-all duration-200 focus:ring-1 focus:ring-cobalt-spark focus:border-cobalt-spark w-full font-sans"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4 mb-4">
+            <div className="flex flex-col gap-2 text-left">
+              <label className="font-apkpraktikal text-[10px] font-bold text-iron uppercase tracking-widest">Pinecone Namespace</label>
+              <input 
+                type="text" 
+                value={pineconeNamespace} 
+                onChange={(e) => setPineconeNamespace(e.target.value)} 
+                placeholder="e.g. my-project-namespace" 
                 required 
                 className="bg-mist border border-ash rounded-lg px-4 py-3 text-sm text-carbon-ink outline-none transition-all duration-200 focus:ring-1 focus:ring-cobalt-spark focus:border-cobalt-spark w-full font-sans"
               />

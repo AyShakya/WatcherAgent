@@ -49,6 +49,7 @@ function App() {
   const [projDiscordChannel, setProjDiscordChannel] = useState('');
   const [projDiscordBotToken, setProjDiscordBotToken] = useState('');
   const [projOpenRouterKey, setProjOpenRouterKey] = useState('');
+  const [projPineconeNamespace, setProjPineconeNamespace] = useState('');
   const [projFormError, setProjFormError] = useState('');
   const [projFormLoading, setProjFormLoading] = useState(false);
   const [projLlmProvider, setProjLlmProvider] = useState('OPENROUTER');
@@ -84,6 +85,7 @@ function App() {
     setProjDiscordChannel('');
     setProjDiscordBotToken('');
     setProjOpenRouterKey('');
+    setProjPineconeNamespace('');
     setProjLlmProvider('OPENROUTER');
     setProjLlmModel('');
     setProjLlmModelsList([]);
@@ -149,6 +151,7 @@ function App() {
     setProjDiscordChannel(project.discord_channel_id || '');
     setProjDiscordBotToken(project.discord_bot_token || '');
     setProjOpenRouterKey(project.openrouter_key || '');
+    setProjPineconeNamespace(project.pinecone_namespace || '');
     setProjLlmProvider(project.llm_provider || 'OPENROUTER');
     setProjLlmModel(project.llm_model || '');
     setProjLlmModelsList([]);
@@ -393,7 +396,8 @@ function App() {
       discord_bot_token: projDiscordBotToken,
       openrouter_key: projOpenRouterKey,
       llm_provider: projLlmProvider,
-      llm_model: projLlmModel
+      llm_model: projLlmModel,
+      pinecone_namespace: projPineconeNamespace
     };
 
     // --- Frontend Validation for Projects ---
@@ -419,6 +423,11 @@ function App() {
     }
     if (!payload.discord_channel_id || payload.discord_channel_id.trim() === '') {
       setProjFormError("Issue: Discord Channel ID is required.\nSolution: Please enter the target Discord channel ID where alerts will be dispatched.");
+      setProjFormLoading(false);
+      return;
+    }
+    if (!payload.pinecone_namespace || payload.pinecone_namespace.trim() === '') {
+      setProjFormError("Issue: Pinecone Namespace is required.\nSolution: Please enter a namespace to isolate vector memory.");
       setProjFormLoading(false);
       return;
     }
@@ -459,6 +468,7 @@ function App() {
         setProjDiscordChannel('');
         setProjDiscordBotToken('');
         setProjOpenRouterKey('');
+        setProjPineconeNamespace('');
         setProjLlmProvider('OPENROUTER');
         setProjLlmModel('');
         setProjLlmModelsList([]);
@@ -715,6 +725,8 @@ function App() {
               setProjDiscordBotToken={setProjDiscordBotToken}
               projOpenRouterKey={projOpenRouterKey}
               setProjOpenRouterKey={setProjOpenRouterKey}
+              projPineconeNamespace={projPineconeNamespace}
+              setProjPineconeNamespace={setProjPineconeNamespace}
               projFormError={projFormError}
               setProjFormError={setProjFormError}
               projFormLoading={projFormLoading}

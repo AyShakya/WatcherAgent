@@ -3,6 +3,8 @@ services:
     image: postgres:15-alpine
     restart: unless-stopped
     container_name: watcher-postgres
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_DB: watcher
       POSTGRES_USER: postgres
@@ -19,6 +21,8 @@ services:
     image: redis:7-alpine
     restart: unless-stopped
     container_name: watcher-redis
+    ports:
+      - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:

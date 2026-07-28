@@ -19,7 +19,7 @@ export const InputSchema = z.object({
   triggered_at:  z.string().datetime(),
   pagerduty_url: z.string().optional(),
   runbook_hint:  z.string().optional(),
-});
+}).passthrough();
 
 export const OutputSchema = z.object({
   incident_id:                z.string(),

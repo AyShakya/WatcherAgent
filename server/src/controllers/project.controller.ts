@@ -14,7 +14,7 @@ export const CreateProjectSchema = z.object({
     discord_channel_id: z.string().min(1, 'Discord channel ID is required'),
     discord_bot_token: z.string().optional(),
     openrouter_key: z.string().optional().nullable(),
-    pinecone_namespace: z.string().optional(),
+    pinecone_namespace: z.string().min(1, 'Pinecone namespace is required'),
     pinecone_api_key: z.string().optional(),
     llm_provider: z.string().optional(),
     llm_model: z.string().optional(),

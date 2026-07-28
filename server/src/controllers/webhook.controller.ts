@@ -142,6 +142,7 @@ export async function handleWebhook(req: Request, res: Response) {
       external_incident_id: incidentId || undefined,
       idempotency_key: idempotencyKey || undefined,
       service,
+      message: errorSignature,
       alert: {
         latencyMs,
         errorRate,

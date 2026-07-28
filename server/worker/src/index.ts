@@ -18,10 +18,17 @@ const loadEnv = () => {
 };
 loadEnv();
 
+if (process.env.MOCK_SERVICES === 'true') {
+  // @ts-ignore
+  await import('../../../mocks/unit/setup-mocks.js');
+}
+
 import { Worker } from 'bullmq';
-import { processQueueJob } from './processor.js';
+
+// Dynamically import processor and discord-bot to ensure they load after env and mocks are ready
+const { processQueueJob } = await import('./processor.js');
 // @ts-ignore
-import { loginBot } from '../../watcherai/nodes/node-03-hitl/discord-bot.js';
+const { loginBot } = await import('../../watcherai/nodes/node-03-hitl/discord-bot.js');
 
 console.log('🚀 Watcher Queue Worker starting...');
 

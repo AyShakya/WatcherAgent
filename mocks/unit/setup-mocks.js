@@ -41,12 +41,15 @@ class MockPinecone extends OriginalPinecone {
       return {
         namespace: function (ns) {
           console.log(`[MOCK PINECONE] Switched to Namespace: "${ns}"`);
-          this._ns = ns;
-          return this;
+          const newIndex = Object.create(this);
+          newIndex._ns = ns;
+          return newIndex;
         },
-        query: async (options) => {
-          console.log(`[MOCK PINECONE] Executing query in namespace: "${options.namespace || 'default'}"`);
+        query: async function (options) {
+          const ns = this._ns || 'default';
+          console.log(`[MOCK PINECONE] Executing query in namespace: "${ns}"`);
           const signatureMatches = mockVectors.filter(v => 
+            v.namespace === ns &&
             v.metadata?.chunk_type === 'error_signature' && 
             (!options.filter?.service || v.metadata?.service === (options.filter.service.$eq || options.filter.service))
           );
@@ -66,29 +69,40 @@ class MockPinecone extends OriginalPinecone {
               }))
             };
           }
-          return {
-            matches: [
-              {
-                score: 0.92,
-                metadata: {
-                  title: 'Database connection pool runbook',
-                  steps: JSON.stringify(['Verify database metrics', 'Increase connection pool limits']),
-                  fix_diff: '@@ -42,1 +42,1 @@\n-  poolSize: 5\n+  poolSize: 20',
-                  fix_file: 'db.js',
-                  root_cause: 'MongoDB Connection pool timeout',
-                  pr_url: 'https://github.com/mock/pr/1',
-                  source: 'HISTORICAL_FIX',
-                  incident_id: 'INC-7890'
+          
+          // Only return the hardcoded default database fallback for checkout-service / default connections
+          const filterService = options.filter?.service?.$eq || options.filter?.service;
+          if (!filterService || filterService === 'checkout-service') {
+            return {
+              matches: [
+                {
+                  score: 0.92,
+                  metadata: {
+                    title: 'Database connection pool runbook',
+                    steps: JSON.stringify(['Verify database metrics', 'Increase connection pool limits']),
+                    fix_diff: '@@ -42,1 +42,1 @@\n-  poolSize: 5\n+  poolSize: 20',
+                    fix_file: 'db.js',
+                    root_cause: 'MongoDB Connection pool timeout',
+                    pr_url: 'https://github.com/mock/pr/1',
+                    source: 'HISTORICAL_FIX',
+                    incident_id: 'INC-7890'
+                  }
                 }
-              }
-            ]
-          };
+              ]
+            };
+          }
+
+          return { matches: [] };
         },
-        upsert: async (payload) => {
-          console.log(`[MOCK PINECONE] Upserted vectors into Pinecone:`, JSON.stringify(payload));
+        upsert: async function (payload) {
+          const ns = this._ns || 'default';
+          console.log(`[MOCK PINECONE] Upserted vectors into Pinecone namespace "${ns}":`, JSON.stringify(payload));
           if (payload && Array.isArray(payload.records)) {
             for (const rec of payload.records) {
-              mockVectors.push(rec);
+              mockVectors.push({
+                ...rec,
+                namespace: ns
+              });
             }
           }
           return { upsertedCount: payload.records ? payload.records.length : 0 };
@@ -125,12 +139,16 @@ try {
     return {
       namespace: function (ns) {
         console.log(`[MOCK PINECONE] Switched to Namespace: "${ns}"`);
-        this._ns = ns;
-        return this;
+        const newIndex = Object.create(this);
+        newIndex._ns = ns;
+        return newIndex;
       },
-      query: async (options) => {
-        console.log(`[MOCK PINECONE] Executing query in namespace: "${options.namespace || 'default'}"`);
+      query: async function (options) {
+        const ns = this._ns || 'default';
+        console.log(`[MOCK PINECONE] Executing query in namespace: "${ns}"`);
+        console.log(`[MOCK PINECONE DEBUG] options:`, JSON.stringify(options));
         const signatureMatches = mockVectors.filter(v => 
+          v.namespace === ns &&
           v.metadata?.chunk_type === 'error_signature' && 
           (!options.filter?.service || v.metadata?.service === (options.filter.service.$eq || options.filter.service))
         );
@@ -150,29 +168,41 @@ try {
             }))
           };
         }
-        return {
-          matches: [
-            {
-              score: 0.92,
-              metadata: {
-                title: 'Database connection pool runbook',
-                steps: JSON.stringify(['Verify database metrics', 'Increase connection pool limits']),
-                fix_diff: '@@ -42,1 +42,1 @@\n-  poolSize: 5\n+  poolSize: 20',
-                fix_file: 'db.js',
-                root_cause: 'MongoDB Connection pool timeout',
-                pr_url: 'https://github.com/mock/pr/1',
-                source: 'HISTORICAL_FIX',
-                incident_id: 'INC-7890'
+        
+        // Only return the hardcoded default database fallback for checkout-service / default connections
+        const filterService = options.filter?.service?.$eq || options.filter?.service;
+        console.log(`[MOCK PINECONE DEBUG] filterService:`, filterService);
+        if (!filterService || filterService === 'checkout-service') {
+          return {
+            matches: [
+              {
+                score: 0.92,
+                metadata: {
+                  title: 'Database connection pool runbook',
+                  steps: JSON.stringify(['Verify database metrics', 'Increase connection pool limits']),
+                  fix_diff: '@@ -42,1 +42,1 @@\n-  poolSize: 5\n+  poolSize: 20',
+                  fix_file: 'db.js',
+                  root_cause: 'MongoDB Connection pool timeout',
+                  pr_url: 'https://github.com/mock/pr/1',
+                  source: 'HISTORICAL_FIX',
+                  incident_id: 'INC-7890'
+                }
               }
-            }
-          ]
-        };
+            ]
+          };
+        }
+
+        return { matches: [] };
       },
-      upsert: async (payload) => {
-        console.log(`[MOCK PINECONE] Upserted vectors into Pinecone:`, JSON.stringify(payload));
+      upsert: async function (payload) {
+        const ns = this._ns || 'default';
+        console.log(`[MOCK PINECONE] Upserted vectors into Pinecone namespace "${ns}":`, JSON.stringify(payload));
         if (payload && Array.isArray(payload.records)) {
           for (const rec of payload.records) {
-            mockVectors.push(rec);
+            mockVectors.push({
+              ...rec,
+              namespace: ns
+            });
           }
         }
         return { upsertedCount: payload.records ? payload.records.length : 0 };
@@ -208,6 +238,60 @@ import {
   clearIncidentTimeout,
 } from '../../server/watcherai/services/incident-store.js';
 
+const mockScenarios = [
+  {
+    key: 'logger is not defined',
+    service: 'user-service',
+    errorMessage: 'ReferenceError: logger is not defined',
+    normalizedSignature: 'ReferenceError: logger is not defined',
+    filePath: 'app.js',
+    errorLine: 5,
+    errorFunction: 'logRequest',
+    errorType: 'reference',
+    keywords: ['logger', 'app.js', 'ReferenceError'],
+    explanation: 'The logger object is used in logRequest but is never defined or imported in this file.',
+    diff: '@@ -1,5 +1,6 @@\n+// Import logger helper\n+import logger from "./logger.js";\n \n function logRequest(req) {\n   logger.info(`Request: ${req.url}`);',
+    newContent: 'import logger from "./logger.js";\n\nfunction logRequest(req) {\n  logger.info(`Request: ${req.url}`);\n}',
+    fixReasoning: 'Add missing import for logger module at the top of app.js.',
+    edgeCases: ['logger module not existing', 'incorrect import path'],
+    originalContent: 'function logRequest(req) {\n  logger.info(`Request: ${req.url}`);\n}'
+  },
+  {
+    key: 'division by zero',
+    service: 'billing-service',
+    errorMessage: 'ZeroDivisionError: division by zero in calculateTax',
+    normalizedSignature: 'ZeroDivisionError: division by zero',
+    filePath: 'tax.js',
+    errorLine: 3,
+    errorFunction: 'calculateTax',
+    errorType: 'logical',
+    keywords: ['tax', 'ZeroDivisionError', 'calculateTax'],
+    explanation: 'The calculation divides by the rate parameter when it is zero, leading to a division by zero error.',
+    diff: '@@ -2,3 +2,4 @@\n function calculateTax(amount, rate) {\n-  if (rate === 0) return amount / rate;\n+  if (rate === 0) return 0;\n   return amount * rate;',
+    newContent: 'function calculateTax(amount, rate) {\n  if (rate === 0) return 0;\n  return amount * rate;\n}',
+    fixReasoning: 'Change the check to return 0 tax when rate is 0 instead of attempting division.',
+    edgeCases: ['negative rates', 'null rate inputs'],
+    originalContent: 'function calculateTax(amount, rate) {\n  if (rate === 0) return amount / rate;\n  return amount * rate;\n}'
+  },
+  {
+    key: 'Unexpected token',
+    service: 'auth-service',
+    errorMessage: 'SyntaxError: Unexpected token \'}\'',
+    normalizedSignature: 'SyntaxError: Unexpected token',
+    filePath: 'auth.js',
+    errorLine: 6,
+    errorFunction: 'verifyToken',
+    errorType: 'syntax',
+    keywords: ['SyntaxError', 'auth.js', 'verifyToken'],
+    explanation: 'An extra closing brace exists at the end of the file, causing a parse syntax error.',
+    diff: '@@ -4,4 +4,3 @@\n     return false;\n   }\n }\n-}\n',
+    newContent: 'function verifyToken(token) {\n  if (!token) {\n    return false;\n  }\n}',
+    fixReasoning: 'Remove the extra closing curly brace at the end of auth.js.',
+    edgeCases: ['breaking other function scopes if bracket structure was different'],
+    originalContent: 'function verifyToken(token) {\n  if (!token) {\n    return false;\n  }\n}\n}\n'
+  }
+];
+
 // 1. Mock Axios POST for LLM (OpenRouter) calls
 axios.post = async (url, data, config) => {
   const body = typeof data === 'string' ? JSON.parse(data) : data;
@@ -215,9 +299,43 @@ axios.post = async (url, data, config) => {
   const userPrompt = body.messages.find(m => m.role === 'user')?.content || '';
 
   console.log(`[MOCK AXIOS] Intercepted POST to OpenRouter:`, url);
+  console.log(`[MOCK AXIOS DEBUG] userPrompt:`, userPrompt);
 
-  // Determine which node is calling based on prompt keyword hints
+  if (global.customLlmResponseResolver) {
+    const customRes = await global.customLlmResponseResolver(url, body, systemPrompt, userPrompt);
+    if (customRes) return customRes;
+  }
+
+  // Find if we have a matching scenario
+  const scenario = mockScenarios.find(s => 
+    userPrompt.includes(s.key) || 
+    userPrompt.includes(s.errorMessage) || 
+    systemPrompt.includes(s.key)
+  );
+
   if (systemPrompt.includes('Triage')) {
+    if (scenario) {
+      return {
+        data: {
+          choices: [{
+            message: {
+              content: JSON.stringify({
+                service: scenario.service,
+                severity: 'P1',
+                raw_error_message: scenario.errorMessage,
+                normalized_error_signature: scenario.normalizedSignature,
+                root_frame: { file: scenario.filePath, line: scenario.errorLine, function: scenario.errorFunction },
+                affected_files: [scenario.filePath],
+                reasoning: 'Verbatim: ' + scenario.errorMessage,
+                confidence: 95,
+                is_critical: true,
+                error_type: scenario.errorType
+              })
+            }
+          }]
+        }
+      };
+    }
     // Triage Node mock response
     return {
       data: {
@@ -240,6 +358,27 @@ axios.post = async (url, data, config) => {
       }
     };
   } else if (userPrompt.includes('TASK — complete in order') || userPrompt.includes('STEP 1 — LOCATE')) {
+    if (scenario) {
+      return {
+        data: {
+          choices: [{
+            message: {
+              content: JSON.stringify({
+                file_path: scenario.filePath,
+                root_cause_line: scenario.errorLine,
+                root_cause_explanation: scenario.explanation,
+                uncertain: false,
+                diff: scenario.diff,
+                new_content: scenario.newContent,
+                reasoning: scenario.fixReasoning,
+                edge_cases: scenario.edgeCases,
+                confidence: 0.98
+              })
+            }
+          }]
+        }
+      };
+    }
     // GitHub Fixer Deep Audit mock response
     return {
       data: {
@@ -261,6 +400,19 @@ axios.post = async (url, data, config) => {
       }
     };
   } else if (userPrompt.includes('technical search keywords')) {
+    if (scenario) {
+      return {
+        data: {
+          choices: [{
+            message: {
+              content: JSON.stringify({
+                keywords: scenario.keywords
+              })
+            }
+          }]
+        }
+      };
+    }
     // Keyword extractor mock response
     return {
       data: {
@@ -274,6 +426,17 @@ axios.post = async (url, data, config) => {
       }
     };
   } else if (userPrompt.includes('top 5 most relevant paths')) {
+    if (scenario) {
+      return {
+        data: {
+          choices: [{
+            message: {
+              content: scenario.filePath
+            }
+          }]
+        }
+      };
+    }
     // Path ranker mock response
     return {
       data: {
@@ -330,24 +493,40 @@ global.fetch = async (url, options) => {
       return makeMockResponse({ object: { sha: 'mocksha1234567890' } });
     }
     if (urlStr.includes('/git/trees/')) {
-      return makeMockResponse({
-        tree: [
-          { path: 'db.js', type: 'blob' },
-          { path: 'checkout.js', type: 'blob' }
-        ]
-      });
+      const tree = [
+        { path: 'db.js', type: 'blob' },
+        { path: 'checkout.js', type: 'blob' },
+        { path: 'app.js', type: 'blob' },
+        { path: 'tax.js', type: 'blob' },
+        { path: 'auth.js', type: 'blob' }
+      ];
+      return makeMockResponse({ tree });
     }
     if (urlStr.includes('/contents/')) {
       if (options?.method === 'PUT') {
         return makeMockResponse({}, 200);
       }
+      const pathMatch = urlStr.match(/\/contents\/(.+)$/);
+      const filePath = pathMatch ? decodeURIComponent(pathMatch[1]).split('?')[0] : '';
+      
+      const scenario = mockScenarios.find(s => s.filePath === filePath);
+      let fileContent = 'const poolSize = 5;';
+      if (scenario) {
+        fileContent = scenario.originalContent;
+      }
       return makeMockResponse({
-        content: Buffer.from('const poolSize = 5;').toString('base64'),
+        content: Buffer.from(fileContent).toString('base64'),
         sha: 'mockfilesha9876'
       });
     }
     if (urlStr.includes('/search/code')) {
-      return makeMockResponse({ items: [{ path: 'db.js' }] });
+      const q = urlStr;
+      let searchPath = 'db.js';
+      if (q.includes('logger') || q.includes('app.js')) searchPath = 'app.js';
+      else if (q.includes('tax') || q.includes('calculateTax')) searchPath = 'tax.js';
+      else if (q.includes('auth') || q.includes('verifyToken')) searchPath = 'auth.js';
+
+      return makeMockResponse({ items: [{ path: searchPath }] });
     }
     // /repos/{owner}/{repo}
     if (urlStr.match(/\/repos\/[^/]+\/[^/]+$/)) {
@@ -384,19 +563,29 @@ Octokit.prototype.request = async function(route, options) {
     return { data: {} };
   }
   if (cleanRoute.includes('/git/trees') && cleanRoute.startsWith('GET')) {
+    const tree = [
+      { path: 'db.js', type: 'blob' },
+      { path: 'checkout.js', type: 'blob' },
+      { path: 'app.js', type: 'blob' },
+      { path: 'tax.js', type: 'blob' },
+      { path: 'auth.js', type: 'blob' }
+    ];
     return {
-      data: {
-        tree: [
-          { path: 'db.js', type: 'blob' },
-          { path: 'checkout.js', type: 'blob' }
-        ]
-      }
+      data: { tree }
     };
   }
   if (cleanRoute.includes('/contents/') && cleanRoute.startsWith('GET')) {
+    const urlParts = cleanRoute.split('/contents/');
+    const filePath = urlParts[1]?.split(' ')[0] || '';
+    
+    const scenario = mockScenarios.find(s => s.filePath === filePath);
+    let fileContent = 'const poolSize = 5;';
+    if (scenario) {
+      fileContent = scenario.originalContent;
+    }
     return {
       data: {
-        content: Buffer.from('const poolSize = 5;').toString('base64'),
+        content: Buffer.from(fileContent).toString('base64'),
         sha: 'mockfilesha9876'
       }
     };
@@ -408,7 +597,13 @@ Octokit.prototype.request = async function(route, options) {
     return { data: { default_branch: 'main' } };
   }
   if (cleanRoute.startsWith('GET /search/code')) {
-    return { data: { items: [{ path: 'db.js' }] } };
+    const q = cleanRoute;
+    let searchPath = 'db.js';
+    if (q.includes('logger') || q.includes('app.js')) searchPath = 'app.js';
+    else if (q.includes('tax') || q.includes('calculateTax')) searchPath = 'tax.js';
+    else if (q.includes('auth') || q.includes('verifyToken')) searchPath = 'auth.js';
+
+    return { data: { items: [{ path: searchPath }] } };
   }
   return { data: {} };
 };
